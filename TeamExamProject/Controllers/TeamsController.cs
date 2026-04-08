@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TeamExamProject.Contracts.Teams;
 using TeamExamProject.Data;
 using TeamExamProject.Models;
 
@@ -25,13 +26,31 @@ public class TeamsController : ControllerBase
         return Ok(await _dbContext.Teams.OrderBy(team => team.Id).ToListAsync());
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Team>> Create(Team team)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Team>> GetById(int id)
     {
+        var team = await _dbContext.Teams.FindAsync(id);
+        if (team is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(team);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Team>> Create(CreateTeamRequest request)
+    {
+        var team = new Team
+        {
+            Name = request.Name.Trim(),
+            Score = request.Score
+        };
+
         _dbContext.Teams.Add(team);
         await _dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetAll), new { id = team.Id }, team);
+        return CreatedAtAction(nameof(GetById), new { id = team.Id }, team);
     }
 
     [HttpGet("me")]
@@ -39,7 +58,8 @@ public class TeamsController : ControllerBase
     {
         return Ok(new
         {
-            id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimTypes.Name),
+            id = User.FindFirstValue(ClaimTypes.NameIdentifier),
+            userName = User.FindFirstValue(ClaimTypes.Name),
             email = User.FindFirstValue(ClaimTypes.Email),
             role = User.FindFirstValue(ClaimTypes.Role)
         });

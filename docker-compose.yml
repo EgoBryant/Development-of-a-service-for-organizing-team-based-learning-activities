@@ -13,7 +13,7 @@ services:
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-team_exam_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       Jwt__Issuer: TeamExamProject
       Jwt__Audience: TeamExamProject.Client
-      Jwt__Key: ${JWT_KEY:-ChangeThisDockerSecretKeyForProduction123!}
+      Jwt__Key: ${JWT_KEY}
       Jwt__ExpiryMinutes: 120
     ports:
       - "8080:8080"
