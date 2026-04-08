@@ -1,0 +1,49 @@
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userprefs
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vs/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test and coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+packages/
+
+# Docker overrides
+docker-compose.override.yml
+
+# EF local database artifacts
+*.db
+*.sqlite
