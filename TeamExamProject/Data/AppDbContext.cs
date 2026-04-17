@@ -23,12 +23,22 @@ public class AppDbContext : DbContext
             entity.Property(user => user.UserName).HasMaxLength(100).IsRequired();
             entity.Property(user => user.PasswordHash).IsRequired();
             entity.Property(user => user.Role).HasMaxLength(50).IsRequired();
+            entity.HasOne(user => user.Team)
+                .WithMany(team => team.Members)
+                .HasForeignKey(user => user.TeamId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Team>(entity =>
         {
             entity.HasKey(team => team.Id);
             entity.Property(team => team.Name).HasMaxLength(150).IsRequired();
+            entity.Property(team => team.InviteCode).HasMaxLength(16).IsRequired();
+            entity.HasIndex(team => team.InviteCode).IsUnique();
+            entity.HasOne(team => team.Captain)
+                .WithMany()
+                .HasForeignKey(team => team.CaptainUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

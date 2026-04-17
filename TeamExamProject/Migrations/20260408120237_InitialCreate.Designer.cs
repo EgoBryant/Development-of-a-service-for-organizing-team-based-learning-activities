@@ -33,8 +33,16 @@ namespace TeamExamProject.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("CaptainUserId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -45,6 +53,11 @@ namespace TeamExamProject.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CaptainUserId");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique();
 
                     b.ToTable("Teams");
                 });
@@ -74,6 +87,9 @@ namespace TeamExamProject.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int?>("TeamId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -84,7 +100,34 @@ namespace TeamExamProject.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("TeamId");
+
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.Team", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.User", "Captain")
+                        .WithMany()
+                        .HasForeignKey("CaptainUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Captain");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.User", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.Team", "Team")
+                        .WithMany("Members")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.Team", b =>
+                {
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

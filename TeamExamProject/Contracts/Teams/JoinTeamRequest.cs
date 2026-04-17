@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TeamExamProject.Contracts.Teams;
 
-public class CreateTeamRequest
+public class JoinTeamRequest
 {
     [Required]
-    [MaxLength(150)]
-    public string Name { get; set; } = string.Empty;
+    [MaxLength(16)]
+    public string InviteCode { get; set; } = string.Empty;
 }

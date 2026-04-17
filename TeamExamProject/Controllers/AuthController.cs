@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -52,7 +53,7 @@ public class AuthController : ControllerBase
         _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync();
 
-        return Ok(CreateAuthResponse(user));
+        return Ok(await CreateAuthResponseAsync(user));
     }
 
     [HttpPost("login")]
@@ -72,18 +73,69 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid email or password." });
         }
 
-        return Ok(CreateAuthResponse(user));
+        return Ok(await CreateAuthResponseAsync(user));
     }
 
-    private AuthResponse CreateAuthResponse(User user)
+    [HttpGet("me")]
+    public async Task<ActionResult<UserProfileResponse>> Me()
     {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var user = await _dbContext.Users.AsNoTracking().SingleOrDefaultAsync(existingUser => existingUser.Id == userId.Value);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(await BuildUserProfileResponseAsync(user));
+    }
+
+    private async Task<AuthResponse> CreateAuthResponseAsync(User user)
+    {
+        var profile = await BuildUserProfileResponseAsync(user);
+        var token = _jwtTokenService.CreateToken(user);
+
         return new AuthResponse
         {
-            Token = _jwtTokenService.CreateToken(user),
+            Token = token,
             ExpiresAtUtc = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
+            UserName = profile.UserName,
+            Email = profile.Email,
+            Role = profile.Role,
+            TeamId = profile.TeamId,
+            TeamName = profile.TeamName,
+            TeamInviteCode = profile.TeamInviteCode,
+            IsCaptain = profile.IsCaptain
+        };
+    }
+
+    private async Task<UserProfileResponse> BuildUserProfileResponseAsync(User user)
+    {
+        var team = user.TeamId is null
+            ? null
+            : await _dbContext.Teams.AsNoTracking().SingleOrDefaultAsync(existingTeam => existingTeam.Id == user.TeamId.Value);
+
+        return new UserProfileResponse
+        {
+            Id = user.Id,
             UserName = user.UserName,
             Email = user.Email,
-            Role = user.Role
+            Role = user.Role,
+            TeamId = team?.Id,
+            TeamName = team?.Name ?? string.Empty,
+            TeamInviteCode = team?.InviteCode ?? string.Empty,
+            IsCaptain = team?.CaptainUserId == user.Id,
+            TeamScore = team?.Score ?? 0
         };
+    }
+
+    private int? GetCurrentUserId()
+    {
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(id, out var parsedId) ? parsedId : null;
     }
 }

@@ -15,5 +15,6 @@ public class RegisterRequest
 
     [Required]
     [MinLength(6)]
+    [MaxLength(128)]
     public string Password { get; set; } = string.Empty;
 }

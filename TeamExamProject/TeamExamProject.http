@@ -41,8 +41,7 @@ Accept: application/json
 Authorization: Bearer {{JwtToken}}
 
 {
-  "name": "Gamma",
-  "score": 10
+  "name": "Gamma"
 }
 
 ###
