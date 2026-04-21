@@ -1,0 +1,110 @@
+@baseUrl = http://localhost:8080
+@userToken = paste-user-jwt-here
+@adminToken = paste-admin-jwt-here
+@inviteCode = ALPHA1
+@teamId = 1
+
+### Healthcheck
+GET {{baseUrl}}/health
+Accept: application/json
+
+### Register user
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userName": "testuser",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Login user
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Login demo student
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "student@teamexam.local",
+  "password": "Student123!"
+}
+
+### Login demo admin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@teamexam.local",
+  "password": "Admin123!"
+}
+
+### Current user profile
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+### List teams
+GET {{baseUrl}}/api/teams
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+### Get team by id
+GET {{baseUrl}}/api/teams/{{teamId}}
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+### Create team
+POST {{baseUrl}}/api/teams
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "name": "Gamma"
+}
+
+### Join team by invite code
+POST {{baseUrl}}/api/teams/join
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "inviteCode": "{{inviteCode}}"
+}
+
+### Get my team
+GET {{baseUrl}}/api/teams/me
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+### Update team score as admin
+PATCH {{baseUrl}}/api/teams/{{teamId}}/score
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "score": 150
+}
+
+### Unauthorized score update example
+PATCH {{baseUrl}}/api/teams/{{teamId}}/score
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "score": 200
+}

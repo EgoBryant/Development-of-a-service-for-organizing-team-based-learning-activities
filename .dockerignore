@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.idea/
+**/.vs/
+**/*.user
+**/*.suo
+**/*.db
+**/*.log
+.git
+.gitignore
+docker-compose.override.yml

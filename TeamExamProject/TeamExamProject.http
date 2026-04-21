@@ -1,0 +1,53 @@
+@TeamExamProject_HostAddress = http://localhost:8080
+@JwtToken = paste-jwt-token-here
+
+GET {{TeamExamProject_HostAddress}}/health
+Accept: application/json
+
+###
+
+POST {{TeamExamProject_HostAddress}}/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userName": "testuser",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+###
+
+POST {{TeamExamProject_HostAddress}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+###
+
+GET {{TeamExamProject_HostAddress}}/api/teams
+Accept: application/json
+Authorization: Bearer {{JwtToken}}
+
+###
+
+POST {{TeamExamProject_HostAddress}}/api/teams
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{JwtToken}}
+
+{
+  "name": "Gamma"
+}
+
+###
+
+GET {{TeamExamProject_HostAddress}}/api/teams/me
+Accept: application/json
+Authorization: Bearer {{JwtToken}}
+
+###
