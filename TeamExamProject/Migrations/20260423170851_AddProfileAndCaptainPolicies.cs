@@ -45,8 +45,37 @@ namespace TeamExamProject.Migrations
                         WHERE table_schema = 'public' AND table_name = 'Teams' AND column_name = 'CaptainId'
                     ) THEN
                         ALTER TABLE "Teams" RENAME COLUMN "CaptainUserId" TO "CaptainId";
+                    ELSIF NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'Teams' AND column_name = 'CaptainId'
+                    ) THEN
+                        ALTER TABLE "Teams" ADD COLUMN "CaptainId" integer NULL;
                     END IF;
                 END $$;
+                """);
+
+            migrationBuilder.Sql("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'Teams' AND column_name = 'InviteCode'
+                    ) THEN
+                        ALTER TABLE "Teams" ADD COLUMN "InviteCode" character varying(16);
+                    END IF;
+                END $$;
+                """);
+
+            migrationBuilder.Sql("""
+                UPDATE "Teams"
+                SET "InviteCode" = LEFT(CONCAT('TEAM', LPAD("Id"::text, 12, '0')), 16)
+                WHERE "InviteCode" IS NULL OR "InviteCode" = '';
+                """);
+
+            migrationBuilder.Sql("""
+                ALTER TABLE "Teams" ALTER COLUMN "InviteCode" SET NOT NULL;
                 """);
 
             migrationBuilder.Sql("""
@@ -55,6 +84,10 @@ namespace TeamExamProject.Migrations
                 ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "ContactEmail" character varying(200) NOT NULL DEFAULT '';
                 ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "PhoneNumber" character varying(32) NOT NULL DEFAULT '';
                 ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "TelegramHandle" character varying(100) NOT NULL DEFAULT '';
+                """);
+
+            migrationBuilder.Sql("""
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_Teams_InviteCode" ON "Teams" ("InviteCode");
                 """);
 
             migrationBuilder.Sql("""
