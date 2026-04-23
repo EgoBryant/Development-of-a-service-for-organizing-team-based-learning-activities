@@ -1,0 +1,184 @@
+@baseUrl = http://localhost:8080
+@jwt = <PASTE_JWT_HERE>
+@captainJwt = <PASTE_CAPTAIN_JWT_HERE>
+@adminJwt = <PASTE_ADMIN_JWT_HERE>
+
+### Health
+GET {{baseUrl}}/health
+Accept: application/json
+
+### Current profile
+GET {{baseUrl}}/api/profile
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Update profile
+PUT {{baseUrl}}/api/profile
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+{
+  "firstName": "Егор",
+  "lastName": "Габов",
+  "middleName": "Андреевич",
+  "nickname": "egorbryant",
+  "bio": "TL/DBA проекта Командный зачёт",
+  "avatarUrl": "https://example.com/avatars/egor.png",
+  "contactEmail": "egor.profile@example.com",
+  "telegramHandle": "@egorbryant",
+  "phoneNumber": "+79001234567",
+  "studentTicketNumber": 420001,
+  "groupId": 1
+}
+
+### List groups
+GET {{baseUrl}}/api/groups
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Create group as admin
+POST {{baseUrl}}/api/groups
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{adminJwt}}
+
+{
+  "title": "РИ-420002",
+  "course": "4",
+  "faculty": "УрФУ"
+}
+
+### Create team
+POST {{baseUrl}}/api/teams/create
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+{
+  "name": "Omega Squad",
+  "description": "Команда для проверки RBAC и MVP-флоу"
+}
+
+### Create team legacy route
+POST {{baseUrl}}/api/teams
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+{
+  "name": "Legacy Squad",
+  "description": "Совместимость со старым маршрутом"
+}
+
+### My team
+GET {{baseUrl}}/api/teams/me
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Join team
+POST {{baseUrl}}/api/teams/join
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+{
+  "inviteCode": "ALPHA1"
+}
+
+### List teams
+GET {{baseUrl}}/api/teams
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Team by id
+GET {{baseUrl}}/api/teams/1
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Create knowledge post
+POST {{baseUrl}}/api/knowledge-posts
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+{
+  "title": "Ищу эксперта по EF Core",
+  "description": "Нужна помощь с миграциями и связями один-ко-многим.",
+  "type": "NeedHelp",
+  "publishToTeam": true
+}
+
+### List knowledge posts
+GET {{baseUrl}}/api/knowledge-posts
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Create help request as captain
+POST {{baseUrl}}/api/help-requests
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{captainJwt}}
+
+{
+  "toTeamId": 2,
+  "description": "Нужна помощь с подготовкой к челленджу по ASP.NET Core.",
+  "bonusPoints": 10
+}
+
+### Update help request status as target captain
+PATCH {{baseUrl}}/api/help-requests/1/status
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{captainJwt}}
+
+{
+  "status": "Accepted"
+}
+
+### List help requests
+GET {{baseUrl}}/api/help-requests
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Create anonymous contribution vote
+POST {{baseUrl}}/api/votes
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+{
+  "toUserId": 2,
+  "score": 5
+}
+
+### List current team votes
+GET {{baseUrl}}/api/votes
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Create weekly check-in as captain
+POST {{baseUrl}}/api/checkins
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{captainJwt}}
+
+{
+  "weekNumber": 16,
+  "reportText": "Закрыли профиль, команды, help requests и knowledge posts."
+}
+
+### List current team check-ins
+GET {{baseUrl}}/api/checkins
+Accept: application/json
+Authorization: Bearer {{jwt}}
+
+### Update team score as admin
+PATCH {{baseUrl}}/api/teams/1/score
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{adminJwt}}
+
+{
+  "score": 150
+}

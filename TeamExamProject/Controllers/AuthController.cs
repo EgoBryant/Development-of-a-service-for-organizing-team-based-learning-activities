@@ -11,6 +11,9 @@ using TeamExamProject.Services;
 
 namespace TeamExamProject.Controllers;
 
+/// <summary>
+/// Методы регистрации, входа и получения данных текущего пользователя.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
@@ -35,7 +38,14 @@ public class AuthController : ControllerBase
         _jwtOptions = jwtOptions.Value;
     }
 
+    /// <summary>
+    /// Регистрирует нового пользователя по email и паролю.
+    /// </summary>
+    /// <param name="request">Данные для создания учетной записи.</param>
+    /// <returns>JWT-токен и сведения о профиле пользователя.</returns>
     [HttpPost("register")]
+    [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
         var email = request.Email.Trim().ToLowerInvariant();
@@ -59,7 +69,14 @@ public class AuthController : ControllerBase
         return Ok(await CreateAuthResponseAsync(user));
     }
 
+    /// <summary>
+    /// Выполняет вход пользователя по email и паролю.
+    /// </summary>
+    /// <param name="request">Учетные данные пользователя.</param>
+    /// <returns>JWT-токен и актуальные сведения о профиле.</returns>
     [HttpPost("login")]
+    [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var email = request.Email.Trim().ToLowerInvariant();
@@ -79,7 +96,14 @@ public class AuthController : ControllerBase
         return Ok(await CreateAuthResponseAsync(user));
     }
 
+    /// <summary>
+    /// Возвращает профиль текущего авторизованного пользователя.
+    /// </summary>
+    /// <returns>Профиль текущего пользователя.</returns>
     [HttpGet("me")]
+    [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileResponse>> Me()
     {
         var userId = GetCurrentUserId();
