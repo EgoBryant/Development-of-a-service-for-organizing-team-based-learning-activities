@@ -19,16 +19,19 @@ public class AuthController : ControllerBase
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly JwtOptions _jwtOptions;
+    private readonly IProfileService _profileService;
 
     public AuthController(
         AppDbContext dbContext,
         IPasswordHasher<User> passwordHasher,
         IJwtTokenService jwtTokenService,
+        IProfileService profileService,
         IOptions<JwtOptions> jwtOptions)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
+        _profileService = profileService;
         _jwtOptions = jwtOptions.Value;
     }
 
@@ -106,6 +109,18 @@ public class AuthController : ControllerBase
             UserName = profile.UserName,
             Email = profile.Email,
             Role = profile.Role,
+            FirstName = profile.FirstName,
+            LastName = profile.LastName,
+            MiddleName = profile.MiddleName,
+            Nickname = profile.Nickname,
+            Bio = profile.Bio,
+            AvatarUrl = profile.AvatarUrl,
+            ContactEmail = profile.ContactEmail,
+            TelegramHandle = profile.TelegramHandle,
+            PhoneNumber = profile.PhoneNumber,
+            StudentTicketNumber = profile.StudentTicketNumber,
+            GroupId = profile.GroupId,
+            GroupTitle = profile.GroupTitle,
             TeamId = profile.TeamId,
             TeamName = profile.TeamName,
             TeamInviteCode = profile.TeamInviteCode,
@@ -115,22 +130,8 @@ public class AuthController : ControllerBase
 
     private async Task<UserProfileResponse> BuildUserProfileResponseAsync(User user)
     {
-        var team = user.TeamId is null
-            ? null
-            : await _dbContext.Teams.AsNoTracking().SingleOrDefaultAsync(existingTeam => existingTeam.Id == user.TeamId.Value);
-
-        return new UserProfileResponse
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email,
-            Role = user.Role,
-            TeamId = team?.Id,
-            TeamName = team?.Name ?? string.Empty,
-            TeamInviteCode = team?.InviteCode ?? string.Empty,
-            IsCaptain = team?.CaptainUserId == user.Id,
-            TeamScore = team?.Score ?? 0
-        };
+        return await _profileService.GetProfileAsync(user.Id)
+               ?? throw new InvalidOperationException($"User profile {user.Id} was not found.");
     }
 
     private int? GetCurrentUserId()

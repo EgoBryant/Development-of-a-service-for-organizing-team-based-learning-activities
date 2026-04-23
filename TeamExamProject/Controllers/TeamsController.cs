@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TeamExamProject.Contracts.Teams;
-using TeamExamProject.Data;
+using TeamExamProject.Infrastructure.Authorization;
 using TeamExamProject.Models;
+using TeamExamProject.Services;
 
 namespace TeamExamProject.Controllers;
 
@@ -13,202 +13,141 @@ namespace TeamExamProject.Controllers;
 [Authorize]
 public class TeamsController : ControllerBase
 {
-    private readonly AppDbContext _dbContext;
+    private readonly ITeamService _teamService;
 
-    public TeamsController(AppDbContext dbContext)
+    public TeamsController(ITeamService teamService)
     {
-        _dbContext = dbContext;
+        _teamService = teamService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TeamResponse>>> GetAll()
     {
-        var teams = await _dbContext.Teams
-            .AsNoTracking()
-            .Include(team => team.Captain)
-            .Include(team => team.Members)
-            .OrderByDescending(team => team.Score)
-            .ThenBy(team => team.Name)
-            .ToListAsync();
-
-        return Ok(teams.Select(MapTeamResponse));
+        return Ok(await _teamService.GetAllAsync(HttpContext.RequestAborted));
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TeamResponse>> GetById(int id)
     {
-        var team = await _dbContext.Teams
-            .AsNoTracking()
-            .Include(existingTeam => existingTeam.Captain)
-            .Include(existingTeam => existingTeam.Members)
-            .SingleOrDefaultAsync(existingTeam => existingTeam.Id == id);
-
+        var team = await _teamService.GetByIdAsync(id, HttpContext.RequestAborted);
         if (team is null)
         {
-            return NotFound();
+            return NotFound(Problem(
+                title: "Team not found",
+                detail: $"Team {id} was not found.",
+                statusCode: StatusCodes.Status404NotFound));
         }
 
-        return Ok(MapTeamResponse(team));
+        return Ok(team);
+    }
+
+    [HttpPost("create")]
+    [Authorize(Policy = PolicyNames.Student)]
+    public async Task<ActionResult<TeamResponse>> Create(CreateTeamDto request)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.CreateAsync(userId.Value, request, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            CreateTeamResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            CreateTeamResultType.AlreadyInTeam => Conflict(Problem(
+                title: "Team membership conflict",
+                detail: "User already belongs to a team.",
+                statusCode: StatusCodes.Status409Conflict)),
+            CreateTeamResultType.Created when result.Team is not null => CreatedAtAction(
+                nameof(GetById),
+                new { id = result.Team.Id },
+                result.Team),
+            _ => Problem(
+                title: "Team creation failed",
+                detail: "The team could not be created.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
     }
 
     [HttpPost]
-    public async Task<ActionResult<TeamResponse>> Create(CreateTeamRequest request)
+    [Authorize(Policy = PolicyNames.Student)]
+    public Task<ActionResult<TeamResponse>> CreateLegacy(CreateTeamDto request)
     {
-        var currentUser = await GetCurrentUserAsync();
-        if (currentUser is null)
-        {
-            return Unauthorized();
-        }
-
-        if (currentUser.TeamId is not null)
-        {
-            return Conflict(new { message = "User already belongs to a team." });
-        }
-
-        var inviteCode = await GenerateUniqueInviteCodeAsync();
-        var team = new Team
-        {
-            Name = request.Name.Trim(),
-            InviteCode = inviteCode,
-            Score = 0,
-            CaptainUserId = currentUser.Id
-        };
-
-        currentUser.Team = team;
-        _dbContext.Teams.Add(team);
-        await _dbContext.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetById), new { id = team.Id }, await BuildTeamResponseAsync(team.Id));
+        return Create(request);
     }
 
     [HttpPost("join")]
+    [Authorize(Policy = PolicyNames.Student)]
     public async Task<ActionResult<TeamResponse>> Join(JoinTeamRequest request)
     {
-        var currentUser = await GetCurrentUserAsync();
-        if (currentUser is null)
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
-        if (currentUser.TeamId is not null)
+        var result = await _teamService.JoinAsync(userId.Value, request, HttpContext.RequestAborted);
+        return result.Type switch
         {
-            return Conflict(new { message = "User already belongs to a team." });
-        }
-
-        var inviteCode = request.InviteCode.Trim().ToUpperInvariant();
-        var team = await _dbContext.Teams.SingleOrDefaultAsync(existingTeam => existingTeam.InviteCode == inviteCode);
-        if (team is null)
-        {
-            return NotFound(new { message = "Team with this invite code was not found." });
-        }
-
-        currentUser.TeamId = team.Id;
-        await _dbContext.SaveChangesAsync();
-
-        return Ok(await BuildTeamResponseAsync(team.Id));
+            JoinTeamResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            JoinTeamResultType.AlreadyInTeam => Conflict(Problem(
+                title: "Team membership conflict",
+                detail: "User already belongs to a team.",
+                statusCode: StatusCodes.Status409Conflict)),
+            JoinTeamResultType.TeamNotFound => NotFound(Problem(
+                title: "Team not found",
+                detail: "Team with this invite code was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            JoinTeamResultType.Joined when result.Team is not null => Ok(result.Team),
+            _ => Problem(
+                title: "Team join failed",
+                detail: "The user could not join the team.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
     }
 
     [HttpGet("me")]
     public async Task<ActionResult<TeamResponse>> Me()
     {
-        var currentUser = await GetCurrentUserAsync();
-        if (currentUser is null)
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
-        if (currentUser.TeamId is null)
+        var team = await _teamService.GetForUserAsync(userId.Value, HttpContext.RequestAborted);
+        if (team is null)
         {
-            return NotFound(new { message = "User is not in a team." });
+            return NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not in a team.",
+                statusCode: StatusCodes.Status404NotFound));
         }
 
-        return Ok(await BuildTeamResponseAsync(currentUser.TeamId.Value));
+        return Ok(team);
     }
 
     [HttpPatch("{id:int}/score")]
     [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<TeamResponse>> UpdateScore(int id, UpdateTeamScoreRequest request)
     {
-        var team = await _dbContext.Teams
-            .Include(existingTeam => existingTeam.Captain)
-            .Include(existingTeam => existingTeam.Members)
-            .SingleOrDefaultAsync(existingTeam => existingTeam.Id == id);
-
+        var team = await _teamService.UpdateScoreAsync(id, request, HttpContext.RequestAborted);
         if (team is null)
         {
-            return NotFound();
+            return NotFound(Problem(
+                title: "Team not found",
+                detail: $"Team {id} was not found.",
+                statusCode: StatusCodes.Status404NotFound));
         }
 
-        team.Score = request.Score;
-        await _dbContext.SaveChangesAsync();
-
-        return Ok(MapTeamResponse(team));
-    }
-
-    private async Task<User?> GetCurrentUserAsync()
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return null;
-        }
-
-        return await _dbContext.Users.SingleOrDefaultAsync(user => user.Id == userId.Value);
-    }
-
-    private async Task<string> GenerateUniqueInviteCodeAsync()
-    {
-        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        while (true)
-        {
-            var buffer = new char[6];
-            for (var i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = alphabet[Random.Shared.Next(alphabet.Length)];
-            }
-
-            var code = new string(buffer);
-            var exists = await _dbContext.Teams.AnyAsync(team => team.InviteCode == code);
-            if (!exists)
-            {
-                return code;
-            }
-        }
-    }
-
-    private async Task<TeamResponse> BuildTeamResponseAsync(int teamId)
-    {
-        var team = await _dbContext.Teams
-            .AsNoTracking()
-            .Include(existingTeam => existingTeam.Captain)
-            .Include(existingTeam => existingTeam.Members)
-            .SingleAsync(existingTeam => existingTeam.Id == teamId);
-
-        return MapTeamResponse(team);
-    }
-
-    private static TeamResponse MapTeamResponse(Team team)
-    {
-        return new TeamResponse
-        {
-            Id = team.Id,
-            Name = team.Name,
-            InviteCode = team.InviteCode,
-            Score = team.Score,
-            CaptainUserName = team.Captain?.UserName ?? string.Empty,
-            MemberCount = team.Members.Count,
-            Members = team.Members
-                .OrderBy(member => member.UserName)
-                .Select(member => new TeamMemberResponse
-                {
-                    Id = member.Id,
-                    UserName = member.UserName,
-                    Email = member.Email,
-                    Role = member.Role,
-                    IsCaptain = team.CaptainUserId == member.Id
-                })
-                .ToList()
-        };
+        return Ok(team);
     }
 
     private int? GetCurrentUserId()

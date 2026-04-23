@@ -24,7 +24,6 @@ If you run the ASP.NET profile directly instead of Docker, use:
 $BaseUrl = 'http://localhost:5141'
 ```
 
-
 ## Fast smoke test: register, login, call `/me`
 
 Copy and run this whole block in one PowerShell session. It registers a new user, logs in with exactly the same email/password, then calls `/api/auth/me` with the login JWT.
@@ -121,19 +120,40 @@ $AdminToken = $AdminLogin.token
 $AdminToken
 ```
 
-## 6. Current profile
+## 6. Current auth profile (`/api/auth/me`)
 
 ```powershell
 curl.exe -i "$BaseUrl/api/auth/me" -H 'Accept: application/json' -H "Authorization: Bearer $StudentToken"
 ```
 
-## 7. List teams
+## 7. Current full profile (`/api/profile`)
+
+```powershell
+curl.exe -i "$BaseUrl/api/profile" -H 'Accept: application/json' -H "Authorization: Bearer $StudentToken"
+```
+
+## 8. Update profile (`/api/profile`)
+
+```powershell
+$BodyFile = New-TemporaryFile
+@{
+    bio = 'Backend-focused student in Team Exam MVP'
+    avatarUrl = 'https://example.com/avatars/student.png'
+    contactEmail = 'student.profile@example.com'
+    telegramHandle = '@teamexam_student'
+    phoneNumber = '+79001234567'
+} | ConvertTo-Json -Compress | Set-Content -Path $BodyFile -Encoding UTF8
+curl.exe -i -X PUT "$BaseUrl/api/profile" -H 'Content-Type: application/json' -H 'Accept: application/json' -H "Authorization: Bearer $StudentToken" --data-binary "@$BodyFile"
+Remove-Item $BodyFile
+```
+
+## 9. List teams
 
 ```powershell
 curl.exe -i "$BaseUrl/api/teams" -H 'Accept: application/json' -H "Authorization: Bearer $StudentToken"
 ```
 
-## 8. Get team by id
+## 10. Get team by id
 
 Seed data creates teams `Alpha` and `Beta`. Their ids are usually `1` and `2` on a fresh database.
 
@@ -141,15 +161,15 @@ Seed data creates teams `Alpha` and `Beta`. Their ids are usually `1` and `2` on
 curl.exe -i "$BaseUrl/api/teams/1" -H 'Accept: application/json' -H "Authorization: Bearer $StudentToken"
 ```
 
-## 9. Get current user's team
+## 11. Get current user's team
 
 ```powershell
 curl.exe -i "$BaseUrl/api/teams/me" -H 'Accept: application/json' -H "Authorization: Bearer $StudentToken"
 ```
 
-## 10. Create a team with a new user
+## 12. Create a team with a new user through `/api/teams/create`
 
-A user can belong to only one team. Use a new registered user or a user that is not in a team.
+A user can belong to only one team. After successful creation, the user's role becomes `Captain`.
 
 ```powershell
 $NewEmail = "team.owner.$([guid]::NewGuid().ToString('N'))@example.com"
@@ -161,11 +181,27 @@ $OwnerToken = $OwnerLogin.token
 
 $BodyFile = New-TemporaryFile
 @{ name = 'Gamma' } | ConvertTo-Json -Compress | Set-Content -Path $BodyFile -Encoding UTF8
+curl.exe -i -X POST "$BaseUrl/api/teams/create" -H 'Content-Type: application/json' -H 'Accept: application/json' -H "Authorization: Bearer $OwnerToken" --data-binary "@$BodyFile"
+Remove-Item $BodyFile
+```
+
+## 13. Legacy create team route `/api/teams`
+
+```powershell
+$NewEmail = "team.legacy.$([guid]::NewGuid().ToString('N'))@example.com"
+$BodyFile = New-TemporaryFile
+@{ userName = 'Legacy Owner'; email = $NewEmail; password = 'Password123!' } | ConvertTo-Json -Compress | Set-Content -Path $BodyFile -Encoding UTF8
+$OwnerLogin = curl.exe -s -X POST "$BaseUrl/api/auth/register" -H 'Content-Type: application/json' -H 'Accept: application/json' --data-binary "@$BodyFile" | ConvertFrom-Json
+Remove-Item $BodyFile
+$OwnerToken = $OwnerLogin.token
+
+$BodyFile = New-TemporaryFile
+@{ name = 'Legacy Gamma' } | ConvertTo-Json -Compress | Set-Content -Path $BodyFile -Encoding UTF8
 curl.exe -i -X POST "$BaseUrl/api/teams" -H 'Content-Type: application/json' -H 'Accept: application/json' -H "Authorization: Bearer $OwnerToken" --data-binary "@$BodyFile"
 Remove-Item $BodyFile
 ```
 
-## 11. Join team by invite code with a new user
+## 14. Join team by invite code with a new user
 
 A user can join only if they are not already in a team.
 
@@ -183,7 +219,7 @@ curl.exe -i -X POST "$BaseUrl/api/teams/join" -H 'Content-Type: application/json
 Remove-Item $BodyFile
 ```
 
-## 12. Update team score as admin
+## 15. Update team score as admin
 
 Only users with role `Admin` can call this endpoint.
 
@@ -194,7 +230,7 @@ curl.exe -i -X PATCH "$BaseUrl/api/teams/1/score" -H 'Content-Type: application/
 Remove-Item $BodyFile
 ```
 
-## 13. Forbidden score update as student
+## 16. Forbidden score update as student
 
 This should return `403 Forbidden` for a normal student token.
 
@@ -205,7 +241,7 @@ curl.exe -i -X PATCH "$BaseUrl/api/teams/1/score" -H 'Content-Type: application/
 Remove-Item $BodyFile
 ```
 
-## 14. Unauthorized request without JWT
+## 17. Unauthorized request without JWT
 
 This should return `401 Unauthorized`.
 

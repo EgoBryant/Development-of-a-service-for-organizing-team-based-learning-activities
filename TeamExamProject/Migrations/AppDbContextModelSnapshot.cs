@@ -22,6 +22,147 @@ namespace TeamExamProject.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("TeamExamProject.Models.CheckIn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReportText")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WeekNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamId", "WeekNumber")
+                        .IsUnique();
+
+                    b.ToTable("CheckIns");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.Group", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Course")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Faculty")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Title")
+                        .IsUnique();
+
+                    b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.HelpRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("BonusPoints")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("FromTeamId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("ToTeamId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromTeamId");
+
+                    b.HasIndex("ToTeamId");
+
+                    b.ToTable("HelpRequests");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.KnowledgePost", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int?>("TeamId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("KnowledgePosts");
+                });
+
             modelBuilder.Entity("TeamExamProject.Models.Team", b =>
                 {
                     b.Property<int>("Id")
@@ -30,11 +171,16 @@ namespace TeamExamProject.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CaptainUserId")
+                    b.Property<int?>("CaptainId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreatedAtUtc")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("InviteCode")
                         .IsRequired()
@@ -51,7 +197,8 @@ namespace TeamExamProject.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CaptainUserId");
+                    b.HasIndex("CaptainId")
+                        .IsUnique();
 
                     b.HasIndex("InviteCode")
                         .IsUnique();
@@ -67,6 +214,21 @@ namespace TeamExamProject.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AvatarUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -75,17 +237,53 @@ namespace TeamExamProject.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("MiddleName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Nickname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int?>("StudentTicketNumber")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("TeamId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("TelegramHandle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -97,16 +295,104 @@ namespace TeamExamProject.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("StudentTicketNumber")
+                        .IsUnique();
+
                     b.HasIndex("TeamId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.Vote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FromUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ToUserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUserId");
+
+                    b.HasIndex("ToUserId");
+
+                    b.HasIndex("TeamId", "FromUserId", "ToUserId")
+                        .IsUnique();
+
+                    b.ToTable("Votes");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.CheckIn", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.Team", "Team")
+                        .WithMany("CheckIns")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.HelpRequest", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.Team", "FromTeam")
+                        .WithMany("OutgoingHelpRequests")
+                        .HasForeignKey("FromTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TeamExamProject.Models.Team", "ToTeam")
+                        .WithMany("IncomingHelpRequests")
+                        .HasForeignKey("ToTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FromTeam");
+
+                    b.Navigation("ToTeam");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.KnowledgePost", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.Team", "Team")
+                        .WithMany("KnowledgePosts")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TeamExamProject.Models.User", "User")
+                        .WithMany("KnowledgePosts")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TeamExamProject.Models.Team", b =>
                 {
                     b.HasOne("TeamExamProject.Models.User", "Captain")
                         .WithMany()
-                        .HasForeignKey("CaptainUserId")
+                        .HasForeignKey("CaptainId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Captain");
@@ -114,17 +400,75 @@ namespace TeamExamProject.Migrations
 
             modelBuilder.Entity("TeamExamProject.Models.User", b =>
                 {
+                    b.HasOne("TeamExamProject.Models.Group", "Group")
+                        .WithMany("Users")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TeamExamProject.Models.Team", "Team")
                         .WithMany("Members")
                         .HasForeignKey("TeamId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.Navigation("Group");
+
                     b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.Vote", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.User", "FromUser")
+                        .WithMany("OutgoingVotes")
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TeamExamProject.Models.Team", "Team")
+                        .WithMany("Votes")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TeamExamProject.Models.User", "ToUser")
+                        .WithMany("IncomingVotes")
+                        .HasForeignKey("ToUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FromUser");
+
+                    b.Navigation("Team");
+
+                    b.Navigation("ToUser");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.Group", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("TeamExamProject.Models.Team", b =>
                 {
+                    b.Navigation("CheckIns");
+
+                    b.Navigation("IncomingHelpRequests");
+
+                    b.Navigation("KnowledgePosts");
+
                     b.Navigation("Members");
+
+                    b.Navigation("OutgoingHelpRequests");
+
+                    b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("TeamExamProject.Models.User", b =>
+                {
+                    b.Navigation("IncomingVotes");
+
+                    b.Navigation("KnowledgePosts");
+
+                    b.Navigation("OutgoingVotes");
                 });
 #pragma warning restore 612, 618
         }
