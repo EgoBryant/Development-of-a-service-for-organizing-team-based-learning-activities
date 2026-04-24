@@ -1,10 +1,11 @@
 import "../styles/start.css";
 
-type View = "home" | "sign-in" | "sign-up" | "recovery" | "sign-in-confirm" | "sign-up-confirm";
+type View = "home" | "sign-in" | "sign-up" | "sign-in-confirm" | "sign-up-confirm";
 
 interface SignInState {
     email: string;
     password: string;
+    magicLinkMessage: string;
 }
 
 interface SignUpState {
@@ -15,16 +16,10 @@ interface SignUpState {
     passwordConfirm: string;
 }
 
-interface RecoveryState {
-    email: string;
-    password: string;
-}
-
 interface AppState {
     view: View;
     signIn: SignInState;
     signUp: SignUpState;
-    recovery: RecoveryState;
 }
 
 type FormField = RadioNodeList | Element | null;
@@ -33,7 +28,8 @@ const appState: AppState = {
     view: "home",
     signIn: {
         email: "",
-        password: ""
+        password: "",
+        magicLinkMessage: ""
     },
     signUp: {
         email: "",
@@ -41,10 +37,6 @@ const appState: AppState = {
         codeSent: false,
         password: "",
         passwordConfirm: ""
-    },
-    recovery: {
-        email: "",
-        password: ""
     }
 };
 
@@ -52,7 +44,8 @@ const homeScreen = document.getElementById("homeScreen");
 const appScreen = document.getElementById("appScreen");
 const authLayout = document.getElementById("authLayout");
 const formContent = document.getElementById("formContent");
-const promoButton = document.getElementById("promoButton");
+const promoSignInButton = document.getElementById("promoSignInButton");
+const promoSignUpButton = document.getElementById("promoSignUpButton");
 
 function isHTMLElement(node: Element | null): node is HTMLElement {
     return node instanceof HTMLElement;
@@ -97,7 +90,14 @@ function escapeHtml(value: string): string {
 }
 
 function render(): void {
-    if (!isHTMLElement(homeScreen) || !isHTMLElement(appScreen) || !isHTMLElement(authLayout) || !isHTMLElement(formContent) || !isHTMLButtonElement(promoButton)) {
+    if (
+        !isHTMLElement(homeScreen) ||
+        !isHTMLElement(appScreen) ||
+        !isHTMLElement(authLayout) ||
+        !isHTMLElement(formContent) ||
+        !isHTMLButtonElement(promoSignInButton) ||
+        !isHTMLButtonElement(promoSignUpButton)
+    ) {
         return;
     }
 
@@ -114,41 +114,63 @@ function render(): void {
 }
 
 function renderAuthView(): void {
-    if (!isHTMLElement(authLayout) || !isHTMLElement(formContent) || !isHTMLButtonElement(promoButton)) {
+    if (
+        !isHTMLElement(authLayout) ||
+        !isHTMLElement(formContent) ||
+        !isHTMLButtonElement(promoSignInButton) ||
+        !isHTMLButtonElement(promoSignUpButton)
+    ) {
         return;
     }
 
     const view = appState.view;
     const reverse = view === "sign-up" || view === "sign-up-confirm";
 
-    authLayout.classList.toggle("layout-reverse", reverse);
+    authLayout.classList.toggle("mode-sign-up", reverse);
 
     if (view === "sign-in") {
-        promoButton.textContent = "РЕГИСТРАЦИЯ";
-        promoButton.onclick = () => setView("sign-up");
         formContent.innerHTML = `
             <form id="signInForm" class="auth-form">
                 <h1>ВХОД</h1>
                 <input name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" required>
-                <input name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" required>
-                <button class="text-link text-link-left" type="button" data-view="recovery">Забыли пароль? Восстановить</button>
+                <div class="password-row auth-password-row">
+                    <input name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" required>
+                    <button class="inline-button magic-link-button" id="magicLinkButton" type="button">ВОССТАНОВИТЬ</button>
+                </div>
+                <p class="magic-link-message ${appState.signIn.magicLinkMessage ? "" : "hidden"}">${escapeHtml(appState.signIn.magicLinkMessage)}</p>
                 <button class="primary-button form-button" type="submit">ПРИСОЕДИНИТЬСЯ</button>
                 <button class="text-link" type="button" data-view="sign-up">Зарегистрироваться, если нет аккаунта</button>
             </form>
         `;
 
         const signInForm = getRequiredElement<HTMLFormElement>("#signInForm", isHTMLFormElement);
+        const magicLinkButton = getRequiredElement<HTMLButtonElement>("#magicLinkButton", isHTMLButtonElement);
+
+        magicLinkButton.addEventListener("click", () => {
+            const email = getInputValue(signInForm.elements.namedItem("email")).trim();
+            appState.signIn.email = email;
+            appState.signIn.password = getInputValue(signInForm.elements.namedItem("password"));
+
+            if (!email) {
+                appState.signIn.magicLinkMessage = "Сначала укажите электронную почту.";
+                render();
+                return;
+            }
+
+            appState.signIn.magicLinkMessage = `Magic link отправлен на ${email}. Проверьте почту.`;
+            render();
+        });
+
         signInForm.addEventListener("submit", (event: SubmitEvent) => {
             event.preventDefault();
             appState.signIn.email = getInputValue(signInForm.elements.namedItem("email"));
             appState.signIn.password = getInputValue(signInForm.elements.namedItem("password"));
+            appState.signIn.magicLinkMessage = "";
             setView("sign-in-confirm");
         });
     }
 
     if (view === "sign-up") {
-        promoButton.textContent = "ВХОД";
-        promoButton.onclick = () => setView("sign-in");
         formContent.innerHTML = `
             <form id="signUpForm" class="auth-form">
                 <h1>РЕГИСТРАЦИЯ</h1>
@@ -182,35 +204,7 @@ function renderAuthView(): void {
         });
     }
 
-    if (view === "recovery") {
-        promoButton.textContent = "РЕГИСТРАЦИЯ";
-        promoButton.onclick = () => setView("sign-up");
-        formContent.innerHTML = `
-            <form id="recoveryForm" class="auth-form">
-                <h1>ВХОД</h1>
-                <input name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.recovery.email)}" required>
-                <div class="password-row">
-                    <input name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.recovery.password)}" required>
-                    <button class="inline-button" type="submit">ВОССТАНОВИТЬ</button>
-                </div>
-                <button class="primary-button form-button" type="button" data-view="sign-in-confirm">ПРИСОЕДИНИТЬСЯ</button>
-            </form>
-        `;
-
-        const recoveryForm = getRequiredElement<HTMLFormElement>("#recoveryForm", isHTMLFormElement);
-        recoveryForm.addEventListener("submit", (event: SubmitEvent) => {
-            event.preventDefault();
-            appState.recovery.email = getInputValue(recoveryForm.elements.namedItem("email"));
-            appState.recovery.password = getInputValue(recoveryForm.elements.namedItem("password"));
-            appState.signIn.email = appState.recovery.email;
-            appState.signIn.password = appState.recovery.password;
-            setView("sign-in");
-        });
-    }
-
     if (view === "sign-in-confirm") {
-        promoButton.textContent = "РЕГИСТРАЦИЯ";
-        promoButton.onclick = () => setView("sign-up");
         formContent.innerHTML = `
             <div class="auth-form">
                 <h1>ПОДТВЕРЖДЕНИЕ</h1>
@@ -223,8 +217,6 @@ function renderAuthView(): void {
     }
 
     if (view === "sign-up-confirm") {
-        promoButton.textContent = "ВХОД";
-        promoButton.onclick = () => setView("sign-in");
         formContent.innerHTML = `
             <div class="auth-form">
                 <h1>РЕГИСТРАЦИЯ</h1>
@@ -251,14 +243,6 @@ function renderAuthView(): void {
                     appState.signUp.code = getInputValue(signUpForm.elements.namedItem("code"));
                     appState.signUp.password = getInputValue(signUpForm.elements.namedItem("password"));
                     appState.signUp.passwordConfirm = getInputValue(signUpForm.elements.namedItem("passwordConfirm"));
-                }
-            }
-
-            if (view === "recovery") {
-                const recoveryForm = document.getElementById("recoveryForm");
-                if (recoveryForm instanceof HTMLFormElement) {
-                    appState.recovery.email = getInputValue(recoveryForm.elements.namedItem("email"));
-                    appState.recovery.password = getInputValue(recoveryForm.elements.namedItem("password"));
                 }
             }
 
@@ -391,6 +375,18 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     }
 
     syncSignUpUi();
+}
+
+if (isHTMLButtonElement(promoSignInButton)) {
+    promoSignInButton.addEventListener("click", () => {
+        setView("sign-in");
+    });
+}
+
+if (isHTMLButtonElement(promoSignUpButton)) {
+    promoSignUpButton.addEventListener("click", () => {
+        setView("sign-up");
+    });
 }
 
 document.querySelectorAll<HTMLElement>("[data-view]").forEach((button) => {
