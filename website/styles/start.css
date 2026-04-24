@@ -1,4 +1,4 @@
-body {
+﻿body {
     margin: 0;
     min-height: 100vh;
     font-family: "Segoe UI", Arial, sans-serif;
@@ -431,6 +431,19 @@ body.modal-open .menu-screen {
     filter: saturate(1.05);
 }
 
+.icon-button {
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    margin: 4px;
+    border: none;
+    border-radius: 999px;
+    background: #d9d9d9;
+    color: #6f6470;
+    font-size: 18px;
+    cursor: pointer;
+}
+
 .magic-link-button {
     min-width: 146px;
 }
@@ -478,6 +491,48 @@ body.modal-open .menu-screen {
     font-size: 18px;
     line-height: 1.5;
     text-align: center;
+}
+
+.status-message {
+    width: 100%;
+    margin: -8px 0 18px;
+    color: #927d86;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.status-error {
+    color: #d14b87;
+}
+
+.profile-summary {
+    width: 100%;
+    display: grid;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-radius: 22px;
+    background: #f7eef3;
+    color: #927d86;
+}
+
+.summary-row strong {
+    color: #715a65;
+    text-align: right;
+}
+
+.summary-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .auth-layout.mode-sign-up .auth-form {

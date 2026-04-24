@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start</title>
+    <title>Командный зачёт</title>
 </head>
 <body>
     <main class="single-page-app">
@@ -14,15 +14,33 @@
             </div>
         </section>
 
-        <section id="appScreen" class="screen auth-screen" aria-live="polite">
-            <div id="authLayout" class="auth-layout">
+        <section id="appScreen" class="screen auth-screen" aria-live="polite" aria-hidden="true">
+            <div id="authLayout" class="auth-layout" role="dialog" aria-modal="true" aria-label="Авторизация">
                 <section class="form-panel">
                     <div id="formContent" class="form-shell"></div>
                 </section>
 
-                <aside class="promo-panel">
-                    <button id="promoButton" class="primary-button promo-button" type="button"></button>
-                </aside>
+                <aside class="promo-panel" aria-hidden="true"></aside>
+
+                <div class="promo-stage">
+                    <div class="promo-copy promo-copy-sign-in">
+                        <div class="promo-content">
+                            <p class="promo-eyebrow">УЖЕ ЕСТЬ АККАУНТ?</p>
+                            <h2 class="promo-title">Вернитесь во вход</h2>
+                            <p class="promo-description">Переключитесь обратно на авторизацию и продолжите работу с командой без лишних шагов.</p>
+                            <button id="promoSignInButton" class="primary-button promo-button" type="button">ВХОД</button>
+                        </div>
+                    </div>
+
+                    <div class="promo-copy promo-copy-sign-up">
+                        <div class="promo-content">
+                            <p class="promo-eyebrow">НОВЫЙ УЧАСТНИК?</p>
+                            <h2 class="promo-title">Создайте профиль</h2>
+                            <p class="promo-description">Откройте регистрацию, чтобы подключиться к командному зачёту, рейтингам и совместным активностям.</p>
+                            <button id="promoSignUpButton" class="primary-button promo-button" type="button">РЕГИСТРАЦИЯ</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
