@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamExamProject.Contracts.Auth;
@@ -10,10 +9,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Методы просмотра и редактирования личного кабинета пользователя.
 /// </summary>
-[ApiController]
 [Route("api/profile")]
 [Authorize]
-public class ProfileController : ControllerBase
+public class ProfileController : ApiControllerBase
 {
     private readonly IProfileService _profileService;
 
@@ -32,7 +30,7 @@ public class ProfileController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileResponse>> Get(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -65,7 +63,7 @@ public class ProfileController : ControllerBase
         [FromBody] UpdateProfileDto request,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -92,11 +90,5 @@ public class ProfileController : ControllerBase
                 detail: "The profile could not be updated.",
                 statusCode: StatusCodes.Status500InternalServerError)
         };
-    }
-
-    private int? GetCurrentUserId()
-    {
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(id, out var parsedId) ? parsedId : null;
     }
 }

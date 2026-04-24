@@ -9,10 +9,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Эндпоинты анонимного голосования внутри команды.
 /// </summary>
-[ApiController]
 [Route("api/votes")]
 [Authorize]
-public class VotesController : ControllerBase
+public class VotesController : ApiControllerBase
 {
     private readonly IVotesService _votesService;
 
@@ -30,7 +29,7 @@ public class VotesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<VoteResponse>>> GetCurrentTeamVotes(CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -54,7 +53,7 @@ public class VotesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<VoteResponse>> Create(CreateVoteDto request, CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();

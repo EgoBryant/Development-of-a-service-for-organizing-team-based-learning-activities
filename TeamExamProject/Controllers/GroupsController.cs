@@ -9,10 +9,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Методы работы с академическими группами.
 /// </summary>
-[ApiController]
 [Route("api/groups")]
 [Authorize]
-public class GroupsController : ControllerBase
+public class GroupsController : ApiControllerBase
 {
     private readonly IGroupsService _groupsService;
 

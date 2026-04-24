@@ -9,10 +9,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Эндпоинты еженедельных check-in отчетов команды.
 /// </summary>
-[ApiController]
 [Route("api/checkins")]
 [Authorize]
-public class CheckInsController : ControllerBase
+public class CheckInsController : ApiControllerBase
 {
     private readonly ICheckInsService _checkInsService;
 
@@ -30,7 +29,7 @@ public class CheckInsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<CheckInResponse>>> GetCurrentTeamCheckIns(CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -54,7 +53,7 @@ public class CheckInsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CheckInResponse>> Create(CreateCheckInDto request, CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();

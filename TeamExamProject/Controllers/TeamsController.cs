@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamExamProject.Contracts.Teams;
@@ -11,10 +10,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Методы управления командами: просмотр, создание, вступление и обновление рейтинга.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TeamsController : ControllerBase
+public class TeamsController : ApiControllerBase
 {
     private readonly ITeamService _teamService;
 
@@ -69,7 +67,7 @@ public class TeamsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TeamResponse>> Create(CreateTeamDto request)
     {
-        var userId = GetCurrentUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -123,7 +121,7 @@ public class TeamsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<TeamResponse>> Join(JoinTeamRequest request)
     {
-        var userId = GetCurrentUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -162,7 +160,7 @@ public class TeamsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TeamResponse>> Me()
     {
-        var userId = GetCurrentUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -203,11 +201,5 @@ public class TeamsController : ControllerBase
         }
 
         return Ok(team);
-    }
-
-    private int? GetCurrentUserId()
-    {
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(id, out var parsedId) ? parsedId : null;
     }
 }

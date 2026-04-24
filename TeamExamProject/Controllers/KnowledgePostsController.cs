@@ -9,10 +9,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Эндпоинты биржи знаний для публикации и просмотра экспертных объявлений.
 /// </summary>
-[ApiController]
 [Route("api/knowledge-posts")]
 [Authorize]
-public class KnowledgePostsController : ControllerBase
+public class KnowledgePostsController : ApiControllerBase
 {
     private readonly IKnowledgePostsService _knowledgePostsService;
 
@@ -44,7 +43,7 @@ public class KnowledgePostsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<KnowledgePostResponse>> Create(CreateKnowledgePostDto request, CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();

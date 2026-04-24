@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +13,8 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Методы регистрации, входа и получения данных текущего пользователя.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : ApiControllerBase
 {
     private readonly AppDbContext _dbContext;
     private readonly IPasswordHasher<User> _passwordHasher;
@@ -106,7 +104,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileResponse>> Me()
     {
-        var userId = GetCurrentUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -156,11 +154,5 @@ public class AuthController : ControllerBase
     {
         return await _profileService.GetProfileAsync(user.Id)
                ?? throw new InvalidOperationException($"User profile {user.Id} was not found.");
-    }
-
-    private int? GetCurrentUserId()
-    {
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(id, out var parsedId) ? parsedId : null;
     }
 }

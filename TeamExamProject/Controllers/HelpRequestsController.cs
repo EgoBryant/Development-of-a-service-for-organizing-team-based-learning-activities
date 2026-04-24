@@ -9,10 +9,9 @@ namespace TeamExamProject.Controllers;
 /// <summary>
 /// Эндпоинты механики взаимопомощи между командами.
 /// </summary>
-[ApiController]
 [Route("api/help-requests")]
 [Authorize]
-public class HelpRequestsController : ControllerBase
+public class HelpRequestsController : ApiControllerBase
 {
     private readonly IHelpRequestsService _helpRequestsService;
 
@@ -47,7 +46,7 @@ public class HelpRequestsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<HelpRequestResponse>> Create(CreateHelpRequestDto request, CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -98,7 +97,7 @@ public class HelpRequestsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<HelpRequestResponse>> UpdateStatus(int id, UpdateHelpRequestStatusDto request, CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = CurrentUserId;
         if (userId is null)
         {
             return Unauthorized();
