@@ -103,8 +103,10 @@ function render(): void {
 
     const isHome = appState.view === "home";
 
-    homeScreen.classList.toggle("screen-active", isHome);
+    homeScreen.classList.add("screen-active");
     appScreen.classList.toggle("screen-active", !isHome);
+    appScreen.setAttribute("aria-hidden", String(isHome));
+    document.body.classList.toggle("modal-open", !isHome);
 
     if (!isHome) {
         renderAuthView();

@@ -6,22 +6,27 @@ body {
     color: #bdbdbd;
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
 button,
 input {
     font: inherit;
 }
 
 .single-page-app {
+    position: relative;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .screen {
-    display: none;
     width: 100%;
 }
 
@@ -33,6 +38,14 @@ input {
 
 .menu-screen {
     min-height: calc(100vh - 48px);
+    transition: filter 240ms ease, transform 240ms ease, opacity 240ms ease;
+}
+
+body.modal-open .menu-screen {
+    filter: blur(16px) brightness(0.72);
+    transform: scale(0.985);
+    pointer-events: none;
+    user-select: none;
 }
 
 .menu-card {
@@ -56,7 +69,27 @@ input {
 }
 
 .auth-screen {
-    min-height: calc(100vh - 48px);
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    background: rgba(33, 17, 27, 0.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 360ms ease, visibility 360ms ease;
+}
+
+.auth-screen.screen-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .auth-layout {
@@ -69,6 +102,13 @@ input {
     background: #ffffff;
     overflow: hidden;
     box-sizing: border-box;
+    box-shadow: 0 32px 80px rgba(58, 31, 46, 0.18);
+    transform: translateY(18px) scale(0.98);
+    transition: transform 220ms ease;
+}
+
+.auth-screen.screen-active .auth-layout {
+    transform: translateY(0) scale(1);
 }
 
 .auth-layout.layout-reverse .promo-panel {
@@ -288,6 +328,10 @@ input {
     .form-panel,
     .promo-panel {
         min-height: 220px;
+    }
+
+    .auth-screen {
+        padding: 18px;
     }
 }
 
