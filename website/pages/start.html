@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start</title>
+</head>
+<body>
+    <main class="single-page-app">
+        <section id="homeScreen" class="screen screen-active menu-screen">
+            <div class="menu-card">
+                <div class="logo-box">ЛОГОТИП</div>
+                <button class="primary-button hero-button" type="button" data-view="sign-in">СТАРТ</button>
+            </div>
+        </section>
+
+        <section id="appScreen" class="screen auth-screen" aria-live="polite">
+            <div id="authLayout" class="auth-layout">
+                <section class="form-panel">
+                    <div id="formContent" class="form-shell"></div>
+                </section>
+
+                <aside class="promo-panel">
+                    <button id="promoButton" class="primary-button promo-button" type="button"></button>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/src/start.ts"></script>
+</body>
+</html>
