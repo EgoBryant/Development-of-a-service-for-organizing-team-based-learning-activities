@@ -20,8 +20,9 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     border-radius: 34px;
-    overflow: hidden;
-    background: #ffffff;
+    background: transparent;
+    padding: 12px;
+    box-sizing: border-box;
 }
 
 .auth-layout.reverse .promo-panel {
@@ -38,6 +39,9 @@ body {
     justify-content: center;
     padding: 40px;
     background: #dedede;
+    border-radius: 28px;
+    min-height: 100%;
+    box-sizing: border-box;
 }
 
 .panel-button,
@@ -62,6 +66,8 @@ body {
     align-items: center;
     justify-content: center;
     padding: 40px 32px;
+    background: #ffffff;
+    border-radius: 28px;
 }
 
 .auth-form {

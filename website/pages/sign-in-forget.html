@@ -9,22 +9,24 @@
 <body>
     <main class="auth-page">
         <section class="auth-layout">
-            <aside class="promo-panel">
-                <a class="panel-button" href="./sign-in.html">ВХОД</a>
-            </aside>
-
             <section class="form-panel">
                 <form class="auth-form" action="./sign-in.html">
-                    <h1>ВОССТАНОВЛЕНИЕ</h1>
+                    <h1>ВХОД</h1>
 
                     <input name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" required>
-                    <input name="code" type="text" placeholder="КОД ИЗ ПИСЬМА" required>
-                    <input name="password" type="password" placeholder="НОВЫЙ ПАРОЛЬ" required>
 
-                    <button class="primary-button" type="submit">СОХРАНИТЬ</button>
-                    <a class="text-link" href="./sign-in.html">Вернуться на страницу входа</a>
+                    <div class="password-row">
+                        <input name="password" type="password" placeholder="ПАРОЛЬ" required>
+                        <button class="inline-button" type="submit">ВОССТАНОВИТЬ</button>
+                    </div>
+
+                    <a class="primary-button" href="./sign-in-confirm.html">ПРИСОЕДИНИТЬСЯ</a>
                 </form>
             </section>
+
+            <aside class="promo-panel">
+                <a class="panel-button" href="./sign-up.html">РЕГИСТРАЦИЯ</a>
+            </aside>
         </section>
     </main>
 </body>
