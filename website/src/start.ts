@@ -1,53 +1,10 @@
-﻿import "../styles/start.css";
+import "../styles/start.css";
 
-type View = "home" | "sign-in" | "sign-up" | "account";
+type View = "home" | "sign-in" | "sign-up";
 
 interface AuthResponse {
     token: string;
     expiresAtUtc: string;
-    userName: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    nickname: string;
-    bio: string;
-    avatarUrl: string;
-    contactEmail: string;
-    telegramHandle: string;
-    phoneNumber: string;
-    studentTicketNumber: number | null;
-    groupId: number | null;
-    groupTitle: string;
-    teamId: number | null;
-    teamName: string;
-    teamInviteCode: string;
-    isCaptain: boolean;
-}
-
-interface UserProfileResponse {
-    id: number;
-    userName: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    nickname: string;
-    bio: string;
-    avatarUrl: string;
-    contactEmail: string;
-    telegramHandle: string;
-    phoneNumber: string;
-    studentTicketNumber: number | null;
-    groupId: number | null;
-    groupTitle: string;
-    teamId: number | null;
-    teamName: string;
-    teamInviteCode: string;
-    isCaptain: boolean;
-    teamScore: number;
 }
 
 interface ProblemLike {
@@ -68,7 +25,6 @@ interface SignInState {
 
 interface SignUpState {
     email: string;
-    code: string;
     password: string;
     passwordVisible: boolean;
 }
@@ -77,7 +33,6 @@ interface AppState {
     view: View;
     signIn: SignInState;
     signUp: SignUpState;
-    profile: UserProfileResponse | null;
     statusMessage: string;
     statusTone: "default" | "error";
     isSubmitting: boolean;
@@ -94,11 +49,9 @@ const appState: AppState = {
     },
     signUp: {
         email: "",
-        code: "",
         password: "",
         passwordVisible: false
     },
-    profile: null,
     statusMessage: "",
     statusTone: "default",
     isSubmitting: false
@@ -165,27 +118,7 @@ async function bootstrap(): Promise<void> {
         return;
     }
 
-    appState.isSubmitting = true;
-    appState.view = "sign-in";
-    setStatus("Восстанавливаем сессию...");
-    render();
-
-    try {
-        appState.profile = await request<UserProfileResponse>("/api/auth/me", {
-            headers: {
-                Authorization: `Bearer ${session.token}`
-            }
-        });
-        appState.view = "account";
-        setStatus("Сессия восстановлена.");
-    } catch (error) {
-        clearSession();
-        setStatus(getErrorMessage(error), "error");
-        appState.view = "sign-in";
-    } finally {
-        appState.isSubmitting = false;
-        render();
-    }
+    window.location.replace("/profile.html");
 }
 
 function render(): void {
@@ -213,10 +146,7 @@ function render(): void {
 }
 
 function renderAuthView(): void {
-    if (
-        !isHTMLElement(authLayout) ||
-        !isHTMLElement(formContent)
-    ) {
+    if (!isHTMLElement(authLayout) || !isHTMLElement(formContent)) {
         return;
     }
 
@@ -272,10 +202,6 @@ function renderAuthView(): void {
                 <h1>РЕГИСТРАЦИЯ</h1>
                 ${renderStatusBlock()}
                 <input name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" required>
-                <div class="code-row">
-                    <input name="code" type="text" placeholder="ПОДТВЕРЖДЕНИЕ" value="${escapeHtml(appState.signUp.code)}">
-                    <button class="inline-button" id="repeatCodeButton" type="button">ПОВТОРИТЬ</button>
-                </div>
                 <div class="password-row auth-password-row">
                     <input name="password" type="${appState.signUp.passwordVisible ? "text" : "password"}" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" required>
                     <button class="icon-button" id="signUpPasswordToggle" type="button" aria-label="Показать пароль">${appState.signUp.passwordVisible ? "○" : "◉"}</button>
@@ -288,44 +214,6 @@ function renderAuthView(): void {
         `;
 
         initializeSignUpForm(getRequiredElement<HTMLFormElement>("#signUpForm", isHTMLFormElement));
-    }
-
-    if (appState.view === "account") {
-        const profile = appState.profile;
-        formContent.innerHTML = `
-            <div class="auth-form">
-                <h1>АККАУНТ</h1>
-                ${renderStatusBlock()}
-                <div class="profile-summary">
-                    <div class="summary-row"><span>Пользователь</span><strong>${escapeHtml(profile?.userName ?? "-")}</strong></div>
-                    <div class="summary-row"><span>Email</span><strong>${escapeHtml(profile?.email ?? "-")}</strong></div>
-                    <div class="summary-row"><span>Роль</span><strong>${escapeHtml(profile?.role ?? "-")}</strong></div>
-                    <div class="summary-row"><span>Группа</span><strong>${escapeHtml(profile?.groupTitle || "Не указана")}</strong></div>
-                    <div class="summary-row"><span>Команда</span><strong>${escapeHtml(profile?.teamName || "Не назначена")}</strong></div>
-                    <div class="summary-row"><span>Код команды</span><strong>${escapeHtml(profile?.teamInviteCode || "Нет")}</strong></div>
-                    <div class="summary-row"><span>Баллы команды</span><strong>${profile?.teamScore ?? 0}</strong></div>
-                </div>
-                <div class="summary-actions">
-                    <button class="primary-button form-button" type="button" id="refreshProfileButton" ${appState.isSubmitting ? "disabled" : ""}>ОБНОВИТЬ</button>
-                    <button class="text-link" type="button" id="logoutButton">ВЫЙТИ</button>
-                </div>
-            </div>
-        `;
-
-        const refreshProfileButton = getRequiredElement<HTMLButtonElement>("#refreshProfileButton", isHTMLButtonElement);
-        const logoutButton = getRequiredElement<HTMLButtonElement>("#logoutButton", isHTMLButtonElement);
-
-        refreshProfileButton.addEventListener("click", () => {
-            void refreshProfile();
-        });
-
-        logoutButton.addEventListener("click", () => {
-            clearSession();
-            appState.profile = null;
-            appState.signIn.password = "";
-            setStatus("Сессия завершена.");
-            setView("sign-in");
-        });
     }
 
     formContent.querySelectorAll<HTMLElement>("[data-view]").forEach((button) => {
@@ -343,9 +231,7 @@ function renderAuthView(): void {
 
 function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const emailInput = signUpForm.elements.namedItem("email");
-    const codeInput = signUpForm.elements.namedItem("code");
     const passwordInput = signUpForm.elements.namedItem("password");
-    const repeatCodeButton = getRequiredElement<HTMLButtonElement>("#repeatCodeButton", isHTMLButtonElement);
     const passwordToggle = getRequiredElement<HTMLButtonElement>("#signUpPasswordToggle", isHTMLButtonElement);
 
     if (!isHTMLInputElement(emailInput) || !isHTMLInputElement(passwordInput)) {
@@ -356,27 +242,8 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         appState.signUp.email = emailInput.value;
     });
 
-    if (isHTMLInputElement(codeInput)) {
-        codeInput.addEventListener("input", () => {
-            appState.signUp.code = codeInput.value;
-        });
-    }
-
     passwordInput.addEventListener("input", () => {
         appState.signUp.password = passwordInput.value;
-    });
-
-    repeatCodeButton.addEventListener("click", () => {
-        appState.signUp.email = emailInput.value;
-
-        if (!appState.signUp.email.trim()) {
-            setStatus("Сначала укажите электронную почту.", "error");
-            updateStatusBlock();
-            return;
-        }
-
-        setStatus(`Код подтверждения повторно отправлен на ${appState.signUp.email.trim()}.`);
-        updateStatusBlock();
     });
 
     passwordToggle.addEventListener("click", () => {
@@ -408,17 +275,9 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
         });
 
         saveSession(auth);
-        appState.profile = await request<UserProfileResponse>("/api/auth/me", {
-            headers: {
-                Authorization: `Bearer ${auth.token}`
-            }
-        });
-        appState.signIn.password = "";
-        appState.view = "account";
-        setStatus("Вход выполнен.");
+        window.location.assign("/profile.html");
     } catch (error) {
         setStatus(getErrorMessage(error), "error");
-    } finally {
         appState.isSubmitting = false;
         render();
     }
@@ -426,7 +285,6 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
 
 async function submitRegister(form: HTMLFormElement): Promise<void> {
     appState.signUp.email = getInputValue(form.elements.namedItem("email")).trim();
-    appState.signUp.code = getInputValue(form.elements.namedItem("code")).trim();
     appState.signUp.password = getInputValue(form.elements.namedItem("password"));
 
     if (!appState.signUp.email || !appState.signUp.password) {
@@ -450,43 +308,9 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
         });
 
         saveSession(auth);
-        appState.profile = await request<UserProfileResponse>("/api/auth/me", {
-            headers: {
-                Authorization: `Bearer ${auth.token}`
-            }
-        });
-        appState.view = "account";
-        setStatus("Регистрация завершена.");
+        window.location.assign("/profile.html");
     } catch (error) {
         setStatus(getErrorMessage(error), "error");
-    } finally {
-        appState.isSubmitting = false;
-        render();
-    }
-}
-
-async function refreshProfile(): Promise<void> {
-    const session = loadSession();
-    if (!session) {
-        setStatus("Сессия не найдена.", "error");
-        render();
-        return;
-    }
-
-    appState.isSubmitting = true;
-    setStatus("Обновляем профиль...");
-    render();
-
-    try {
-        appState.profile = await request<UserProfileResponse>("/api/auth/me", {
-            headers: {
-                Authorization: `Bearer ${session.token}`
-            }
-        });
-        setStatus("Данные обновлены.");
-    } catch (error) {
-        setStatus(getErrorMessage(error), "error");
-    } finally {
         appState.isSubmitting = false;
         render();
     }
@@ -546,10 +370,6 @@ function loadSession(): SessionState | null {
     } catch {
         return null;
     }
-}
-
-function clearSession(): void {
-    localStorage.removeItem(SESSION_KEY);
 }
 
 function buildUserName(email: string): string {

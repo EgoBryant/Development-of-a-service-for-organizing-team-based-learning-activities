@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, __dirname, "");
-    const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:5141";
+    const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://127.0.0.1:5141";
 
     return {
         server: {
@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
             rollupOptions: {
                 input: {
                     main: resolve(__dirname, "index.html"),
+                    profile: resolve(__dirname, "profile.html"),
                     start: resolve(__dirname, "pages/start.html")
                 }
             }
