@@ -1,18 +1,28 @@
 using System.Text;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using TeamExamProject.Data;
+using TeamExamProject.Infrastructure;
 using TeamExamProject.Infrastructure.Authorization;
 using TeamExamProject.Models;
 using TeamExamProject.Options;
 using TeamExamProject.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // За reverse proxy (nginx, Traefik) — доверять заголовкам от прокси
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 
@@ -41,6 +51,7 @@ builder.Services.AddCors(options =>
     });
 });
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -117,6 +128,8 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 using (var scope = app.Services.CreateScope())
 {
     var logger = scope.ServiceProvider
@@ -135,7 +148,23 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
+// Chrome PNA: preflight с Access-Control-Request-Private-Network иначе fetch с preview (4174) на API (8080) даёт «Failed to fetch».
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        if (context.Request.Headers.ContainsKey("Access-Control-Request-Private-Network"))
+        {
+            context.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+        }
+
+        return Task.CompletedTask;
+    });
+    await next();
+});
 app.UseCors("Frontend");
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -143,10 +172,30 @@ app.MapControllers();
 app.MapGet("/health", async (AppDbContext dbContext) =>
 {
     var canConnect = await dbContext.Database.CanConnectAsync();
-    return canConnect
-        ? Results.Ok(new { status = "ok", database = "up" })
-        : Results.Problem(title: "Database is unavailable", statusCode: StatusCodes.Status503ServiceUnavailable);
+    if (!canConnect)
+    {
+        return Results.Problem(title: "Database is unavailable", statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToArray();
+    if (pending.Length > 0)
+    {
+        return Results.Json(
+            new
+            {
+                status = "degraded",
+                database = "up",
+                message =
+                    "Есть невыполненные миграции EF. Остановите API и выполните: dotnet ef database update --project TeamExamProject",
+                pendingMigrations = pending
+            },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    return Results.Ok(new { status = "ok", database = "up" });
 });
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
@@ -165,6 +214,7 @@ static async Task InitializeDatabaseAsync(
         try
         {
             await dbContext.Database.MigrateAsync();
+            await DatabaseSchemaRepair.ApplyAsync(dbContext, logger);
             await SeedData.InitializeAsync(dbContext, passwordHasher);
             logger.LogInformation("Database migration and seed completed successfully.");
             return;

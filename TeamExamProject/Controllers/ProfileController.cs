@@ -84,6 +84,10 @@ public class ProfileController : ApiControllerBase
                 title: "Student ticket conflict",
                 detail: "This student ticket number is already assigned to another user.",
                 statusCode: StatusCodes.Status400BadRequest)),
+            ProfileUpdateResultType.AvatarPayloadTooLarge => BadRequest(Problem(
+                title: "Avatar too large",
+                detail: "Avatar image payload exceeds the maximum allowed size.",
+                statusCode: StatusCodes.Status400BadRequest)),
             ProfileUpdateResultType.Updated when result.Profile is not null => Ok(result.Profile),
             _ => Problem(
                 title: "Profile update failed",

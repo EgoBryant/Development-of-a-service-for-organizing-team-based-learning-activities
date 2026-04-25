@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,19 +22,22 @@ public class AuthController : ApiControllerBase
     private readonly IJwtTokenService _jwtTokenService;
     private readonly JwtOptions _jwtOptions;
     private readonly IProfileService _profileService;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         AppDbContext dbContext,
         IPasswordHasher<User> passwordHasher,
         IJwtTokenService jwtTokenService,
         IProfileService profileService,
-        IOptions<JwtOptions> jwtOptions)
+        IOptions<JwtOptions> jwtOptions,
+        ILogger<AuthController> logger)
     {
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _profileService = profileService;
         _jwtOptions = jwtOptions.Value;
+        _logger = logger;
     }
 
     /// <summary>
@@ -78,14 +82,44 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         var email = request.Email.Trim().ToLowerInvariant();
-        var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Email == email);
+        var candidates = await _dbContext.Users
+            .Include(existingUser => existingUser.Group)
+            .Where(existingUser => existingUser.Email == email)
+            .Take(3)
+            .ToListAsync();
+
+        if (candidates.Count > 1)
+        {
+            _logger.LogError("Multiple users share email {Email}; expected unique index on Users.Email.", email);
+            return Problem(
+                title: "Database integrity error",
+                detail: "More than one account uses this email. Check PostgreSQL data and unique index on Users.Email.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        var user = candidates.Count == 0 ? null : candidates[0];
 
         if (user is null)
         {
             return Unauthorized(new { message = "Invalid email or password." });
         }
 
-        var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        PasswordVerificationResult verificationResult;
+        try
+        {
+            verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        }
+        catch (FormatException exception)
+        {
+            _logger.LogWarning(exception, "Invalid password hash format for user id {UserId}.", user.Id);
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
         if (verificationResult == PasswordVerificationResult.Failed)
         {
             return Unauthorized(new { message = "Invalid email or password." });
@@ -99,6 +133,7 @@ public class AuthController : ApiControllerBase
     /// </summary>
     /// <returns>Профиль текущего пользователя.</returns>
     [HttpGet("me")]
+    [Authorize]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -110,13 +145,14 @@ public class AuthController : ApiControllerBase
             return Unauthorized();
         }
 
-        var user = await _dbContext.Users.AsNoTracking().SingleOrDefaultAsync(existingUser => existingUser.Id == userId.Value);
-        if (user is null)
+        var profile = await _profileService.GetProfileAsync(userId.Value);
+        if (profile is null)
         {
+            _logger.LogWarning("GET /api/Auth/me: user id {UserId} from token not found in database.", userId);
             return NotFound();
         }
 
-        return Ok(await BuildUserProfileResponseAsync(user));
+        return Ok(profile);
     }
 
     private async Task<AuthResponse> CreateAuthResponseAsync(User user)
@@ -126,6 +162,7 @@ public class AuthController : ApiControllerBase
 
         return new AuthResponse
         {
+            Id = profile.Id,
             Token = token,
             ExpiresAtUtc = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
             UserName = profile.UserName,
@@ -146,13 +183,11 @@ public class AuthController : ApiControllerBase
             TeamId = profile.TeamId,
             TeamName = profile.TeamName,
             TeamInviteCode = profile.TeamInviteCode,
-            IsCaptain = profile.IsCaptain
+            IsCaptain = profile.IsCaptain,
+            TeamScore = profile.TeamScore
         };
     }
 
-    private async Task<UserProfileResponse> BuildUserProfileResponseAsync(User user)
-    {
-        return await _profileService.GetProfileAsync(user.Id)
-               ?? throw new InvalidOperationException($"User profile {user.Id} was not found.");
-    }
+    private Task<UserProfileResponse> BuildUserProfileResponseAsync(User user) =>
+        _profileService.MapToProfileResponseAsync(user);
 }

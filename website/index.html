@@ -10,36 +10,21 @@
         <section id="homeScreen" class="screen screen-active menu-screen">
             <div class="menu-card">
                 <div class="logo-box">ЛОГОТИП</div>
-                <button class="primary-button hero-button" type="button" data-view="sign-in">СТАРТ</button>
+                <button class="start-pill-button" type="button" data-view="sign-in">СТАРТ</button>
             </div>
         </section>
 
         <section id="appScreen" class="screen auth-screen" aria-live="polite" aria-hidden="true">
-            <div id="authLayout" class="auth-layout" role="dialog" aria-modal="true" aria-label="Авторизация">
-                <section class="form-panel">
-                    <div id="formContent" class="form-shell"></div>
-                </section>
+            <div id="profileShell" class="profile-shell hidden" aria-hidden="true">
+                <div id="profileMount" class="profile-mount"></div>
+            </div>
 
-                <aside class="promo-panel" aria-hidden="true"></aside>
-
-                <div class="promo-stage">
-                    <div class="promo-copy promo-copy-sign-in">
-                        <div class="promo-content">
-                            <p class="promo-eyebrow">УЖЕ ЕСТЬ АККАУНТ?</p>
-                            <h2 class="promo-title">Вернитесь во вход</h2>
-                            <p class="promo-description">Переключитесь обратно на авторизацию и продолжите работу с командой без лишних шагов.</p>
-                            <button id="promoSignInButton" class="primary-button promo-button" type="button">ВХОД</button>
-                        </div>
+            <div id="authLayout" class="auth-layout" role="dialog" aria-modal="true" aria-label="Вход и регистрация">
+                <div id="authModalCard" class="auth-modal-card">
+                    <div class="auth-form-column">
+                        <div id="formContent" class="form-shell"></div>
                     </div>
-
-                    <div class="promo-copy promo-copy-sign-up">
-                        <div class="promo-content">
-                            <p class="promo-eyebrow">НОВЫЙ УЧАСТНИК?</p>
-                            <h2 class="promo-title">Создайте профиль</h2>
-                            <p class="promo-description">Откройте регистрацию, чтобы подключиться к командному зачёту, рейтингам и совместным активностям.</p>
-                            <button id="promoSignUpButton" class="primary-button promo-button" type="button">РЕГИСТРАЦИЯ</button>
-                        </div>
-                    </div>
+                    <aside id="authSwitchColumn" class="auth-switch-column" aria-label="Переключение между входом и регистрацией"></aside>
                 </div>
             </div>
         </section>

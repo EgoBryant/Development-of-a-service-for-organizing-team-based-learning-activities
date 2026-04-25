@@ -19,14 +19,18 @@ public class JwtTokenService : IJwtTokenService
 
     public string CreateToken(User user)
     {
+        var role = string.IsNullOrWhiteSpace(user.Role) ? Roles.Student : user.Role;
+        var email = user.Email ?? string.Empty;
+        var name = user.UserName ?? string.Empty;
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Name, user.UserName),
-            new(ClaimTypes.Role, user.Role)
+            new(JwtRegisteredClaimNames.Email, email),
+            new(ClaimTypes.Email, email),
+            new(ClaimTypes.Name, name),
+            new(ClaimTypes.Role, role)
         };
 
         var credentials = new SigningCredentials(

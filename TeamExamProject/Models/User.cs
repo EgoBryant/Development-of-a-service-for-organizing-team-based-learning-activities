@@ -17,6 +17,8 @@ public class User
     public string TelegramHandle { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public int? StudentTicketNumber { get; set; }
+    /// <summary>Текст академгруппы из ЛК (может не совпадать со справочником Groups).</summary>
+    public string AcademicGroupLabel { get; set; } = string.Empty;
     public int? GroupId { get; set; }
     public Group? Group { get; set; }
     public int? TeamId { get; set; }

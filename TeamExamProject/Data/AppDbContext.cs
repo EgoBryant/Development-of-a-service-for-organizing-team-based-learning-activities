@@ -33,7 +33,8 @@ public class AppDbContext : DbContext
             entity.Property(user => user.MiddleName).HasMaxLength(100);
             entity.Property(user => user.Nickname).HasMaxLength(100);
             entity.Property(user => user.Bio).HasMaxLength(1000);
-            entity.Property(user => user.AvatarUrl).HasMaxLength(500);
+            entity.Property(user => user.AvatarUrl).HasColumnType("text");
+            entity.Property(user => user.AcademicGroupLabel).HasMaxLength(100);
             entity.Property(user => user.ContactEmail).HasMaxLength(200);
             entity.Property(user => user.TelegramHandle).HasMaxLength(100);
             entity.Property(user => user.PhoneNumber).HasMaxLength(32);

@@ -7,7 +7,8 @@ public enum ProfileUpdateResultType
     Updated,
     UserNotFound,
     GroupNotFound,
-    StudentTicketAlreadyUsed
+    StudentTicketAlreadyUsed,
+    AvatarPayloadTooLarge
 }
 
 public sealed class ProfileUpdateResult

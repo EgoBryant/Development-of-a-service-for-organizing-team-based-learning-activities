@@ -9,3 +9,10 @@
 .git
 .gitignore
 docker-compose.override.yml
+# Frontend: install + build done inside image; do not send host copies
+website/node_modules
+website/dist
+_build_verify
+**/.vite
+**/.env.local
+**/.env.*.local

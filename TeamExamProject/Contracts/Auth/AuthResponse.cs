@@ -2,6 +2,8 @@ namespace TeamExamProject.Contracts.Auth;
 
 public class AuthResponse
 {
+    /// <summary>Идентичен профилю; с фронта не обязан вызывать GET /me сразу после login/register.</summary>
+    public int Id { get; set; }
     public string Token { get; set; } = string.Empty;
     public DateTime ExpiresAtUtc { get; set; }
     public string UserName { get; set; } = string.Empty;
@@ -23,4 +25,5 @@ public class AuthResponse
     public string TeamName { get; set; } = string.Empty;
     public string TeamInviteCode { get; set; } = string.Empty;
     public bool IsCaptain { get; set; }
+    public int TeamScore { get; set; }
 }
