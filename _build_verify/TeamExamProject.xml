@@ -1,0 +1,292 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>TeamExamProject</name>
+    </assembly>
+    <members>
+        <member name="P:TeamExamProject.Contracts.Profile.UpdateProfileDto.AvatarUrl">
+            <summary>URL или data:image/...;base64,... — хранится в БД как text. Лимит длины — в ProfileService (без [MaxLength]: крупное фото в base64 легко &gt; 4M символов).</summary>
+        </member>
+        <member name="P:TeamExamProject.Contracts.Profile.UpdateProfileDto.AcademicGroupLabel">
+            <summary>Свободный ввод группы с экрана профиля; при совпадении с Groups.Title выставляется GroupId.</summary>
+        </member>
+        <member name="T:TeamExamProject.Controllers.AuthController">
+            <summary>
+            Методы регистрации, входа и получения данных текущего пользователя.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.AuthController.Register(TeamExamProject.Contracts.Auth.RegisterRequest)">
+            <summary>
+            Регистрирует нового пользователя по email и паролю.
+            </summary>
+            <param name="request">Данные для создания учетной записи.</param>
+            <returns>JWT-токен и сведения о профиле пользователя.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.AuthController.Login(TeamExamProject.Contracts.Auth.LoginRequest)">
+            <summary>
+            Выполняет вход пользователя по email и паролю.
+            </summary>
+            <param name="request">Учетные данные пользователя.</param>
+            <returns>JWT-токен и актуальные сведения о профиле.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.AuthController.Me">
+            <summary>
+            Возвращает профиль текущего авторизованного пользователя.
+            </summary>
+            <returns>Профиль текущего пользователя.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.CheckInsController">
+            <summary>
+            Эндпоинты еженедельных check-in отчетов команды.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.CheckInsController.GetCurrentTeamCheckIns(System.Threading.CancellationToken)">
+            <summary>
+            Возвращает список check-in текущей команды.
+            </summary>
+            <returns>История еженедельных отчетов команды.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.CheckInsController.Create(TeamExamProject.Contracts.CheckIns.CreateCheckInDto,System.Threading.CancellationToken)">
+            <summary>
+            Создает новый еженедельный check-in для команды текущего капитана.
+            </summary>
+            <param name="request">Неделя, статус и текст отчета команды.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Созданный check-in.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.GroupsController">
+            <summary>
+            Методы работы с академическими группами.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.GroupsController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Возвращает список всех учебных групп.
+            </summary>
+            <returns>Справочник групп для заполнения профиля пользователя.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.GroupsController.Create(TeamExamProject.Contracts.Groups.CreateGroupDto,System.Threading.CancellationToken)">
+            <summary>
+            Создает новую учебную группу. Доступно только администратору.
+            </summary>
+            <param name="request">Код и название учебной группы.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Созданная учебная группа.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.HelpRequestsController">
+            <summary>
+            Эндпоинты механики взаимопомощи между командами.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.HelpRequestsController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Возвращает список запросов на помощь между командами.
+            </summary>
+            <returns>Все запросы помощи с исходной и целевой командой.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.HelpRequestsController.Create(TeamExamProject.Contracts.HelpRequests.CreateHelpRequestDto,System.Threading.CancellationToken)">
+            <summary>
+            Создает новый запрос на помощь от команды текущего капитана.
+            </summary>
+            <param name="request">Описание проблемы и команда, к которой адресован запрос.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Созданный запрос на помощь.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.HelpRequestsController.UpdateStatus(System.Int32,TeamExamProject.Contracts.HelpRequests.UpdateHelpRequestStatusDto,System.Threading.CancellationToken)">
+            <summary>
+            Изменяет статус запроса на помощь.
+            </summary>
+            <param name="id">Идентификатор запроса на помощь.</param>
+            <param name="request">Новый статус: Open, Accepted, Rejected или Completed.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Обновленный запрос на помощь.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.KnowledgePostsController">
+            <summary>
+            Эндпоинты биржи знаний для публикации и просмотра экспертных объявлений.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.KnowledgePostsController.GetAll(System.Threading.CancellationToken)">
+            <summary>
+            Возвращает все публикации биржи знаний.
+            </summary>
+            <returns>Список объявлений с автором и связанной командой.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.KnowledgePostsController.Create(TeamExamProject.Contracts.Knowledge.CreateKnowledgePostDto,System.Threading.CancellationToken)">
+            <summary>
+            Создает новую публикацию на бирже знаний от имени текущего пользователя.
+            </summary>
+            <param name="request">Заголовок, описание и категория публикации.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Созданная публикация.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.ProfileController">
+            <summary>
+            Методы просмотра и редактирования личного кабинета пользователя.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.ProfileController.Get(System.Threading.CancellationToken)">
+            <summary>
+            Возвращает профиль текущего пользователя.
+            </summary>
+            <returns>Данные профиля, команды и учебной группы.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.ProfileController.Put(TeamExamProject.Contracts.Profile.UpdateProfileDto,System.Threading.CancellationToken)">
+            <summary>
+            Обновляет данные профиля текущего пользователя.
+            </summary>
+            <param name="request">Новые значения профиля: ФИО, контакты, описание, группа и другие поля.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Обновленный профиль пользователя.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.TeamsController">
+            <summary>
+            Методы управления командами: просмотр, создание, вступление и обновление рейтинга.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.GetAll">
+            <summary>
+            Возвращает список всех команд.
+            </summary>
+            <returns>Список команд с капитаном, участниками и invite code.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.GetById(System.Int32)">
+            <summary>
+            Возвращает команду по идентификатору.
+            </summary>
+            <param name="id">Идентификатор команды.</param>
+            <returns>Данные выбранной команды.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.Create(TeamExamProject.Contracts.Teams.CreateTeamDto)">
+            <summary>
+            Создает новую команду для пользователя, который еще не состоит в команде.
+            </summary>
+            <param name="request">Название и описание создаваемой команды.</param>
+            <returns>Созданная команда. Создатель автоматически становится капитаном.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.CreateLegacy(TeamExamProject.Contracts.Teams.CreateTeamDto)">
+            <summary>
+            Устаревший маршрут создания команды. Полностью эквивалентен <c>POST /api/teams/create</c>.
+            </summary>
+            <param name="request">Название и описание создаваемой команды.</param>
+            <returns>Созданная команда.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.Join(TeamExamProject.Contracts.Teams.JoinTeamRequest)">
+            <summary>
+            Вступает в существующую команду по пригласительному коду.
+            </summary>
+            <param name="request">Invite code команды.</param>
+            <returns>Команда, в которую вступил пользователь.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.Me">
+            <summary>
+            Возвращает команду текущего пользователя.
+            </summary>
+            <returns>Текущая команда пользователя.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.TeamsController.UpdateScore(System.Int32,TeamExamProject.Contracts.Teams.UpdateTeamScoreRequest)">
+            <summary>
+            Обновляет рейтинг команды. Доступно только администратору.
+            </summary>
+            <param name="id">Идентификатор команды.</param>
+            <param name="request">Новые значения рейтинга/баллов команды.</param>
+            <returns>Обновленная команда.</returns>
+        </member>
+        <member name="T:TeamExamProject.Controllers.VotesController">
+            <summary>
+            Эндпоинты анонимного голосования внутри команды.
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Controllers.VotesController.GetCurrentTeamVotes(System.Threading.CancellationToken)">
+            <summary>
+            Возвращает все голоса текущей команды.
+            </summary>
+            <returns>Список голосов участников команды.</returns>
+        </member>
+        <member name="M:TeamExamProject.Controllers.VotesController.Create(TeamExamProject.Contracts.Votes.CreateVoteDto,System.Threading.CancellationToken)">
+            <summary>
+            Создает голос за участника своей команды.
+            </summary>
+            <param name="request">Идентификатор участника и оценка по 5-балльной шкале.</param>
+            <param name="cancellationToken">Токен отмены запроса.</param>
+            <returns>Созданный голос.</returns>
+        </member>
+        <member name="T:TeamExamProject.Data.DatabaseSchemaRepair">
+            <summary>
+            Идемпотентные SQL-правки на случай рассинхрона <c>__EFMigrationsHistory</c> и реальной схемы PostgreSQL
+            (миграция в истории есть, DDL не выполнялся).
+            </summary>
+        </member>
+        <member name="M:TeamExamProject.Data.SeedData.RemoveStaleDemoTeamsIfNoUsersAsync(TeamExamProject.Data.AppDbContext)">
+            <summary>
+            После оборванного сида в БД могли остаться демо-команды с уникальными invite, а <see cref="T:TeamExamProject.Models.User"/> — пустая.
+            Удаляем только известные демо-коды, чтобы не получить 23505 на <c>IX_Teams_InviteCode</c>.
+            </summary>
+        </member>
+        <member name="T:TeamExamProject.Infrastructure.GlobalExceptionHandler">
+            <summary>
+            В Development возвращает текст исключения в ProblemDetails (удобно для отладки 500).
+            </summary>
+        </member>
+        <member name="T:TeamExamProject.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TeamExamProject.Migrations.AddProfileAndCaptainPolicies">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddProfileAndCaptainPolicies.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddProfileAndCaptainPolicies.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddProfileAndCaptainPolicies.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TeamExamProject.Migrations.AddCoreDomainModules">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddCoreDomainModules.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddCoreDomainModules.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddCoreDomainModules.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TeamExamProject.Migrations.AddMissingUserTeamLink">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddMissingUserTeamLink.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.AddMissingUserTeamLink.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TeamExamProject.Migrations.FrontendProfileAlignment">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.FrontendProfileAlignment.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TeamExamProject.Migrations.FrontendProfileAlignment.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="P:TeamExamProject.Models.User.AcademicGroupLabel">
+            <summary>Текст академгруппы из ЛК (может не совпадать со справочником Groups).</summary>
+        </member>
+        <member name="F:TeamExamProject.Services.ProfileService.MaxAvatarUrlChars">
+            <summary>~12M символов ≈ типичный потолок для data URL крупного JPEG после base64.</summary>
+        </member>
+    </members>
+</doc>

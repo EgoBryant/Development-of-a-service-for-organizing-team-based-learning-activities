@@ -1,0 +1,51 @@
+# Запуск на сервере БЕЗ исходников: образ уже docker load, только postgres тянется с Docker Hub.
+# Скопируй на сервер в /opt/prod/:
+#   docker-compose.prod.yml
+#   .env (JWT_KEY, POSTGRES_PASSWORD, …)
+# Затем: docker compose -f docker-compose.prod.yml up -d
+#
+services:
+  api:
+    image: teamexamproject-api:latest
+    container_name: teamexam-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-team_exam_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Issuer: TeamExamProject
+      Jwt__Audience: TeamExamProject.Client
+      Jwt__Key: ${JWT_KEY:-d7bf531a22280cde214529ef1248b3c2a5a27c7dac5cd568c5c2b5df866b5be1}
+      Jwt__ExpiryMinutes: 120
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/8080; printf \"GET /health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; grep -q \"200 OK\" <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: teamexam-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-team_exam_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-team_exam_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
