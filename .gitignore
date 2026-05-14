@@ -3,6 +3,9 @@ bin/
 obj/
 out/
 publish/
+_build_verify/
+_tz_extract/
+temp-*.pid
 
 # User-specific files
 *.user
@@ -47,3 +50,5 @@ docker-compose.override.yml
 # EF local database artifacts
 *.db
 *.sqlite
+
+AGENTS.MD

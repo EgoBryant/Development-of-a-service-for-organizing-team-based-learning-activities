@@ -5,7 +5,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: TeamExamProject/Dockerfile
+      dockerfile: backend/Dockerfile
     container_name: teamexam-api
     depends_on:
       postgres:
