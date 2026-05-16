@@ -1,11 +1,58 @@
-﻿import "../styles/start.css";
+import "../styles/start.css";
 import QRCode from "qrcode";
+import { setAppBridge } from "./app/bridge";
+import type { JoinTeamResult } from "./app/bridge";
+import { isDemoInviteCodeValid, normalizeInviteCode } from "./data/demoTeam";
+import { renderRatingPageMain, renderRatingPageModals, wireRatingPageEvents } from "./pages/RatingPage";
+import {
+    paintTeamPageEventSuccessQr,
+    renderTeamPageMain,
+    renderTeamPageModals,
+    wireTeamPageEvents
+} from "./pages/TeamPage";
+import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
+import type { TeamMemberView } from "./types/team";
 
 type View = "home" | "sign-in" | "sign-up" | "account";
 
-type DashboardSection = "profile" | "team";
+type DashboardSection = "profile" | "team" | "rating" | "events";
 
-type TeamModalKind = "none" | "vote" | "requests";
+type EventsCalendarScope = "all" | "mine";
+type EventsFeedTab = "activity" | "news";
+type EventsModalKind = "none" | "create" | "success";
+
+interface EventCreateDraft {
+    topic: string;
+    tag: string;
+    description: string;
+    format: string;
+    dateTime: string;
+}
+
+interface CalendarEventItem {
+    id: string;
+    isMine: boolean;
+}
+
+interface NewsFeedItem {
+    id: string;
+    title: string;
+    lineCount: number;
+}
+
+type TeamModalKind = "none" | "vote" | "requests" | "rescue";
+
+interface TeamRescueDraft {
+    topic: string;
+    tag: string;
+    description: string;
+    league: string;
+    deadline: string;
+    photoFileName: string;
+}
+
+/** Событие открытия модалки «Спасение» с любого места UI. */
+export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
 type ProfileModalKind =
     | "none"
@@ -187,6 +234,13 @@ interface AppState {
     profileFormDraft: ProfileEdits | null;
     dashboardSection: DashboardSection;
     teamModal: TeamModalKind;
+    teamRescueDraft: TeamRescueDraft | null;
+    eventsCalendarScope: EventsCalendarScope;
+    eventsFeedTab: EventsFeedTab;
+    eventsWeekOffset: number;
+    eventsModal: EventsModalKind;
+    eventsCreateDraft: EventCreateDraft | null;
+    eventsShareLink: string;
     teamVoteMemberIndex: number;
     teamRequestsInviteLink: string;
     localCreatedTeam: LocalCreatedTeam | null;
@@ -246,6 +300,13 @@ const appState: AppState = {
     profileFormDraft: null,
     dashboardSection: "profile",
     teamModal: "none",
+    teamRescueDraft: null,
+    eventsCalendarScope: "all",
+    eventsFeedTab: "activity",
+    eventsWeekOffset: 0,
+    eventsModal: "none",
+    eventsCreateDraft: null,
+    eventsShareLink: "",
     teamVoteMemberIndex: 0,
     teamRequestsInviteLink: "",
     localCreatedTeam: null,
@@ -309,7 +370,118 @@ function clearStatus(): void {
     appState.statusTone = "default";
 }
 
+function createEmptyTeamRescueDraft(): TeamRescueDraft {
+    return {
+        topic: "",
+        tag: "",
+        description: "",
+        league: "",
+        deadline: "",
+        photoFileName: ""
+    };
+}
+
+function ensureTeamRescueDraft(): TeamRescueDraft {
+    if (!appState.teamRescueDraft) {
+        appState.teamRescueDraft = createEmptyTeamRescueDraft();
+    }
+    return appState.teamRescueDraft;
+}
+
+function openRescueModal(): void {
+    if (appState.view !== "account") {
+        return;
+    }
+    appState.dashboardSection = "team";
+    openTeamModal("rescue");
+}
+
+function getTeamMembersForView(): TeamMemberView[] {
+    return getTeamRoster().map((member) => ({
+        id: member.id,
+        displayName: member.displayName,
+        roleLabel: member.roleLabel,
+        avatarUrl: member.avatarUrl
+    }));
+}
+
+function joinTeamByInviteCode(code: string): JoinTeamResult {
+    if (!isDemoInviteCodeValid(code)) {
+        return { ok: false, errorMessage: "НЕВЕРНЫЙ КОД ПРИГЛАШЕНИЯ" };
+    }
+
+    const normalized = normalizeInviteCode(code);
+    const captain = buildLocalCaptainMemberRow();
+    const members = captain ? [captain] : [];
+    appState.localCreatedTeam = {
+        name: "КОМАНДА ДЕМО",
+        inviteCode: normalized,
+        direction: "ВСТУПЛЕНИЕ ПО КОДУ",
+        members
+    };
+    persistLocalTeam();
+
+    if (appState.profile) {
+        appState.profile = {
+            ...appState.profile,
+            teamName: appState.localCreatedTeam.name,
+            teamInviteCode: appState.localCreatedTeam.inviteCode
+        };
+    }
+
+    return { ok: true, errorMessage: "" };
+}
+
+function createTeamFromBridge(name: string, direction: string): void {
+    const teamName = name.trim() || "КОМАНДА";
+    const invite = appState.profile?.teamInviteCode?.trim() || `local-${Date.now().toString(36)}`;
+    const link = `${window.location.origin}/team/${encodeURIComponent(teamName)}?invite=${encodeURIComponent(invite)}`;
+    appState.profileInviteLink = link;
+    const captain = buildLocalCaptainMemberRow();
+    const members = captain ? [captain] : [];
+    appState.localCreatedTeam = {
+        name: teamName,
+        inviteCode: invite,
+        direction: direction.trim(),
+        members
+    };
+    persistLocalTeam();
+
+    if (appState.profile) {
+        appState.profile = {
+            ...appState.profile,
+            teamName: appState.localCreatedTeam.name,
+            teamInviteCode: appState.localCreatedTeam.inviteCode
+        };
+    }
+}
+
 async function bootstrap(): Promise<void> {
+    setAppBridge({
+        render,
+        setStatus,
+        clearStatus,
+        isCurrentUserCaptain: isTeamCaptain,
+        hasTeamAccess,
+        getTeamTitle: () => getEffectiveTeamName() || "НАЗВАНИЕ",
+        getTeamSubtitle: () => appState.localCreatedTeam?.direction?.trim() ?? "",
+        getTeamMembers: getTeamMembersForView,
+        joinTeamByInviteCode,
+        createTeam: createTeamFromBridge,
+        openTeamOverlayModal: (kind, memberIndex) => openTeamModal(kind, memberIndex),
+        openTeamRescue: openRescueModal,
+        navigateToRating: () => {
+            appState.dashboardSection = "rating";
+            persistDashboardSectionToStorage();
+            clearStatus();
+            render();
+        }
+    });
+
+    document.addEventListener(TEAM_RESCUE_OPEN_EVENT, () => {
+        openRescueModal();
+    });
+
     const session = loadSession();
     render();
 
@@ -633,10 +805,601 @@ function hydrateProfileClientStateFromStorage(): void {
         };
     }
 
-    if (data.dashboardSection === "profile" || data.dashboardSection === "team") {
+    if (
+        data.dashboardSection === "profile" ||
+        data.dashboardSection === "team" ||
+        data.dashboardSection === "rating" ||
+        data.dashboardSection === "events"
+    ) {
         appState.dashboardSection = data.dashboardSection;
     }
 }
+
+const EVENTS_WEEKDAY_LABELS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ"] as const;
+
+const EVENTS_MONTH_LABELS = [
+    "ЯНВАРЬ",
+    "ФЕВРАЛЬ",
+    "МАРТ",
+    "АПРЕЛЬ",
+    "МАЙ",
+    "ИЮНЬ",
+    "ИЮЛЬ",
+    "АВГУСТ",
+    "СЕНТЯБРЬ",
+    "ОКТЯБРЬ",
+    "НОЯБРЬ",
+    "ДЕКАБРЬ"
+] as const;
+
+/** Пн 20.04.2026 — якорь недели из макета; сдвиг через eventsWeekOffset. */
+const EVENTS_WEEK_ANCHOR = new Date(2026, 3, 20);
+
+const DEMO_WEEK_CALENDAR_EVENTS: CalendarEventItem[][] = [
+    [{ id: "ev-mon-1", isMine: true }],
+    [{ id: "ev-tue-1", isMine: false }],
+    [
+        { id: "ev-wed-1", isMine: true },
+        { id: "ev-wed-2", isMine: true }
+    ],
+    [
+        { id: "ev-thu-1", isMine: false },
+        { id: "ev-thu-2", isMine: true }
+    ],
+    []
+];
+
+const eventsUserCreatedByDay: CalendarEventItem[][] = [[], [], [], [], []];
+
+const DEMO_ACTIVITY_FEED_ITEMS = [
+    { id: "act-1", hasPoints: true },
+    { id: "act-2", hasPoints: false },
+    { id: "act-3", hasPoints: true }
+] as const;
+
+const DEMO_NEWS_FEED_ITEMS: NewsFeedItem[] = [
+    { id: "news-1", title: "ТЕМА", lineCount: 4 },
+    { id: "news-2", title: "ТЕМА", lineCount: 3 }
+];
+
+function getEventsWeekStart(): Date {
+    const start = new Date(EVENTS_WEEK_ANCHOR);
+    start.setDate(start.getDate() + appState.eventsWeekOffset * 7);
+    return start;
+}
+
+function formatEventsMonthLabel(weekStart: Date): string {
+    const month = EVENTS_MONTH_LABELS[weekStart.getMonth()] ?? "МЕСЯЦ";
+    return `${month} ${weekStart.getFullYear()} Г.`;
+}
+
+function getMergedCalendarEvents(dayIndex: number): CalendarEventItem[] {
+    const base = DEMO_WEEK_CALENDAR_EVENTS[dayIndex] ?? [];
+    const user = eventsUserCreatedByDay[dayIndex] ?? [];
+    return [...base, ...user];
+}
+
+function getFilteredCalendarEvents(dayIndex: number): CalendarEventItem[] {
+    const dayEvents = getMergedCalendarEvents(dayIndex);
+    if (appState.eventsCalendarScope === "all") {
+        return dayEvents;
+    }
+    return dayEvents.filter((event) => event.isMine);
+}
+
+function renderEventsCalendarEventCard(event: CalendarEventItem): string {
+    return `<div class="events-calendar-card" role="listitem" aria-label="Событие ${escapeHtml(event.id)}"></div>`;
+}
+
+function renderEventsCalendarColumn(dayIndex: number): string {
+    const weekStart = getEventsWeekStart();
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + dayIndex);
+    const weekday = EVENTS_WEEKDAY_LABELS[dayIndex] ?? "ПН";
+    const dayNumber = dayDate.getDate();
+    const events = getFilteredCalendarEvents(dayIndex);
+    const cardsHtml = events.map((event) => renderEventsCalendarEventCard(event)).join("");
+
+    return `
+        <div class="events-calendar-col" role="listitem">
+            <div class="events-calendar-col-head">${weekday}, ${dayNumber}</div>
+            <div class="events-calendar-col-body" role="list">
+                ${cardsHtml}
+            </div>
+        </div>`;
+}
+
+function renderEventsCalendarBlock(): string {
+    const weekStart = getEventsWeekStart();
+    const monthLabel = formatEventsMonthLabel(weekStart);
+    const scopeAllActive = appState.eventsCalendarScope === "all";
+    const scopeMineActive = appState.eventsCalendarScope === "mine";
+    const columnsHtml = EVENTS_WEEKDAY_LABELS.map((_, index) => renderEventsCalendarColumn(index)).join("");
+
+    return `
+        <section class="events-calendar-block" aria-label="Календарь недели">
+            <header class="events-calendar-toolbar">
+                <div class="events-calendar-month-group">
+                    <span class="events-calendar-month-pill">${escapeHtml(monthLabel)}</span>
+                    <button type="button" class="events-calendar-month-toggle" id="eventsWeekNavButton" aria-label="Следующая неделя"></button>
+                </div>
+                <div class="events-calendar-toolbar-end">
+                    <div class="events-calendar-scope" role="group" aria-label="Фильтр событий">
+                        <button
+                            type="button"
+                            class="events-calendar-scope-btn${scopeAllActive ? " is-active" : ""}"
+                            data-events-calendar-scope="all"
+                            aria-pressed="${scopeAllActive}"
+                        >ВСЕ</button>
+                        <button
+                            type="button"
+                            class="events-calendar-scope-btn${scopeMineActive ? " is-active" : ""}"
+                            data-events-calendar-scope="mine"
+                            aria-pressed="${scopeMineActive}"
+                        >МОИ</button>
+                    </div>
+                    <button type="button" class="events-calendar-create-btn" id="eventsOpenCreateButton" aria-label="Создать событие">+</button>
+                </div>
+            </header>
+            <div class="events-calendar-grid" role="list" aria-label="Дни недели">
+                ${columnsHtml}
+            </div>
+        </section>`;
+}
+
+function renderEventsActivityFeed(): string {
+    const rowsHtml = DEMO_ACTIVITY_FEED_ITEMS.map((item) => {
+        const pointsHtml = item.hasPoints
+            ? `<span class="events-activity-points">БАЛЛЫ</span>`
+            : "";
+        return `
+            <div class="events-activity-row${item.hasPoints ? "" : " events-activity-row--plain"}" role="listitem">
+                ${pointsHtml}
+            </div>`;
+    }).join("");
+
+    return `
+        <div
+            class="events-feed-panel events-feed-panel--activity"
+            id="eventsFeedPanelActivity"
+            role="tabpanel"
+            aria-labelledby="eventsFeedTabActivity"
+            ${appState.eventsFeedTab === "activity" ? "" : "hidden"}
+        >
+            <div class="events-activity-list" role="list">
+                ${rowsHtml}
+            </div>
+        </div>`;
+}
+
+function renderEventsNewsLines(count: number): string {
+    const widths = ["92%", "78%", "64%", "48%"];
+    return Array.from({ length: count }, (_, index) => {
+        const width = widths[index % widths.length];
+        return `<span class="events-news-line" style="width: ${width}"></span>`;
+    }).join("");
+}
+
+function renderEventsNewsFeed(): string {
+    const cardsHtml = DEMO_NEWS_FEED_ITEMS.map(
+        (item) => `
+        <article class="events-news-card" role="listitem">
+            <div class="events-news-media" aria-hidden="true"></div>
+            <div class="events-news-copy">
+                <h3 class="events-news-title">${escapeHtml(item.title)}</h3>
+                <div class="events-news-lines" aria-hidden="true">
+                    ${renderEventsNewsLines(item.lineCount)}
+                </div>
+            </div>
+        </article>`
+    ).join("");
+
+    return `
+        <div
+            class="events-feed-panel events-feed-panel--news"
+            id="eventsFeedPanelNews"
+            role="tabpanel"
+            aria-labelledby="eventsFeedTabNews"
+            ${appState.eventsFeedTab === "news" ? "" : "hidden"}
+        >
+            <div class="events-news-list" role="list">
+                ${cardsHtml}
+            </div>
+        </div>`;
+}
+
+function renderEventsFeedBlock(): string {
+    const activityActive = appState.eventsFeedTab === "activity";
+    const newsActive = appState.eventsFeedTab === "news";
+
+    return `
+        <section class="events-feed-block" aria-label="Информационные ленты">
+            <div class="events-feed-tabs" role="tablist" aria-label="Ленты">
+                <button
+                    type="button"
+                    class="events-feed-tab${activityActive ? " is-active" : ""}"
+                    id="eventsFeedTabActivity"
+                    role="tab"
+                    aria-selected="${activityActive}"
+                    aria-controls="eventsFeedPanelActivity"
+                    data-events-feed-tab="activity"
+                >ЛЕНТА АКТИВНОСТЕЙ</button>
+                <button
+                    type="button"
+                    class="events-feed-tab${newsActive ? " is-active" : ""}"
+                    id="eventsFeedTabNews"
+                    role="tab"
+                    aria-selected="${newsActive}"
+                    aria-controls="eventsFeedPanelNews"
+                    data-events-feed-tab="news"
+                >ЛЕНТА НОВОСТЕЙ</button>
+            </div>
+            <div class="events-feed-panels">
+                ${renderEventsActivityFeed()}
+                ${renderEventsNewsFeed()}
+            </div>
+        </section>`;
+}
+
+function renderEventsDashboardMain(statusHtml: string): string {
+    return `
+            <section class="profile-main events-dashboard-main">
+                ${statusHtml}
+                <div class="events-panels-stack">
+                    ${renderEventsCalendarBlock()}
+                    ${renderEventsFeedBlock()}
+                </div>
+            </section>`;
+}
+
+function wireEventsDashboardEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.dashboardSection !== "events") {
+        return;
+    }
+
+    const weekNav = profileMount.querySelector("#eventsWeekNavButton");
+    if (isHTMLButtonElement(weekNav)) {
+        weekNav.addEventListener("click", () => {
+            appState.eventsWeekOffset += 1;
+            clearStatus();
+            render();
+        });
+    }
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-events-calendar-scope]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const scope = button.dataset.eventsCalendarScope;
+            if (scope === "all" || scope === "mine") {
+                appState.eventsCalendarScope = scope;
+                clearStatus();
+                render();
+            }
+        });
+    });
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-events-feed-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const tab = button.dataset.eventsFeedTab;
+            if (tab === "activity" || tab === "news") {
+                appState.eventsFeedTab = tab;
+                clearStatus();
+                render();
+            }
+        });
+    });
+
+    const openCreate = profileMount.querySelector("#eventsOpenCreateButton");
+    if (isHTMLButtonElement(openCreate)) {
+        openCreate.addEventListener("click", () => {
+            openEventsCreateModal();
+        });
+    }
+}
+
+function createEmptyEventCreateDraft(): EventCreateDraft {
+    return {
+        topic: "",
+        tag: "",
+        description: "",
+        format: "",
+        dateTime: ""
+    };
+}
+
+function ensureEventCreateDraft(): EventCreateDraft {
+    if (!appState.eventsCreateDraft) {
+        appState.eventsCreateDraft = createEmptyEventCreateDraft();
+    }
+    return appState.eventsCreateDraft;
+}
+
+function buildEventShareLink(): string {
+    const draft = appState.eventsCreateDraft;
+    const slug = encodeURIComponent((draft?.topic.trim() || "sobytie").replace(/\s+/g, "-").toLowerCase());
+    return `${window.location.origin}/events/${slug}`;
+}
+
+function openEventsCreateModal(): void {
+    if (appState.view !== "account") {
+        return;
+    }
+
+    appState.dashboardSection = "events";
+    appState.profileModal = "none";
+    appState.teamModal = "none";
+    appState.eventsModal = "create";
+    ensureEventCreateDraft();
+    persistDashboardSectionToStorage();
+    clearStatus();
+    render();
+}
+
+function openEventsSuccessModal(): void {
+    appState.eventsModal = "success";
+    appState.eventsShareLink = buildEventShareLink();
+    render();
+}
+
+function closeEventsModal(): void {
+    appState.eventsModal = "none";
+    render();
+}
+
+function appendCreatedEventToCalendar(): void {
+    const dayIndex = eventsUserCreatedByDay.findIndex((day) => day.length === 0);
+    const targetDay = dayIndex >= 0 ? dayIndex : 4;
+    eventsUserCreatedByDay[targetDay].push({
+        id: `ev-user-${Date.now().toString(36)}`,
+        isMine: true
+    });
+}
+
+async function paintEventSuccessQr(): Promise<void> {
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    const img = profileMount.querySelector("#eventsSuccessQrImg");
+    if (!(img instanceof HTMLImageElement)) {
+        return;
+    }
+
+    const url = appState.eventsShareLink.trim() || buildEventShareLink();
+    try {
+        img.src = await QRCode.toDataURL(url, {
+            width: 200,
+            margin: 2,
+            color: {
+                dark: "#2a2a2a",
+                light: "#ffffff"
+            }
+        });
+        img.alt = "QR-код ссылки на событие";
+    } catch {
+        img.removeAttribute("src");
+        img.alt = "Не удалось сформировать QR";
+    }
+}
+
+function syncEventCreateDraftFromForm(): void {
+    if (!isHTMLElement(profileMount) || appState.eventsModal !== "create") {
+        return;
+    }
+
+    const draft = ensureEventCreateDraft();
+    const topic = profileMount.querySelector("#eventCreateTopicInput");
+    const tag = profileMount.querySelector("#eventCreateTagInput");
+    const description = profileMount.querySelector("#eventCreateDescriptionInput");
+    const format = profileMount.querySelector("#eventCreateFormatInput");
+    const dateTime = profileMount.querySelector("#eventCreateDateTimeInput");
+
+    if (isHTMLInputElement(topic)) {
+        draft.topic = topic.value;
+    }
+    if (isHTMLInputElement(tag)) {
+        draft.tag = tag.value;
+    }
+    if (description instanceof HTMLTextAreaElement) {
+        draft.description = description.value;
+    }
+    if (isHTMLInputElement(format)) {
+        draft.format = format.value;
+    }
+    if (isHTMLInputElement(dateTime)) {
+        draft.dateTime = dateTime.value;
+    }
+}
+
+function renderEventsModal(): string {
+    if (appState.eventsModal === "create") {
+        const draft = ensureEventCreateDraft();
+        return `
+                <div class="profile-modal team-overlay-modal team-rescue-modal event-create-modal" role="dialog" aria-modal="true" aria-label="Создание события">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-events-modal="1"></div>
+                    <div class="profile-modal-card team-rescue-card">
+                        <button type="button" class="team-rescue-close" id="eventsCloseCreateButton" aria-label="Закрыть"></button>
+                        <h2 class="team-rescue-title">СОБЫТИЕ</h2>
+                        <form id="eventCreateForm" class="team-rescue-form" novalidate>
+                            <div class="team-rescue-topic-row">
+                                <input
+                                    id="eventCreateTopicInput"
+                                    class="team-rescue-field team-rescue-field--topic"
+                                    type="text"
+                                    placeholder="ТЕМА"
+                                    value="${escapeHtml(draft.topic)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="eventCreateTagInput"
+                                    class="team-rescue-field team-rescue-field--tag"
+                                    type="text"
+                                    placeholder="ТЕГ"
+                                    value="${escapeHtml(draft.tag)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <textarea
+                                id="eventCreateDescriptionInput"
+                                class="team-rescue-textarea"
+                                placeholder=" "
+                                aria-label="Описание события"
+                            >${escapeHtml(draft.description)}</textarea>
+                            <div class="team-rescue-duo-row">
+                                <input
+                                    id="eventCreateFormatInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ФОРМАТ"
+                                    value="${escapeHtml(draft.format)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="eventCreateDateTimeInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ДАТА, ВРЕМЯ"
+                                    value="${escapeHtml(draft.dateTime)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <button type="submit" class="team-rescue-submit">СОЗДАТЬ</button>
+                        </form>
+                    </div>
+                </div>`;
+    }
+
+    if (appState.eventsModal === "success") {
+        return `
+                <div class="profile-modal team-overlay-modal event-success-modal" role="dialog" aria-modal="true" aria-label="Событие создано">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-events-modal="1"></div>
+                    <div class="profile-modal-card event-success-card">
+                        <button type="button" class="team-rescue-close" id="eventsCloseSuccessButton" aria-label="Закрыть"></button>
+                        <h2 class="profile-modal-title event-success-title">УСПЕШНО!</h2>
+                        <div class="event-success-link-row">
+                            <div class="event-success-link-field">ССЫЛКА</div>
+                            <button type="button" class="event-success-link-copy" id="eventsCopyLinkButton">СКОПИРОВАТЬ</button>
+                        </div>
+                        <div class="event-success-qr-wrap">
+                            <img id="eventsSuccessQrImg" class="event-success-qr" width="200" height="200" alt="">
+                        </div>
+                        <button type="button" class="event-success-done" id="eventsSuccessDoneButton">ГОТОВО</button>
+                    </div>
+                </div>`;
+    }
+
+    return "";
+}
+
+function wireEventsModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.eventsModal === "none") {
+        return;
+    }
+
+    profileMount.querySelectorAll<HTMLElement>("[data-close-events-modal]").forEach((node) => {
+        node.addEventListener("click", () => {
+            if (appState.eventsModal === "create") {
+                syncEventCreateDraftFromForm();
+            }
+            closeEventsModal();
+        });
+    });
+
+    if (appState.eventsModal === "create") {
+        const draft = ensureEventCreateDraft();
+        const closeCreate = profileMount.querySelector("#eventsCloseCreateButton");
+        if (isHTMLButtonElement(closeCreate)) {
+            closeCreate.addEventListener("click", () => {
+                syncEventCreateDraftFromForm();
+                closeEventsModal();
+            });
+        }
+
+        const topic = profileMount.querySelector("#eventCreateTopicInput");
+        const tag = profileMount.querySelector("#eventCreateTagInput");
+        const description = profileMount.querySelector("#eventCreateDescriptionInput");
+        const format = profileMount.querySelector("#eventCreateFormatInput");
+        const dateTime = profileMount.querySelector("#eventCreateDateTimeInput");
+        const createForm = profileMount.querySelector("#eventCreateForm");
+
+        const bindInput = (
+            el: Element | null,
+            key: keyof Pick<EventCreateDraft, "topic" | "tag" | "format" | "dateTime">
+        ): void => {
+            if (!isHTMLInputElement(el)) {
+                return;
+            }
+            el.addEventListener("input", () => {
+                draft[key] = el.value;
+            });
+        };
+
+        bindInput(topic, "topic");
+        bindInput(tag, "tag");
+        bindInput(format, "format");
+        bindInput(dateTime, "dateTime");
+
+        if (description instanceof HTMLTextAreaElement) {
+            description.addEventListener("input", () => {
+                draft.description = description.value;
+            });
+        }
+
+        if (isHTMLFormElement(createForm)) {
+            createForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                syncEventCreateDraftFromForm();
+
+                if (!draft.topic.trim()) {
+                    setStatus("Укажите тему события.", "error");
+                    render();
+                    return;
+                }
+
+                appendCreatedEventToCalendar();
+                openEventsSuccessModal();
+            });
+        }
+
+        return;
+    }
+
+    if (appState.eventsModal === "success") {
+        const closeSuccess = profileMount.querySelector("#eventsCloseSuccessButton");
+        if (isHTMLButtonElement(closeSuccess)) {
+            closeSuccess.addEventListener("click", () => {
+                appState.eventsCreateDraft = createEmptyEventCreateDraft();
+                closeEventsModal();
+                setStatus("Событие создано.");
+                render();
+            });
+        }
+
+        const copyLink = profileMount.querySelector("#eventsCopyLinkButton");
+        if (isHTMLButtonElement(copyLink)) {
+            copyLink.addEventListener("click", async () => {
+                const link = appState.eventsShareLink || buildEventShareLink();
+                try {
+                    await navigator.clipboard.writeText(link);
+                    setStatus("Ссылка на событие скопирована.");
+                } catch {
+                    setStatus("Не удалось скопировать ссылку.", "error");
+                }
+                render();
+            });
+        }
+
+        const done = profileMount.querySelector("#eventsSuccessDoneButton");
+        if (isHTMLButtonElement(done)) {
+            done.addEventListener("click", () => {
+                appState.eventsCreateDraft = createEmptyEventCreateDraft();
+                closeEventsModal();
+                setStatus("Событие создано.");
+                render();
+            });
+        }
+    }
+}
+
 
 function syncCurrentUserInLocalTeamRoster(): void {
     const p = appState.profile;
@@ -852,6 +1615,8 @@ async function paintTeamSuccessQr(): Promise<void> {
 function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     appState.profileModal = "none";
     appState.profileFormDraft = null;
+    appState.eventsModal = "none";
+    closeTeamEventModals();
     appState.teamModal = kind;
     const roster = getTeamRoster();
     const safeIndex =
@@ -862,6 +1627,10 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
         appState.teamRequestsInviteLink = buildTeamInviteLink();
     }
 
+    if (kind === "rescue") {
+        ensureTeamRescueDraft();
+    }
+
     render();
 }
 
@@ -870,66 +1639,106 @@ function closeTeamModal(): void {
     render();
 }
 
-function renderTeamMemberCardsHtml(): string {
-    const roster = getTeamRoster();
-    if (!roster.length) {
-        return `<p class="team-members-empty">Участники появятся здесь после приглашения в команду.</p>`;
+function syncTeamRescueDraftFromForm(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "rescue") {
+        return;
     }
 
-    return roster
-        .map((m, i) => {
-            const avatarInner = m.avatarUrl
-                ? `<img src="${escapeHtml(m.avatarUrl)}" alt="" loading="lazy">`
-                : "";
-            return `
-            <div class="team-member-card">
-                <div class="team-member-avatar" aria-hidden="true">${avatarInner}</div>
-                <div class="team-member-name">${escapeHtml(m.displayName)}</div>
-                <div class="team-member-role">${escapeHtml(m.roleLabel)}</div>
-                <button type="button" class="team-member-action" data-team-card-action="vote" data-member-index="${i}">ГОЛОСОВАТЬ</button>
-            </div>`;
-        })
-        .join("");
+    const draft = ensureTeamRescueDraft();
+    const topic = profileMount.querySelector("#teamRescueTopicInput");
+    const tag = profileMount.querySelector("#teamRescueTagInput");
+    const description = profileMount.querySelector("#teamRescueDescriptionInput");
+    const league = profileMount.querySelector("#teamRescueLeagueInput");
+    const deadline = profileMount.querySelector("#teamRescueDeadlineInput");
+
+    if (isHTMLInputElement(topic)) {
+        draft.topic = topic.value;
+    }
+    if (isHTMLInputElement(tag)) {
+        draft.tag = tag.value;
+    }
+    if (description instanceof HTMLTextAreaElement) {
+        draft.description = description.value;
+    }
+    if (isHTMLInputElement(league)) {
+        draft.league = league.value;
+    }
+    if (isHTMLInputElement(deadline)) {
+        draft.deadline = deadline.value;
+    }
 }
 
-function renderTeamDashboardMain(statusHtml: string, teamTitle: string): string {
-    const teamSubtitle = appState.localCreatedTeam?.direction?.trim() ?? "";
-    const requestsControl = isTeamCaptain()
-        ? `<button type="button" class="team-top-pill team-top-pill-plus" id="teamOpenRequestsHeaderButton" aria-label="Заявки">+</button>`
-        : "";
+function wireTeamRescueModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "rescue") {
+        return;
+    }
 
-    return `
-            <section class="profile-main team-dashboard-main">
-                ${statusHtml}
-                <header class="team-top-bar">
-                    <div class="team-top-headings">
-                        <span class="team-top-title">${escapeHtml(teamTitle)}</span>
-                        ${
-                            teamSubtitle
-                                ? `<span class="team-top-subtitle">${escapeHtml(teamSubtitle)}</span>`
-                                : ""
-                        }
-                    </div>
-                    <span class="team-top-dot" aria-hidden="true"></span>
-                    <button type="button" class="team-top-pill" id="teamKrkButton">КРК</button>
-                    ${requestsControl}
-                </header>
-                <div class="team-panel team-members-panel">
-                    <div class="team-members-grid">
-                        ${renderTeamMemberCardsHtml()}
-                    </div>
-                </div>
-                <div class="team-panel team-history-panel">
-                    <div class="team-history-head">
-                        <h3 class="team-history-title">ИСТОРИЯ АКТИВНОСТИ</h3>
-                        <button type="button" class="team-top-pill team-check-in-pill" id="teamCheckInButton">CHECK-IN</button>
-                    </div>
-                    <div class="team-history-rows team-history-rows--empty" aria-label="История активности пока пуста"></div>
-                </div>
-                <div class="team-rescue-bar">
-                    <button type="button" class="team-rescue-pill" id="teamRescueButton">СПАСЕНИЕ</button>
-                </div>
-            </section>`;
+    const draft = ensureTeamRescueDraft();
+
+    const teamCloseRescue = profileMount.querySelector("#teamCloseRescueButton");
+    if (isHTMLButtonElement(teamCloseRescue)) {
+        teamCloseRescue.addEventListener("click", () => {
+            syncTeamRescueDraftFromForm();
+            closeTeamModal();
+        });
+    }
+
+    const topic = profileMount.querySelector("#teamRescueTopicInput");
+    const tag = profileMount.querySelector("#teamRescueTagInput");
+    const description = profileMount.querySelector("#teamRescueDescriptionInput");
+    const league = profileMount.querySelector("#teamRescueLeagueInput");
+    const deadline = profileMount.querySelector("#teamRescueDeadlineInput");
+    const photoInput = profileMount.querySelector("#teamRescuePhotoInput");
+    const photoLabel = profileMount.querySelector("#teamRescuePhotoLabel");
+    const rescueForm = profileMount.querySelector("#teamRescueForm");
+
+    const bindInput = (el: Element | null, key: keyof Pick<TeamRescueDraft, "topic" | "tag" | "league" | "deadline">): void => {
+        if (!isHTMLInputElement(el)) {
+            return;
+        }
+        el.addEventListener("input", () => {
+            draft[key] = el.value;
+        });
+    };
+
+    bindInput(topic, "topic");
+    bindInput(tag, "tag");
+    bindInput(league, "league");
+    bindInput(deadline, "deadline");
+
+    if (description instanceof HTMLTextAreaElement) {
+        description.addEventListener("input", () => {
+            draft.description = description.value;
+        });
+    }
+
+    if (isHTMLInputElement(photoInput)) {
+        photoInput.addEventListener("change", () => {
+            const file = photoInput.files?.[0];
+            draft.photoFileName = file?.name ?? "";
+            if (photoLabel instanceof HTMLElement) {
+                photoLabel.textContent = draft.photoFileName.trim() || "ФОТО";
+            }
+        });
+    }
+
+    if (isHTMLFormElement(rescueForm)) {
+        rescueForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            syncTeamRescueDraftFromForm();
+
+            if (!draft.topic.trim()) {
+                setStatus("Укажите тему запроса на спасение.", "error");
+                render();
+                return;
+            }
+
+            appState.teamRescueDraft = createEmptyTeamRescueDraft();
+            closeTeamModal();
+            setStatus("Спасение: запрос помощи отправлен (демо).");
+            render();
+        });
+    }
 }
 
 function renderTeamModal(): string {
@@ -955,6 +1764,77 @@ function renderTeamModal(): string {
                         <div class="team-history-rows team-vote-rows">
                             ${renderVoteModalRowsHtml()}
                         </div>
+                    </div>
+                </div>`;
+    }
+
+    if (appState.teamModal === "rescue") {
+        const draft = ensureTeamRescueDraft();
+        const photoLabel = draft.photoFileName.trim() || "ФОТО";
+        return `
+                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-rescue-card">
+                        <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
+                        <h2 class="team-rescue-title">СПАСЕНИЕ</h2>
+                        <form id="teamRescueForm" class="team-rescue-form" novalidate>
+                            <div class="team-rescue-topic-row">
+                                <input
+                                    id="teamRescueTopicInput"
+                                    class="team-rescue-field team-rescue-field--topic"
+                                    type="text"
+                                    placeholder="ТЕМА"
+                                    value="${escapeHtml(draft.topic)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="teamRescueTagInput"
+                                    class="team-rescue-field team-rescue-field--tag"
+                                    type="text"
+                                    placeholder="ТЕГ"
+                                    value="${escapeHtml(draft.tag)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <textarea
+                                id="teamRescueDescriptionInput"
+                                class="team-rescue-textarea"
+                                placeholder=" "
+                                aria-label="Описание ситуации"
+                            >${escapeHtml(draft.description)}</textarea>
+                            <div class="team-rescue-photo-row">
+                                <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
+                                <label class="team-rescue-photo-btn">
+                                    ВЫБРАТЬ
+                                    <input
+                                        type="file"
+                                        id="teamRescuePhotoInput"
+                                        class="team-rescue-file"
+                                        accept="image/*"
+                                        hidden
+                                    >
+                                </label>
+                            </div>
+                            <div class="team-rescue-duo-row">
+                                <input
+                                    id="teamRescueLeagueInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ЛИГА"
+                                    value="${escapeHtml(draft.league)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="teamRescueDeadlineInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ДЕДЛАЙН"
+                                    value="${escapeHtml(draft.deadline)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
+                        </form>
                     </div>
                 </div>`;
     }
@@ -1007,6 +1887,7 @@ function renderTeamModal(): string {
 
 function openProfileModal(kind: ProfileModalKind): void {
     appState.teamModal = "none";
+    appState.eventsModal = "none";
     appState.profileModal = kind;
 
     if (kind === "personal") {
@@ -1184,18 +2065,23 @@ function renderProfileView(): void {
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
     const teamPillText = teamName || "КОМАНДА";
-    const teamScreenTitle = teamName || "НАЗВАНИЕ";
     const statusHtml = appState.statusMessage
         ? `<p class="profile-inline-status ${appState.statusTone === "error" ? "is-error" : ""}">${escapeHtml(appState.statusMessage)}</p>`
         : "";
 
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
+    const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
+    const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
 
     const mainColumn =
         appState.dashboardSection === "team"
-            ? renderTeamDashboardMain(statusHtml, teamScreenTitle)
-            : `
+            ? renderTeamPageMain(statusHtml)
+            : appState.dashboardSection === "rating"
+              ? renderRatingPageMain(statusHtml)
+              : appState.dashboardSection === "events"
+                ? renderEventsDashboardMain(statusHtml)
+                : `
             <section class="profile-main">
                 ${statusHtml}
                 <div class="profile-hero-card">
@@ -1242,8 +2128,8 @@ function renderProfileView(): void {
                 <nav class="profile-nav-top">
                     <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
                     <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="rating">РЕЙТИНГ</button>
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="events">СОБЫТИЯ</button>
+                    <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating">РЕЙТИНГ</button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>
                     <button type="button" class="profile-nav-button" data-dashboard-placeholder="news">НОВОСТИ</button>
                 </nav>
                 <nav class="profile-nav-bottom">
@@ -1255,12 +2141,23 @@ function renderProfileView(): void {
         </div>
         ${renderProfileModal()}
         ${renderTeamModal()}
+        ${renderEventsModal()}
+        ${renderRatingPageModals()}
+        ${renderTeamPageModals()}
     `;
 
     wireProfileViewEvents();
 
     if (appState.profileModal === "teamSuccess") {
         void paintTeamSuccessQr();
+    }
+
+    if (appState.eventsModal === "success") {
+        void paintEventSuccessQr();
+    }
+
+    if (appState.dashboardSection === "team" && teamFlowState.eventModal === "success" && isHTMLElement(profileMount)) {
+        void paintTeamPageEventSuccessQr(profileMount);
     }
 }
 
@@ -1318,15 +2215,10 @@ function wireProfileViewEvents(): void {
     const teamPill = profileMount.querySelector("#profileTeamPillButton");
     if (isHTMLButtonElement(teamPill)) {
         teamPill.addEventListener("click", () => {
-            if (hasTeamAccess()) {
-                appState.dashboardSection = "team";
-                persistDashboardSectionToStorage();
-                clearStatus();
-                render();
-                return;
-            }
-
-            openProfileModal("noTeam");
+            appState.dashboardSection = "team";
+            persistDashboardSectionToStorage();
+            clearStatus();
+            render();
         });
     }
 
@@ -1334,11 +2226,6 @@ function wireProfileViewEvents(): void {
         button.addEventListener("click", () => {
             const section = button.dataset.dashboard as DashboardSection | undefined;
             if (!section) {
-                return;
-            }
-
-            if (section === "team" && !hasTeamAccess()) {
-                openProfileModal("noTeam");
                 return;
             }
 
@@ -1356,46 +2243,16 @@ function wireProfileViewEvents(): void {
         });
     });
 
-    const teamKrk = profileMount.querySelector("#teamKrkButton");
-    if (isHTMLButtonElement(teamKrk)) {
-        teamKrk.addEventListener("click", () => {
-            setStatus("Экран рейтинга и КРК скоро будут здесь. Пока откройте «РЕЙТИНГ» в меню слева.");
-            render();
-        });
+    if (appState.dashboardSection === "rating" && isHTMLElement(profileMount)) {
+        wireRatingPageEvents(profileMount);
     }
-
-    const teamOpenRequestsHeader = profileMount.querySelector("#teamOpenRequestsHeaderButton");
-    if (isHTMLButtonElement(teamOpenRequestsHeader)) {
-        teamOpenRequestsHeader.addEventListener("click", () => {
-            openTeamModal("requests");
-        });
+    if (appState.dashboardSection === "team" && isHTMLElement(profileMount)) {
+        wireTeamPageEvents(profileMount);
     }
+    wireEventsDashboardEvents();
+    wireEventsModalEvents();
 
-    const teamCheckIn = profileMount.querySelector("#teamCheckInButton");
-    if (isHTMLButtonElement(teamCheckIn)) {
-        teamCheckIn.addEventListener("click", () => {
-            setStatus("Check-in зарегистрирован (демо).");
-            render();
-        });
-    }
-
-    const teamRescue = profileMount.querySelector("#teamRescueButton");
-    if (isHTMLButtonElement(teamRescue)) {
-        teamRescue.addEventListener("click", () => {
-            setStatus("Спасение: запрос помощи отправлен (демо).");
-            render();
-        });
-    }
-
-    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-card-action]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const action = button.dataset.teamCardAction;
-            const idx = Number(button.dataset.memberIndex ?? "0");
-            if (action === "vote") {
-                openTeamModal("vote", idx);
-            }
-        });
-    });
+    wireTeamRescueModalEvents();
 
     profileMount.querySelectorAll<HTMLElement>("[data-close-team-modal]").forEach((node) => {
         node.addEventListener("click", () => {
