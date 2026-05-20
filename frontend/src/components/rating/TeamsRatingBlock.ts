@@ -22,7 +22,8 @@ export function renderTeamsRatingBlock(): string {
     const search = ratingFlowState.teamsSearch;
     const filtered = filterEntries(toLeaderboardEntries(), search);
     const sorted = sortEntries(filtered, ratingFlowState.teamsSort);
-    const rest = sorted.filter((entry) => entry.rank >= 4);
+    const top10 = sorted.slice(0, 10);
+    const rest = top10.filter((entry) => entry.rank >= 4);
     const listHtml = rest.length
         ? rest.map((entry) => {
               const team = DEMO_RATING_TEAMS.find((t) => t.rank === entry.rank);
@@ -49,7 +50,7 @@ export function renderTeamsRatingBlock(): string {
             </div>
             <div class="rating-panel-body">
                 <div class="rating-podium" role="list" aria-label="Тройка лидеров команд">
-                    ${renderPodiumHtml(sorted)}
+                    ${renderPodiumHtml(top10)}
                 </div>
                 <div class="rating-list-scroll" role="list" aria-label="Команды с 4 места">
                     ${listHtml}

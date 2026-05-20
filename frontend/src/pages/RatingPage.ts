@@ -193,6 +193,11 @@ export function wireRatingPageEvents(root: HTMLElement): void {
 
     root.querySelectorAll<HTMLButtonElement>("[data-rating-invite-user]").forEach((button) => {
         button.addEventListener("click", () => {
+            bridge.pushActivity({
+                kind: "invite_sent",
+                title: "ПРИГЛАШЕНИЕ",
+                description: "Приглашение в команду отправлено."
+            });
             bridge.setStatus("Приглашение отправлено (демо).");
             bridge.render();
         });
@@ -279,8 +284,14 @@ export function wireRatingPageEvents(root: HTMLElement): void {
             }
 
             ratingFlowState.rescueShowError = false;
+            const topic = ratingFlowState.rescueDraft.topic.trim() || "Запрос";
             ratingFlowState.rescueDraft = createEmptyRescueDraft();
             closeRatingRescueModal();
+            bridge.pushActivity({
+                kind: "rescue_sent",
+                title: "ЗАПРОС СПАСЕНИЯ",
+                description: `Тема: «${topic}». Запрос отправлен в биржу помощи.`
+            });
             bridge.setStatus("Спасение: запрос помощи отправлен (демо).");
             bridge.render();
         });
