@@ -20,6 +20,9 @@ import {
     wireEventCreateFormInputs
 } from "./components/modals/eventCreateForm";
 import { renderEventsDashboardCreateModal } from "./components/modals/CreateEventModal";
+import { renderActivityFeedPanel } from "./components/events/ActivityFeedBlock";
+import { isNewsCreateDraftComplete, renderCreateNewsModal } from "./components/events/CreateNewsModal";
+import { renderNewsFeedPanel } from "./components/events/NewsFeedBlock";
 import { renderCalendarEventCard } from "./components/events/CalendarEventCard";
 import {
     addUserCalendarEventFromDraft,
@@ -28,6 +31,10 @@ import {
     getWeekStartForOffset,
     loadPersistedUserEvents
 } from "./state/eventsCalendarState";
+import { loadPersistedActivityFeed, pushActivityFeedItem } from "./state/activityFeedState";
+import { loadPersistedNewsFeed, pushNewsPost } from "./state/newsFeedState";
+import type { ActivityFeedPushInput } from "./types/activity";
+import type { NewsCreateDraft } from "./types/news";
 import { parseEventDateTimeLocal } from "./utils/calendarEvents";
 
 type View = "home" | "sign-in" | "sign-up" | "account";
@@ -36,13 +43,7 @@ type DashboardSection = "profile" | "team" | "rating" | "events";
 
 type EventsCalendarScope = "all" | "mine";
 type EventsFeedTab = "activity" | "news";
-type EventsModalKind = "none" | "create" | "success";
-
-interface NewsFeedItem {
-    id: string;
-    title: string;
-    lineCount: number;
-}
+type EventsModalKind = "none" | "create" | "success" | "createNews";
 
 type TeamModalKind = "none" | "vote" | "requests" | "rescue";
 
@@ -246,6 +247,8 @@ interface AppState {
     eventsCreateDraft: EventCreateDraft | null;
     eventsShowValidationError: boolean;
     eventsShareLink: string;
+    newsCreateDraft: NewsCreateDraft | null;
+    newsShowValidationError: boolean;
     teamVoteMemberIndex: number;
     teamRequestsInviteLink: string;
     localCreatedTeam: LocalCreatedTeam | null;
@@ -313,6 +316,8 @@ const appState: AppState = {
     eventsCreateDraft: null,
     eventsShowValidationError: false,
     eventsShareLink: "",
+    newsCreateDraft: null,
+    newsShowValidationError: false,
     teamVoteMemberIndex: 0,
     teamRequestsInviteLink: "",
     localCreatedTeam: null,
@@ -411,6 +416,10 @@ function getTeamMembersForView(): TeamMemberView[] {
     }));
 }
 
+function pushUserActivity(input: ActivityFeedPushInput): void {
+    pushActivityFeedItem(input);
+}
+
 function joinTeamByInviteCode(code: string): JoinTeamResult {
     if (!isDemoInviteCodeValid(code)) {
         return { ok: false, errorMessage: "НЕВЕРНЫЙ КОД ПРИГЛАШЕНИЯ" };
@@ -434,6 +443,12 @@ function joinTeamByInviteCode(code: string): JoinTeamResult {
             teamInviteCode: appState.localCreatedTeam.inviteCode
         };
     }
+
+    pushUserActivity({
+        kind: "team_joined",
+        title: "ВСТУПЛЕНИЕ В КОМАНДУ",
+        description: `Вы присоединились к команде «${appState.localCreatedTeam.name}».`
+    });
 
     return { ok: true, errorMessage: "" };
 }
@@ -460,10 +475,18 @@ function createTeamFromBridge(name: string, direction: string): void {
             teamInviteCode: appState.localCreatedTeam.inviteCode
         };
     }
+
+    pushUserActivity({
+        kind: "team_created",
+        title: "КОМАНДА СОЗДАНА",
+        description: `Создана команда «${teamName}»${direction ? ` · ${direction}` : ""}.`
+    });
 }
 
 async function bootstrap(): Promise<void> {
     loadPersistedUserEvents();
+    loadPersistedActivityFeed();
+    loadPersistedNewsFeed();
 
     setAppBridge({
         render,
@@ -491,7 +514,8 @@ async function bootstrap(): Promise<void> {
                 persistDashboardSectionToStorage();
             }
             return added;
-        }
+        },
+        pushActivity: pushUserActivity
     });
 
     document.addEventListener(TEAM_RESCUE_OPEN_EVENT, () => {
@@ -916,17 +940,6 @@ const DEMO_WEEK_CALENDAR_EVENTS: CalendarEventItem[][] = [
     []
 ];
 
-const DEMO_ACTIVITY_FEED_ITEMS = [
-    { id: "act-1", hasPoints: true },
-    { id: "act-2", hasPoints: false },
-    { id: "act-3", hasPoints: true }
-] as const;
-
-const DEMO_NEWS_FEED_ITEMS: NewsFeedItem[] = [
-    { id: "news-1", title: "ТЕМА", lineCount: 4 },
-    { id: "news-2", title: "ТЕМА", lineCount: 3 }
-];
-
 function getEventsWeekStart(): Date {
     return getWeekStartForOffset(appState.eventsWeekOffset);
 }
@@ -1041,67 +1054,6 @@ function renderEventsCalendarBlock(): string {
         </section>`;
 }
 
-function renderEventsActivityFeed(): string {
-    const rowsHtml = DEMO_ACTIVITY_FEED_ITEMS.map((item) => {
-        const pointsHtml = item.hasPoints
-            ? `<span class="events-activity-points">БАЛЛЫ</span>`
-            : "";
-        return `
-            <div class="events-activity-row${item.hasPoints ? "" : " events-activity-row--plain"}" role="listitem">
-                ${pointsHtml}
-            </div>`;
-    }).join("");
-
-    return `
-        <div
-            class="events-feed-panel events-feed-panel--activity"
-            id="eventsFeedPanelActivity"
-            role="tabpanel"
-            aria-labelledby="eventsFeedTabActivity"
-            ${appState.eventsFeedTab === "activity" ? "" : "hidden"}
-        >
-            <div class="events-activity-list" role="list">
-                ${rowsHtml}
-            </div>
-        </div>`;
-}
-
-function renderEventsNewsLines(count: number): string {
-    const widths = ["92%", "78%", "64%", "48%"];
-    return Array.from({ length: count }, (_, index) => {
-        const width = widths[index % widths.length];
-        return `<span class="events-news-line" style="width: ${width}"></span>`;
-    }).join("");
-}
-
-function renderEventsNewsFeed(): string {
-    const cardsHtml = DEMO_NEWS_FEED_ITEMS.map(
-        (item) => `
-        <article class="events-news-card" role="listitem">
-            <div class="events-news-media" aria-hidden="true"></div>
-            <div class="events-news-copy">
-                <h3 class="events-news-title">${escapeHtml(item.title)}</h3>
-                <div class="events-news-lines" aria-hidden="true">
-                    ${renderEventsNewsLines(item.lineCount)}
-                </div>
-            </div>
-        </article>`
-    ).join("");
-
-    return `
-        <div
-            class="events-feed-panel events-feed-panel--news"
-            id="eventsFeedPanelNews"
-            role="tabpanel"
-            aria-labelledby="eventsFeedTabNews"
-            ${appState.eventsFeedTab === "news" ? "" : "hidden"}
-        >
-            <div class="events-news-list" role="list">
-                ${cardsHtml}
-            </div>
-        </div>`;
-}
-
 function renderEventsFeedBlock(): string {
     const activityActive = appState.eventsFeedTab === "activity";
     const newsActive = appState.eventsFeedTab === "news";
@@ -1129,8 +1081,8 @@ function renderEventsFeedBlock(): string {
                 >ЛЕНТА НОВОСТЕЙ</button>
             </div>
             <div class="events-feed-panels">
-                ${renderEventsActivityFeed()}
-                ${renderEventsNewsFeed()}
+                ${renderActivityFeedPanel(appState.eventsFeedTab === "activity")}
+                ${renderNewsFeedPanel(appState.eventsFeedTab === "news")}
             </div>
         </section>`;
 }
@@ -1197,6 +1149,13 @@ function wireEventsDashboardEvents(): void {
             openEventsCreateModal();
         });
     }
+
+    const openCreateNews = profileMount.querySelector("#eventsOpenCreateNewsButton");
+    if (isHTMLButtonElement(openCreateNews)) {
+        openCreateNews.addEventListener("click", () => {
+            openNewsCreateModal();
+        });
+    }
 }
 
 function createEmptyEventCreateDraftState(): EventCreateDraft {
@@ -1255,6 +1214,13 @@ function appendCreatedEventToCalendar(draft: EventCreateDraft): boolean {
         appState.eventsWeekOffset = weekOffset;
     }
 
+    const topic = draft.topic.trim() || "Событие";
+    pushUserActivity({
+        kind: "event_created",
+        title: "СОБЫТИЕ СОЗДАНО",
+        description: `«${topic}» добавлено в календарь.`
+    });
+
     return true;
 }
 
@@ -1293,9 +1259,70 @@ function syncEventCreateDraftFromForm(): void {
     syncSharedEventCreateDraftFromForm(profileMount, "eventCreate", ensureEventCreateDraft());
 }
 
+function createEmptyNewsCreateDraft(): NewsCreateDraft {
+    return { title: "", body: "" };
+}
+
+function ensureNewsCreateDraft(): NewsCreateDraft {
+    if (!appState.newsCreateDraft) {
+        appState.newsCreateDraft = createEmptyNewsCreateDraft();
+    }
+    return appState.newsCreateDraft;
+}
+
+function syncNewsCreateDraftFromForm(): void {
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    const draft = ensureNewsCreateDraft();
+    const titleInput = profileMount.querySelector("#newsCreateTitleInput");
+    const bodyInput = profileMount.querySelector("#newsCreateBodyInput");
+
+    if (isHTMLInputElement(titleInput)) {
+        draft.title = titleInput.value;
+    }
+
+    if (bodyInput instanceof HTMLTextAreaElement) {
+        draft.body = bodyInput.value;
+    }
+}
+
+function getNewsAuthorDisplayName(): string {
+    const profile = appState.profile;
+    if (!profile) {
+        return "Организатор";
+    }
+
+    const parts = [profile.firstName, profile.lastName].filter(Boolean);
+    if (parts.length > 0) {
+        return parts.join(" ").trim();
+    }
+
+    return profile.nickname?.trim() || profile.userName?.trim() || "Организатор";
+}
+
+function openNewsCreateModal(): void {
+    appState.newsCreateDraft = createEmptyNewsCreateDraft();
+    appState.newsShowValidationError = false;
+    appState.eventsModal = "createNews";
+    render();
+}
+
+function closeNewsCreateModal(): void {
+    appState.eventsModal = "none";
+    appState.newsCreateDraft = null;
+    appState.newsShowValidationError = false;
+    render();
+}
+
 function renderEventsModal(): string {
     if (appState.eventsModal === "create") {
         return renderEventsDashboardCreateModal(ensureEventCreateDraft(), appState.eventsShowValidationError);
+    }
+
+    if (appState.eventsModal === "createNews") {
+        return renderCreateNewsModal(ensureNewsCreateDraft(), appState.newsShowValidationError);
     }
 
     if (appState.eventsModal === "success") {
@@ -1329,10 +1356,72 @@ function wireEventsModalEvents(): void {
         node.addEventListener("click", () => {
             if (appState.eventsModal === "create") {
                 syncEventCreateDraftFromForm();
+                closeEventsModal();
+                return;
             }
+
+            if (appState.eventsModal === "createNews") {
+                syncNewsCreateDraftFromForm();
+                closeNewsCreateModal();
+                return;
+            }
+
             closeEventsModal();
         });
     });
+
+    if (appState.eventsModal === "createNews") {
+        const draft = ensureNewsCreateDraft();
+        const closeNews = profileMount.querySelector("#eventsCloseCreateNewsButton");
+        if (isHTMLButtonElement(closeNews)) {
+            closeNews.addEventListener("click", () => {
+                syncNewsCreateDraftFromForm();
+                closeNewsCreateModal();
+            });
+        }
+
+        const titleInput = profileMount.querySelector("#newsCreateTitleInput");
+        if (isHTMLInputElement(titleInput)) {
+            titleInput.addEventListener("input", () => {
+                draft.title = titleInput.value;
+                appState.newsShowValidationError = false;
+            });
+        }
+
+        const bodyInput = profileMount.querySelector("#newsCreateBodyInput");
+        if (bodyInput instanceof HTMLTextAreaElement) {
+            bodyInput.addEventListener("input", () => {
+                draft.body = bodyInput.value;
+                appState.newsShowValidationError = false;
+            });
+        }
+
+        const form = profileMount.querySelector("#newsCreateForm");
+        if (isHTMLFormElement(form)) {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                syncNewsCreateDraftFromForm();
+
+                if (!isNewsCreateDraftComplete(draft)) {
+                    appState.newsShowValidationError = true;
+                    render();
+                    return;
+                }
+
+                pushNewsPost({
+                    title: draft.title,
+                    body: draft.body,
+                    authorName: getNewsAuthorDisplayName()
+                });
+                appState.eventsFeedTab = "news";
+                closeNewsCreateModal();
+                setStatus("Новость опубликована.");
+                render();
+            });
+        }
+
+        return;
+    }
 
     if (appState.eventsModal === "create") {
         const draft = ensureEventCreateDraft();
@@ -1748,6 +1837,11 @@ function wireTeamRescueModalEvents(): void {
 
             appState.teamRescueDraft = createEmptyTeamRescueDraft();
             closeTeamModal();
+            pushUserActivity({
+                kind: "rescue_sent",
+                title: "ЗАПРОС СПАСЕНИЯ",
+                description: `Тема: «${topic}». Запрос отправлен в биржу помощи.`
+            });
             setStatus("Спасение: запрос помощи отправлен (демо).");
             render();
         });
@@ -2318,6 +2412,11 @@ function wireProfileViewEvents(): void {
                 };
                 persistLocalTeam();
             }
+            pushUserActivity({
+                kind: "team_joined",
+                title: "НОВЫЙ УЧАСТНИК",
+                description: "Заявка в команду принята."
+            });
             setStatus("Заявка принята (демо).");
             closeTeamModal();
         });
@@ -2446,6 +2545,11 @@ function wireProfileViewEvents(): void {
             const direction = appState.profileCreateTeamDirection.trim();
             appState.localCreatedTeam = { name, inviteCode: invite, direction, members };
             persistLocalTeam();
+            pushUserActivity({
+                kind: "team_created",
+                title: "КОМАНДА СОЗДАНА",
+                description: `Создана команда «${name}»${direction ? ` · ${direction}` : ""}.`
+            });
             appState.profileModal = "teamSuccess";
             render();
         });
@@ -2861,6 +2965,12 @@ async function submitPersonalProfileSave(): Promise<void> {
     const putBody = buildPersonalProfilePutBody(p, draft);
 
     closeProfileModal();
+
+    pushUserActivity({
+        kind: "profile_updated",
+        title: "ПРОФИЛЬ ОБНОВЛЁН",
+        description: "Личные данные сохранены."
+    });
 
     if (session) {
         void (async () => {

@@ -172,6 +172,11 @@ export function wireTeamPageEvents(root: HTMLElement): void {
     const teamCheckIn = root.querySelector("#teamCheckInButton");
     if (isHTMLButtonElement(teamCheckIn)) {
         teamCheckIn.addEventListener("click", () => {
+            bridge.pushActivity({
+                kind: "check_in",
+                title: "CHECK-IN",
+                description: "Отметка посещения зарегистрирована."
+            });
             bridge.setStatus("Check-in зарегистрирован (демо).");
             bridge.render();
         });

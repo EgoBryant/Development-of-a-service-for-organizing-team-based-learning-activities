@@ -1,3 +1,4 @@
+import type { ActivityFeedPushInput } from "../types/activity";
 import type { EventCreateDraft } from "../types/event";
 import type { TeamMemberView } from "../types/team";
 
@@ -21,6 +22,7 @@ export interface AppBridge {
     openTeamRescue: () => void;
     navigateToRating: () => void;
     addCalendarEventFromDraft: (draft: EventCreateDraft) => boolean;
+    pushActivity: (input: ActivityFeedPushInput) => void;
 }
 
 export type StatusTone = "default" | "error";

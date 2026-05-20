@@ -22,7 +22,8 @@ export function renderUsersRatingBlock(): string {
     const search = ratingFlowState.usersSearch;
     const filtered = filterEntries(toLeaderboardEntries(), search);
     const sorted = sortEntries(filtered, ratingFlowState.usersSort);
-    const rest = sorted.filter((entry) => entry.rank >= 4);
+    const top10 = sorted.slice(0, 10);
+    const rest = top10.filter((entry) => entry.rank >= 4);
     const listHtml = rest.length
         ? rest.map((entry) => {
               const user = DEMO_RATING_USERS.find((u) => u.rank === entry.rank);
@@ -49,7 +50,7 @@ export function renderUsersRatingBlock(): string {
             </div>
             <div class="rating-panel-body">
                 <div class="rating-podium" role="list" aria-label="Тройка лидеров пользователей">
-                    ${renderPodiumHtml(sorted)}
+                    ${renderPodiumHtml(top10)}
                 </div>
                 <div class="rating-list-scroll" role="list" aria-label="Пользователи с 4 места">
                     ${listHtml}

@@ -33,12 +33,17 @@ export function sortEntries(entries: RatingLeaderboardEntry[], sortKey: RatingSo
     }
 }
 
-export function renderPodiumSlot(place: 1 | 2 | 3): string {
+export function renderPodiumSlot(place: 1 | 2 | 3, entry?: RatingLeaderboardEntry, isEmpty = false): string {
     const placeClass =
         place === 1 ? "rating-podium-slot--first" : place === 2 ? "rating-podium-slot--second" : "rating-podium-slot--third";
+    const label = entry?.label ?? "";
+    const emptyClass = isEmpty ? " rating-podium-slot--empty" : "";
     return `
-        <article class="rating-podium-slot ${placeClass}" aria-label="${place} место">
-            <span class="rating-podium-rank">${place}</span>
+        <article class="rating-podium-slot ${placeClass}${emptyClass}"${isEmpty ? ' aria-hidden="true"' : ` aria-label="${place} место"`}>
+            <div class="rating-podium-card">
+                <span class="rating-podium-rank">${place}</span>
+                ${label ? `<span class="rating-podium-label">${escapeHtml(label)}</span>` : ""}
+            </div>
             <span class="rating-podium-points">БАЛЛЫ</span>
         </article>`;
 }
@@ -49,15 +54,9 @@ export function renderPodiumHtml(entries: RatingLeaderboardEntry[]): string {
         .map((place) => {
             const entry = topByRank.get(place);
             if (!entry) {
-                const emptyClass =
-                    place === 1 ? "first" : place === 2 ? "second" : "third";
-                return `
-                    <article class="rating-podium-slot rating-podium-slot--empty rating-podium-slot--${emptyClass}" aria-hidden="true">
-                        <span class="rating-podium-rank">${place}</span>
-                        <span class="rating-podium-points">БАЛЛЫ</span>
-                    </article>`;
+                return renderPodiumSlot(place as 1 | 2 | 3, undefined, true);
             }
-            return renderPodiumSlot(place as 1 | 2 | 3);
+            return renderPodiumSlot(place as 1 | 2 | 3, entry);
         })
         .join("");
 }
