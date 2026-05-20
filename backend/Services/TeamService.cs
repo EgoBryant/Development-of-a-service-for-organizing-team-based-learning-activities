@@ -10,10 +10,17 @@ public class TeamService : ITeamService
     private const string InviteAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     private readonly AppDbContext _dbContext;
+    private readonly IKrkCalculationService _krkCalculationService;
+    private readonly IActivityFeedService _activityFeed;
 
-    public TeamService(AppDbContext dbContext)
+    public TeamService(
+        AppDbContext dbContext,
+        IKrkCalculationService krkCalculationService,
+        IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
+        _krkCalculationService = krkCalculationService;
+        _activityFeed = activityFeed;
     }
 
     public async Task<IReadOnlyCollection<TeamResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -82,6 +89,15 @@ public class TeamService : ITeamService
         _dbContext.Teams.Add(team);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        await _activityFeed.AppendAsync(
+            ActivityFeedItemTypes.TeamCreated,
+            $"Создана команда «{team.Name}».",
+            team.Id,
+            user.Id,
+            cancellationToken);
+
+        await _krkCalculationService.RecalculateForTeamAsync(team.Id, cancellationToken);
+
         return new CreateTeamResult
         {
             Type = CreateTeamResultType.Created,
@@ -113,6 +129,13 @@ public class TeamService : ITeamService
         user.Role = Roles.Student;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        await _activityFeed.AppendAsync(
+            ActivityFeedItemTypes.TeamJoined,
+            $"{user.UserName} вступил(а) в команду «{team.Name}».",
+            team.Id,
+            user.Id,
+            cancellationToken);
+
         return new JoinTeamResult
         {
             Type = JoinTeamResultType.Joined,
@@ -135,7 +158,15 @@ public class TeamService : ITeamService
         team.Score = request.Score;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapTeamResponse(team);
+        await _krkCalculationService.RecalculateForTeamAsync(team.Id, cancellationToken);
+
+        var refreshed = await _dbContext.Teams
+            .AsNoTracking()
+            .Include(existing => existing.Captain)
+            .Include(existing => existing.Members)
+            .SingleAsync(existing => existing.Id == teamId, cancellationToken);
+
+        return MapTeamResponse(refreshed);
     }
 
     private async Task<string> GenerateInviteCodeAsync(CancellationToken cancellationToken)
@@ -157,7 +188,7 @@ public class TeamService : ITeamService
         }
     }
 
-    private static TeamResponse MapTeamResponse(Team team)
+    internal static TeamResponse MapTeamResponse(Team team)
     {
         return new TeamResponse
         {
@@ -167,20 +198,46 @@ public class TeamService : ITeamService
             InviteCode = team.InviteCode,
             CaptainId = team.CaptainId,
             Score = team.Score,
+            Krk = Math.Round(team.KrkCached, 1),
             CaptainUserName = team.Captain?.UserName ?? string.Empty,
             CreatedAt = team.CreatedAt,
             MemberCount = team.Members.Count,
             Members = team.Members
-                .OrderBy(member => member.UserName)
+                .OrderByDescending(member => team.CaptainId == member.Id)
+                .ThenBy(member => member.UserName)
                 .Select(member => new TeamMemberResponse
                 {
                     Id = member.Id,
                     UserName = member.UserName,
                     Email = member.Email,
                     Role = member.Role,
-                    IsCaptain = team.CaptainId == member.Id
+                    IsCaptain = team.CaptainId == member.Id,
+                    DisplayName = BuildDisplayName(member),
+                    RoleLabel = team.CaptainId == member.Id ? "КАПИТАН" : "УЧАСТНИК",
+                    AvatarUrl = member.AvatarUrl,
+                    UserPoints = member.UserPoints
                 })
                 .ToList()
         };
+    }
+
+    private static string BuildDisplayName(User member)
+    {
+        var lname = (member.LastName ?? string.Empty).Trim();
+        var fname = (member.FirstName ?? string.Empty).Trim();
+        if (lname.Length > 0 || fname.Length > 0)
+        {
+            var fnameInitial = fname.Length > 0 ? $" {fname[..1].ToUpperInvariant()}." : string.Empty;
+            var baseName = (lname + fnameInitial).Trim();
+            if (baseName.Length > 0)
+            {
+                return baseName.ToUpperInvariant();
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(member.Nickname))
+        {
+            return member.Nickname.Trim().ToUpperInvariant();
+        }
+        return (member.UserName ?? string.Empty).Trim().ToUpperInvariant();
     }
 }

@@ -16,18 +16,49 @@ public class HelpRequestsService : IHelpRequestsService
     ];
 
     private readonly AppDbContext _dbContext;
+    private readonly IKrkCalculationService _krkCalculationService;
+    private readonly IActivityFeedService _activityFeed;
+    private readonly IAchievementsService _achievements;
 
-    public HelpRequestsService(AppDbContext dbContext)
+    public HelpRequestsService(
+        AppDbContext dbContext,
+        IKrkCalculationService krkCalculationService,
+        IActivityFeedService activityFeed,
+        IAchievementsService achievements)
     {
         _dbContext = dbContext;
+        _krkCalculationService = krkCalculationService;
+        _activityFeed = activityFeed;
+        _achievements = achievements;
     }
 
-    public async Task<IReadOnlyCollection<HelpRequestResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<HelpRequestResponse>> GetAsync(int userId, bool isAdmin, string? scope, CancellationToken cancellationToken = default)
     {
-        var requests = await _dbContext.HelpRequests
+        var user = await _dbContext.Users.AsNoTracking()
+            .SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
+        var teamId = user?.TeamId;
+
+        IQueryable<HelpRequest> query = _dbContext.HelpRequests
             .AsNoTracking()
             .Include(request => request.FromTeam)
-            .Include(request => request.ToTeam)
+            .Include(request => request.ToTeam);
+
+        var normalizedScope = (scope ?? string.Empty).Trim().ToLowerInvariant();
+
+        query = normalizedScope switch
+        {
+            "incoming" when teamId is not null =>
+                query.Where(request => request.ToTeamId == teamId),
+            "outgoing" when teamId is not null =>
+                query.Where(request => request.FromTeamId == teamId),
+            "all" when isAdmin => query,
+            _ when teamId is not null =>
+                query.Where(request => request.ToTeamId == teamId || request.FromTeamId == teamId),
+            _ when isAdmin => query,
+            _ => query.Where(request => false)
+        };
+
+        var requests = await query
             .OrderByDescending(request => request.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
@@ -62,7 +93,14 @@ public class HelpRequestsService : IHelpRequestsService
         {
             FromTeamId = user.TeamId.Value,
             ToTeamId = request.ToTeamId,
+            Topic = request.Topic.Trim(),
+            Tag = request.Tag.Trim(),
             Description = request.Description.Trim(),
+            Format = request.Format.Trim(),
+            ScheduledAtUtc = request.ScheduledAtUtc is null
+                ? null
+                : DateTime.SpecifyKind(request.ScheduledAtUtc.Value, DateTimeKind.Utc),
+            LeagueLabel = request.LeagueLabel.Trim(),
             BonusPoints = request.BonusPoints,
             Status = HelpRequestStatuses.Open,
             CreatedAtUtc = DateTime.UtcNow
@@ -70,6 +108,13 @@ public class HelpRequestsService : IHelpRequestsService
 
         _dbContext.HelpRequests.Add(helpRequest);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _activityFeed.AppendAsync(
+            ActivityFeedItemTypes.HelpRequestCreated,
+            $"Команда отправила запрос «спасения»: «{helpRequest.Topic}».",
+            user.TeamId,
+            user.Id,
+            cancellationToken);
 
         return new HelpRequestCreateResult
         {
@@ -86,7 +131,10 @@ public class HelpRequestsService : IHelpRequestsService
             return new HelpRequestStatusUpdateResult { Type = HelpRequestStatusUpdateResultType.UserNotFound };
         }
 
-        var helpRequest = await _dbContext.HelpRequests.SingleOrDefaultAsync(existingRequest => existingRequest.Id == helpRequestId, cancellationToken);
+        var helpRequest = await _dbContext.HelpRequests
+            .Include(existing => existing.FromTeam)
+            .Include(existing => existing.ToTeam)
+            .SingleOrDefaultAsync(existingRequest => existingRequest.Id == helpRequestId, cancellationToken);
         if (helpRequest is null)
         {
             return new HelpRequestStatusUpdateResult { Type = HelpRequestStatusUpdateResultType.HelpRequestNotFound };
@@ -105,8 +153,47 @@ public class HelpRequestsService : IHelpRequestsService
             return new HelpRequestStatusUpdateResult { Type = HelpRequestStatusUpdateResultType.Forbidden };
         }
 
-        helpRequest.Status = AllowedStatuses.Single(status => status.Equals(normalizedStatus, StringComparison.OrdinalIgnoreCase));
+        var canonicalStatus = AllowedStatuses.Single(status => status.Equals(normalizedStatus, StringComparison.OrdinalIgnoreCase));
+
+        var becameCompleted = canonicalStatus == HelpRequestStatuses.Completed && helpRequest.Status != HelpRequestStatuses.Completed;
+        helpRequest.Status = canonicalStatus;
+
+        var helpingTeamId = helpRequest.ToTeamId;
+        var helpedTeamId = helpRequest.FromTeamId;
+
+        if (becameCompleted && !helpRequest.BonusAwarded && helpRequest.BonusPoints > 0)
+        {
+            var helpingTeam = helpRequest.ToTeam ?? await _dbContext.Teams.SingleOrDefaultAsync(team => team.Id == helpingTeamId, cancellationToken);
+            if (helpingTeam is not null)
+            {
+                helpingTeam.Score += (int)Math.Round(helpRequest.BonusPoints, MidpointRounding.AwayFromZero);
+                helpRequest.BonusAwarded = true;
+            }
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (becameCompleted)
+        {
+            await _krkCalculationService.RecalculateForTeamAsync(helpingTeamId, cancellationToken);
+            await _krkCalculationService.RecalculateForTeamAsync(helpedTeamId, cancellationToken);
+
+            await _activityFeed.AppendAsync(
+                ActivityFeedItemTypes.HelpRequestCompleted,
+                $"«Спасение» завершено: «{helpRequest.Topic}».",
+                helpingTeamId,
+                null,
+                cancellationToken);
+
+            var helpingCaptainId = await _dbContext.Teams.AsNoTracking()
+                .Where(team => team.Id == helpingTeamId)
+                .Select(team => (int?)team.CaptainId)
+                .SingleOrDefaultAsync(cancellationToken);
+            if (helpingCaptainId is not null)
+            {
+                await _achievements.GrantIfMissingAsync(helpingCaptainId.Value, AchievementCodes.FirstRescue, cancellationToken);
+            }
+        }
 
         return new HelpRequestStatusUpdateResult
         {
@@ -135,9 +222,15 @@ public class HelpRequestsService : IHelpRequestsService
             FromTeamName = request.FromTeam?.Name ?? string.Empty,
             ToTeamId = request.ToTeamId,
             ToTeamName = request.ToTeam?.Name ?? string.Empty,
+            Topic = request.Topic,
+            Tag = request.Tag,
             Description = request.Description,
+            Format = request.Format,
+            ScheduledAtUtc = request.ScheduledAtUtc,
+            LeagueLabel = request.LeagueLabel,
             Status = request.Status,
             BonusPoints = request.BonusPoints,
+            BonusAwarded = request.BonusAwarded,
             CreatedAtUtc = request.CreatedAtUtc
         };
     }

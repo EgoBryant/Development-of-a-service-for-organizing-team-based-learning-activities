@@ -41,6 +41,16 @@ builder.Services.AddScoped<IKnowledgePostsService, KnowledgePostsService>();
 builder.Services.AddScoped<IHelpRequestsService, HelpRequestsService>();
 builder.Services.AddScoped<IVotesService, VotesService>();
 builder.Services.AddScoped<ICheckInsService, CheckInsService>();
+builder.Services.AddScoped<IKrkCalculationService, KrkCalculationService>();
+builder.Services.AddScoped<IRatingsService, RatingsService>();
+builder.Services.AddScoped<IChallengesService, ChallengesService>();
+builder.Services.AddScoped<IEventsService, EventsService>();
+builder.Services.AddScoped<INewsService, NewsService>();
+builder.Services.AddScoped<IActivityFeedService, ActivityFeedService>();
+builder.Services.AddScoped<IAchievementsService, AchievementsService>();
+// MVP-заглушки: реальная имплементация — после интеграции с УрФУ.
+builder.Services.AddScoped<IExternalAuthProvider, NotImplementedExternalAuthProvider>();
+builder.Services.AddScoped<IPortalGradesImporter, NotImplementedPortalGradesImporter>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>

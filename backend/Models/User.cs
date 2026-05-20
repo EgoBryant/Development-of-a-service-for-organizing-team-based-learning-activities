@@ -23,8 +23,13 @@ public class User
     public Group? Group { get; set; }
     public int? TeamId { get; set; }
     public Team? Team { get; set; }
+    /// <summary>Персональные баллы пользователя (импорт/начисления). Используются в рейтинге пользователей.</summary>
+    public int UserPoints { get; set; }
+    /// <summary>SaaS-расширение: владелец-институт. В MVP nullable.</summary>
+    public int? InstituteId { get; set; }
     public ICollection<KnowledgePost> KnowledgePosts { get; set; } = new List<KnowledgePost>();
     public ICollection<Vote> OutgoingVotes { get; set; } = new List<Vote>();
     public ICollection<Vote> IncomingVotes { get; set; } = new List<Vote>();
+    public ICollection<UserAchievement> Achievements { get; set; } = new List<UserAchievement>();
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }

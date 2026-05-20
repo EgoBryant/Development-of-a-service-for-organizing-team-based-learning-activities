@@ -8,6 +8,8 @@ public class TeamResponse
     public string InviteCode { get; set; } = string.Empty;
     public int? CaptainId { get; set; }
     public int Score { get; set; }
+    /// <summary>Последний рассчитанный КРК (0–10, 1 знак после запятой).</summary>
+    public double Krk { get; set; }
     public string CaptainUserName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public int MemberCount { get; set; }

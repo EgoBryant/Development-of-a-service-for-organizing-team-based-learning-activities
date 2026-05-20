@@ -8,10 +8,17 @@ namespace TeamExamProject.Services;
 public class VotesService : IVotesService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IKrkCalculationService _krkCalculationService;
+    private readonly IAchievementsService _achievements;
 
-    public VotesService(AppDbContext dbContext)
+    public VotesService(
+        AppDbContext dbContext,
+        IKrkCalculationService krkCalculationService,
+        IAchievementsService achievements)
     {
         _dbContext = dbContext;
+        _krkCalculationService = krkCalculationService;
+        _achievements = achievements;
     }
 
     public async Task<IReadOnlyCollection<VoteResponse>> GetForCurrentTeamAsync(int userId, CancellationToken cancellationToken = default)
@@ -34,6 +41,25 @@ public class VotesService : IVotesService
             .ToListAsync(cancellationToken);
 
         return votes.Select(Map).ToList();
+    }
+
+    public async Task<IReadOnlyCollection<MyVoteResponse>> GetMyVotesAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var votes = await _dbContext.Votes
+            .AsNoTracking()
+            .Include(vote => vote.ToUser)
+            .Where(vote => vote.FromUserId == userId)
+            .OrderByDescending(vote => vote.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return votes.Select(vote => new MyVoteResponse
+        {
+            Id = vote.Id,
+            ToUserId = vote.ToUserId,
+            ToUserName = vote.ToUser?.UserName ?? string.Empty,
+            Score = vote.Score,
+            CreatedAtUtc = vote.CreatedAtUtc
+        }).ToList();
     }
 
     public async Task<VoteCreateResult> CreateAsync(int userId, CreateVoteDto request, CancellationToken cancellationToken = default)
@@ -86,6 +112,9 @@ public class VotesService : IVotesService
 
         _dbContext.Votes.Add(vote);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _krkCalculationService.RecalculateForTeamAsync(fromUser.TeamId.Value, cancellationToken);
+        await _achievements.GrantIfMissingAsync(fromUser.Id, AchievementCodes.FirstVote, cancellationToken);
 
         return new VoteCreateResult
         {

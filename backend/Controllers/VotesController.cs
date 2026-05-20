@@ -39,6 +39,23 @@ public class VotesController : ApiControllerBase
     }
 
     /// <summary>
+    /// Возвращает голоса, отданные текущим пользователем (UI: кого уже оценил).
+    /// </summary>
+    /// <param name="cancellationToken">Токен отмены запроса.</param>
+    [HttpGet("my")]
+    [ProducesResponseType<IEnumerable<MyVoteResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<MyVoteResponse>>> GetMyVotes(CancellationToken cancellationToken)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+        return Ok(await _votesService.GetMyVotesAsync(userId.Value, cancellationToken));
+    }
+
+    /// <summary>
     /// Создает голос за участника своей команды.
     /// </summary>
     /// <param name="request">Идентификатор участника и оценка по 5-балльной шкале.</param>

@@ -8,10 +8,17 @@ namespace TeamExamProject.Services;
 public class CheckInsService : ICheckInsService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IActivityFeedService _activityFeed;
+    private readonly IAchievementsService _achievements;
 
-    public CheckInsService(AppDbContext dbContext)
+    public CheckInsService(
+        AppDbContext dbContext,
+        IActivityFeedService activityFeed,
+        IAchievementsService achievements)
     {
         _dbContext = dbContext;
+        _activityFeed = activityFeed;
+        _achievements = achievements;
     }
 
     public async Task<IReadOnlyCollection<CheckInResponse>> GetForCurrentTeamAsync(int userId, CancellationToken cancellationToken = default)
@@ -60,11 +67,22 @@ public class CheckInsService : ICheckInsService
             TeamId = user.TeamId.Value,
             WeekNumber = request.WeekNumber,
             ReportText = request.ReportText.Trim(),
+            Status = CheckInStatuses.Submitted,
+            SubmittedAtUtc = DateTime.UtcNow,
             CreatedAtUtc = DateTime.UtcNow
         };
 
         _dbContext.CheckIns.Add(checkIn);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _activityFeed.AppendAsync(
+            ActivityFeedItemTypes.CheckIn,
+            $"Капитан сдал(а) check-in за {request.WeekNumber} неделю.",
+            user.TeamId,
+            user.Id,
+            cancellationToken);
+
+        await _achievements.GrantIfMissingAsync(user.Id, AchievementCodes.FirstCheckIn, cancellationToken);
 
         return new CheckInCreateResult
         {
@@ -87,6 +105,8 @@ public class CheckInsService : ICheckInsService
             TeamName = checkIn.Team?.Name ?? string.Empty,
             WeekNumber = checkIn.WeekNumber,
             ReportText = checkIn.ReportText,
+            Status = string.IsNullOrWhiteSpace(checkIn.Status) ? CheckInStatuses.Submitted : checkIn.Status,
+            SubmittedAtUtc = checkIn.SubmittedAtUtc,
             CreatedAtUtc = checkIn.CreatedAtUtc
         };
     }

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TeamExamProject.Contracts.Knowledge;
-using TeamExamProject.Infrastructure.Authorization;
+using TeamExamProject.Models;
 using TeamExamProject.Services;
 
 namespace TeamExamProject.Controllers;
@@ -21,14 +21,21 @@ public class KnowledgePostsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает все публикации биржи знаний.
+    /// Возвращает все публикации биржи знаний с фильтрами.
     /// </summary>
+    /// <param name="search">Подстрока в title/description (регистронезависимый поиск).</param>
+    /// <param name="type">Точное совпадение тега/типа: «Java», «Матан», ...</param>
+    /// <param name="cancellationToken">Токен отмены запроса.</param>
     /// <returns>Список объявлений с автором и связанной командой.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<KnowledgePostResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<KnowledgePostResponse>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<KnowledgePostResponse>>> GetAll(
+        [FromQuery] string? search,
+        [FromQuery] string? type,
+        CancellationToken cancellationToken)
     {
-        return Ok(await _knowledgePostsService.GetAllAsync(cancellationToken));
+        var query = new KnowledgePostQuery { Search = search, Type = type };
+        return Ok(await _knowledgePostsService.GetAllAsync(query, cancellationToken));
     }
 
     /// <summary>
@@ -59,5 +66,34 @@ public class KnowledgePostsController : ApiControllerBase
         }
 
         return CreatedAtAction(nameof(GetAll), new { id = post.Id }, post);
+    }
+
+    /// <summary>
+    /// Удаляет публикацию (автор или администратор).
+    /// </summary>
+    /// <param name="id">Идентификатор публикации.</param>
+    /// <param name="cancellationToken">Токен отмены запроса.</param>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var isAdmin = User.IsInRole(Roles.Admin);
+        var deleted = await _knowledgePostsService.DeleteOwnAsync(userId.Value, id, isAdmin, cancellationToken);
+        if (!deleted)
+        {
+            return NotFound(Problem(
+                title: "Post not found",
+                detail: $"Knowledge post {id} was not found or you have no rights to delete it.",
+                statusCode: StatusCodes.Status404NotFound));
+        }
+        return NoContent();
     }
 }

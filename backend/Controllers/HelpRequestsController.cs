@@ -21,14 +21,24 @@ public class HelpRequestsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает список запросов на помощь между командами.
+    /// Возвращает список запросов на помощь между командами с фильтром <c>scope</c>.
     /// </summary>
-    /// <returns>Все запросы помощи с исходной и целевой командой.</returns>
+    /// <param name="scope">all (admin) | incoming | outgoing. По умолчанию — обе стороны для команды текущего пользователя.</param>
+    /// <param name="cancellationToken">Токен отмены запроса.</param>
+    /// <returns>Запросы помощи с исходной и целевой командой.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<HelpRequestResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<HelpRequestResponse>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<HelpRequestResponse>>> GetAll(
+        [FromQuery] string? scope,
+        CancellationToken cancellationToken)
     {
-        return Ok(await _helpRequestsService.GetAllAsync(cancellationToken));
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+        var isAdmin = User.IsInRole(Models.Roles.Admin);
+        return Ok(await _helpRequestsService.GetAsync(userId.Value, isAdmin, scope, cancellationToken));
     }
 
     /// <summary>

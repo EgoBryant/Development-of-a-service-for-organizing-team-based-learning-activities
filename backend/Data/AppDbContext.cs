@@ -15,6 +15,13 @@ public class AppDbContext : DbContext
     public DbSet<HelpRequest> HelpRequests => Set<HelpRequest>();
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
+    public DbSet<Challenge> Challenges => Set<Challenge>();
+    public DbSet<TeamChallengeProgress> TeamChallengeProgresses => Set<TeamChallengeProgress>();
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+    public DbSet<NewsItem> NewsItems => Set<NewsItem>();
+    public DbSet<ActivityFeedItem> ActivityFeedItems => Set<ActivityFeedItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,7 +45,9 @@ public class AppDbContext : DbContext
             entity.Property(user => user.ContactEmail).HasMaxLength(200);
             entity.Property(user => user.TelegramHandle).HasMaxLength(100);
             entity.Property(user => user.PhoneNumber).HasMaxLength(32);
+            entity.Property(user => user.UserPoints).HasDefaultValue(0);
             entity.HasIndex(user => user.StudentTicketNumber).IsUnique();
+            entity.HasIndex(user => user.UserPoints);
             entity.HasOne(user => user.Group)
                 .WithMany(group => group.Users)
                 .HasForeignKey(user => user.GroupId)
@@ -55,8 +64,10 @@ public class AppDbContext : DbContext
             entity.Property(team => team.Name).HasMaxLength(150).IsRequired();
             entity.Property(team => team.Description).HasMaxLength(1000);
             entity.Property(team => team.InviteCode).HasMaxLength(16).IsRequired();
+            entity.Property(team => team.KrkCached).HasDefaultValue(0d);
             entity.HasIndex(team => team.InviteCode).IsUnique();
             entity.HasIndex(team => team.CaptainId).IsUnique();
+            entity.HasIndex(team => team.Score);
             entity.HasOne(team => team.Captain)
                 .WithMany()
                 .HasForeignKey(team => team.CaptainId)
@@ -78,6 +89,7 @@ public class AppDbContext : DbContext
             entity.Property(post => post.Title).HasMaxLength(200).IsRequired();
             entity.Property(post => post.Description).HasMaxLength(2000).IsRequired();
             entity.Property(post => post.Type).HasMaxLength(50).IsRequired();
+            entity.HasIndex(post => post.Type);
             entity.HasOne(post => post.User)
                 .WithMany(user => user.KnowledgePosts)
                 .HasForeignKey(post => post.UserId)
@@ -91,8 +103,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<HelpRequest>(entity =>
         {
             entity.HasKey(request => request.Id);
+            entity.Property(request => request.Topic).HasMaxLength(200);
+            entity.Property(request => request.Tag).HasMaxLength(100);
             entity.Property(request => request.Description).HasMaxLength(2000).IsRequired();
+            entity.Property(request => request.Format).HasMaxLength(50);
+            entity.Property(request => request.LeagueLabel).HasMaxLength(50);
             entity.Property(request => request.Status).HasMaxLength(32).IsRequired();
+            entity.HasIndex(request => request.Status);
             entity.HasOne(request => request.FromTeam)
                 .WithMany(team => team.OutgoingHelpRequests)
                 .HasForeignKey(request => request.FromTeamId)
@@ -125,11 +142,106 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(checkIn => checkIn.Id);
             entity.Property(checkIn => checkIn.ReportText).HasMaxLength(4000).IsRequired();
+            entity.Property(checkIn => checkIn.Status).HasMaxLength(32).IsRequired();
             entity.HasIndex(checkIn => new { checkIn.TeamId, checkIn.WeekNumber }).IsUnique();
             entity.HasOne(checkIn => checkIn.Team)
                 .WithMany(team => team.CheckIns)
                 .HasForeignKey(checkIn => checkIn.TeamId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Challenge>(entity =>
+        {
+            entity.HasKey(challenge => challenge.Id);
+            entity.Property(challenge => challenge.Title).HasMaxLength(200).IsRequired();
+            entity.Property(challenge => challenge.Description).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(challenge => challenge.IsActive);
+        });
+
+        modelBuilder.Entity<TeamChallengeProgress>(entity =>
+        {
+            entity.HasKey(progress => progress.Id);
+            entity.Property(progress => progress.ProofText).HasMaxLength(2000);
+            entity.Property(progress => progress.Status).HasMaxLength(32).IsRequired();
+            entity.HasIndex(progress => new { progress.ChallengeId, progress.TeamId, progress.Status });
+            entity.HasOne(progress => progress.Challenge)
+                .WithMany(challenge => challenge.Progress)
+                .HasForeignKey(progress => progress.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(progress => progress.Team)
+                .WithMany(team => team.ChallengeProgress)
+                .HasForeignKey(progress => progress.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(progress => progress.SubmittedByUser)
+                .WithMany()
+                .HasForeignKey(progress => progress.SubmittedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Achievement>(entity =>
+        {
+            entity.HasKey(achievement => achievement.Id);
+            entity.Property(achievement => achievement.Code).HasMaxLength(64).IsRequired();
+            entity.Property(achievement => achievement.Title).HasMaxLength(200).IsRequired();
+            entity.Property(achievement => achievement.Description).HasMaxLength(1000);
+            entity.Property(achievement => achievement.IconUrl).HasColumnType("text");
+            entity.HasIndex(achievement => achievement.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<UserAchievement>(entity =>
+        {
+            entity.HasKey(userAchievement => userAchievement.Id);
+            entity.HasIndex(userAchievement => new { userAchievement.UserId, userAchievement.AchievementId }).IsUnique();
+            entity.HasOne(userAchievement => userAchievement.User)
+                .WithMany(user => user.Achievements)
+                .HasForeignKey(userAchievement => userAchievement.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(userAchievement => userAchievement.Achievement)
+                .WithMany(achievement => achievement.Holders)
+                .HasForeignKey(userAchievement => userAchievement.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CalendarEvent>(entity =>
+        {
+            entity.HasKey(calendarEvent => calendarEvent.Id);
+            entity.Property(calendarEvent => calendarEvent.Topic).HasMaxLength(200).IsRequired();
+            entity.Property(calendarEvent => calendarEvent.Tag).HasMaxLength(100);
+            entity.Property(calendarEvent => calendarEvent.Description).HasMaxLength(2000);
+            entity.Property(calendarEvent => calendarEvent.Format).HasMaxLength(50);
+            entity.HasIndex(calendarEvent => calendarEvent.StartsAtUtc);
+            entity.HasOne(calendarEvent => calendarEvent.Team)
+                .WithMany()
+                .HasForeignKey(calendarEvent => calendarEvent.TeamId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(calendarEvent => calendarEvent.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(calendarEvent => calendarEvent.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<NewsItem>(entity =>
+        {
+            entity.HasKey(news => news.Id);
+            entity.Property(news => news.Title).HasMaxLength(200).IsRequired();
+            entity.Property(news => news.Body).HasMaxLength(4000).IsRequired();
+            entity.HasIndex(news => news.PublishedAtUtc);
+        });
+
+        modelBuilder.Entity<ActivityFeedItem>(entity =>
+        {
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Type).HasMaxLength(64).IsRequired();
+            entity.Property(item => item.Message).HasMaxLength(500).IsRequired();
+            entity.HasIndex(item => item.CreatedAtUtc);
+            entity.HasOne(item => item.Team)
+                .WithMany()
+                .HasForeignKey(item => item.TeamId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(item => item.User)
+                .WithMany()
+                .HasForeignKey(item => item.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
