@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TeamExamProject.Contracts.Challenges;
-using TeamExamProject.Data;
 using TeamExamProject.Infrastructure.Authorization;
 using TeamExamProject.Models;
 using TeamExamProject.Services;
@@ -17,12 +15,12 @@ namespace TeamExamProject.Controllers;
 public class ChallengesController : ApiControllerBase
 {
     private readonly IChallengesService _challengesService;
-    private readonly AppDbContext _dbContext;
+    private readonly ITeamService _teamService;
 
-    public ChallengesController(IChallengesService challengesService, AppDbContext dbContext)
+    public ChallengesController(IChallengesService challengesService, ITeamService teamService)
     {
         _challengesService = challengesService;
-        _dbContext = dbContext;
+        _teamService = teamService;
     }
 
     /// <summary>Возвращает активные челленджи. Если у пользователя есть команда, отдаёт статус её попытки.</summary>
@@ -31,14 +29,7 @@ public class ChallengesController : ApiControllerBase
     public async Task<ActionResult<IEnumerable<ChallengeResponse>>> Get(CancellationToken cancellationToken)
     {
         var userId = CurrentUserId;
-        int? teamId = null;
-        if (userId is not null)
-        {
-            teamId = await _dbContext.Users.AsNoTracking()
-                .Where(user => user.Id == userId)
-                .Select(user => user.TeamId)
-                .SingleOrDefaultAsync(cancellationToken);
-        }
+        int? teamId = userId is null ? null : await _teamService.GetTeamIdForUserAsync(userId.Value, cancellationToken);
         return Ok(await _challengesService.GetActiveAsync(teamId, cancellationToken));
     }
 

@@ -1,30 +1,28 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TeamExamProject.Contracts.Admin;
-using TeamExamProject.Data;
 using TeamExamProject.Models;
 using TeamExamProject.Services;
 
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Минимальная админская поверхность для MVP: правка очков, модерация постов биржи знаний.
+/// Минимальная админская поверхность для MVP: правка очков, пересчёт КРК, модерация постов биржи знаний.
 /// </summary>
 [Route("api/admin")]
 [Authorize(Roles = Roles.Admin)]
 public class AdminController : ApiControllerBase
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IAdminUserService _adminUserService;
     private readonly IKrkCalculationService _krkCalculationService;
     private readonly IKnowledgePostsService _knowledgePostsService;
 
     public AdminController(
-        AppDbContext dbContext,
+        IAdminUserService adminUserService,
         IKrkCalculationService krkCalculationService,
         IKnowledgePostsService knowledgePostsService)
     {
-        _dbContext = dbContext;
+        _adminUserService = adminUserService;
         _krkCalculationService = krkCalculationService;
         _knowledgePostsService = knowledgePostsService;
     }
@@ -35,16 +33,14 @@ public class AdminController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateUserPoints(int userId, AdminUpdateUserPointsDto request, CancellationToken cancellationToken)
     {
-        var user = await _dbContext.Users.SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
-        if (user is null)
+        var updated = await _adminUserService.UpdatePointsAsync(userId, request.UserPoints, cancellationToken);
+        if (!updated)
         {
             return NotFound(Problem(
                 title: "User not found",
                 detail: $"User {userId} was not found.",
                 statusCode: StatusCodes.Status404NotFound));
         }
-        user.UserPoints = request.UserPoints;
-        await _dbContext.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
 
@@ -67,7 +63,10 @@ public class AdminController : ApiControllerBase
         var deleted = await _knowledgePostsService.DeleteOwnAsync(userId, postId, isAdmin: true, cancellationToken);
         if (!deleted)
         {
-            return NotFound(Problem(title: "Post not found", detail: $"Knowledge post {postId} was not found.", statusCode: StatusCodes.Status404NotFound));
+            return NotFound(Problem(
+                title: "Post not found",
+                detail: $"Knowledge post {postId} was not found.",
+                statusCode: StatusCodes.Status404NotFound));
         }
         return NoContent();
     }

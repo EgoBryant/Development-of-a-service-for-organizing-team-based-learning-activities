@@ -1,17 +1,21 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TeamExamProject.Contracts.Ratings;
 using TeamExamProject.Data;
 using TeamExamProject.Models;
+using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
 public class RatingsService : IRatingsService
 {
     private readonly AppDbContext _dbContext;
+    private readonly LeagueOptions _leagueOptions;
 
-    public RatingsService(AppDbContext dbContext)
+    public RatingsService(AppDbContext dbContext, IOptions<LeagueOptions> leagueOptions)
     {
         _dbContext = dbContext;
+        _leagueOptions = leagueOptions.Value;
     }
 
     public async Task<IReadOnlyCollection<RatingTeamResponse>> GetTeamsAsync(RatingQuery query, CancellationToken cancellationToken = default)
@@ -84,7 +88,7 @@ public class RatingsService : IRatingsService
             {
                 Id = user.Id.ToString(),
                 Rank = index + 1,
-                Name = BuildUserDisplayName(user.FirstName, user.LastName, user.MiddleName, user.Nickname, user.UserName),
+                Name = DisplayNameFormatter.Format(user.FirstName, user.LastName, user.MiddleName, user.Nickname, user.UserName),
                 Points = user.UserPoints,
                 HasTeam = user.TeamId is not null,
                 TeamId = user.TeamId?.ToString(),
@@ -106,8 +110,47 @@ public class RatingsService : IRatingsService
 
     public async Task<RatingUserResponse?> GetUserByIdAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var all = await GetUsersAsync(new RatingQuery(), cancellationToken);
-        return all.FirstOrDefault(user => user.Id == userId.ToString());
+        var target = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => new
+            {
+                user.Id,
+                user.UserName,
+                user.FirstName,
+                user.LastName,
+                user.MiddleName,
+                user.Nickname,
+                user.UserPoints,
+                user.TeamId,
+                AchievementsCount = user.Achievements.Count()
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (target is null)
+        {
+            return null;
+        }
+
+        // Rank считаем подзапросом: 1 + count(users with more points OR equal points and lexicographically earlier).
+        var rank = 1 + await _dbContext.Users.AsNoTracking()
+            .CountAsync(user =>
+                user.UserPoints > target.UserPoints
+                || (user.UserPoints == target.UserPoints &&
+                    string.Compare(user.UserName, target.UserName, StringComparison.Ordinal) < 0),
+                cancellationToken);
+
+        return new RatingUserResponse
+        {
+            Id = target.Id.ToString(),
+            Rank = rank,
+            Name = DisplayNameFormatter.Format(target.FirstName, target.LastName, target.MiddleName, target.Nickname, target.UserName),
+            Points = target.UserPoints,
+            HasTeam = target.TeamId is not null,
+            TeamId = target.TeamId?.ToString(),
+            League = ResolveLeague(target.UserPoints),
+            AchievementsCount = target.AchievementsCount
+        };
     }
 
     private static RatingTeamResponse MapTeam(Team team, int rank)
@@ -125,7 +168,7 @@ public class RatingsService : IRatingsService
                 .Select(member => new RatingTeamMemberResponse
                 {
                     Id = member.Id.ToString(),
-                    DisplayName = BuildUserDisplayName(member.FirstName, member.LastName, member.MiddleName, member.Nickname, member.UserName),
+                    DisplayName = DisplayNameFormatter.Format(member),
                     RoleLabel = team.CaptainId == member.Id ? "КАПИТАН" : "УЧАСТНИК"
                 })
                 .ToList()
@@ -176,37 +219,14 @@ public class RatingsService : IRatingsService
         _ => source.OrderBy(u => u.Rank).ToList()
     };
 
-    internal static string BuildUserDisplayName(string firstName, string lastName, string middleName, string nickname, string userName)
-    {
-        var lname = (lastName ?? string.Empty).Trim();
-        var fname = (firstName ?? string.Empty).Trim();
-        if (lname.Length > 0 || fname.Length > 0)
-        {
-            var fnameInitial = fname.Length > 0 ? $" {fname[..1].ToUpperInvariant()}." : string.Empty;
-            var baseName = (lname + fnameInitial).Trim();
-            if (baseName.Length > 0)
-            {
-                return baseName.ToUpperInvariant();
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(nickname))
-        {
-            return nickname.Trim().ToUpperInvariant();
-        }
-
-        return (userName ?? string.Empty).Trim().ToUpperInvariant();
-    }
-
     /// <summary>
-    /// Пороги лиг по персональным очкам:
-    /// 0..149 — БАЗОВАЯ, 150..299 — БРОНЗА, 300..399 — СЕРЕБРО, ≥400 — ЗОЛОТО.
+    /// Резолвит лигу по персональным очкам пользователя в соответствии с <see cref="LeagueOptions"/>.
     /// </summary>
-    internal static string ResolveLeague(int points) => points switch
+    private string ResolveLeague(int points)
     {
-        >= 400 => "ЗОЛОТО",
-        >= 300 => "СЕРЕБРО",
-        >= 150 => "БРОНЗА",
-        _ => "БАЗОВАЯ"
-    };
+        if (points >= _leagueOptions.GoldThreshold) return _leagueOptions.GoldLabel;
+        if (points >= _leagueOptions.SilverThreshold) return _leagueOptions.SilverLabel;
+        if (points >= _leagueOptions.BronzeThreshold) return _leagueOptions.BronzeLabel;
+        return _leagueOptions.BaseLabel;
+    }
 }

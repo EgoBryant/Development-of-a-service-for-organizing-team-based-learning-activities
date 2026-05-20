@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TeamExamProject.Data;
 using TeamExamProject.Models;
+using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
@@ -11,19 +13,17 @@ namespace TeamExamProject.Services;
 ///   <item><c>cohesionNormalized</c> — среднее голосов команды (шкала 1–5) → 0–10.</item>
 ///   <item><c>challengeBonusNormalized</c> — суммарный бонус за выполненные челленджи, нормализован к 0–10.</item>
 /// </list>
-/// Веса: 0.6 / 0.3 / 0.1. Если данных нет — компонент = 0.
+/// Веса берутся из <see cref="KrkOptions"/>. Если данных нет — компонент = 0.
 /// </summary>
 public class KrkCalculationService : IKrkCalculationService
 {
-    private const double BaseWeight = 0.6;
-    private const double CohesionWeight = 0.3;
-    private const double ChallengeWeight = 0.1;
-
     private readonly AppDbContext _dbContext;
+    private readonly KrkOptions _options;
 
-    public KrkCalculationService(AppDbContext dbContext)
+    public KrkCalculationService(AppDbContext dbContext, IOptions<KrkOptions> options)
     {
         _dbContext = dbContext;
+        _options = options.Value;
     }
 
     public async Task<double> RecalculateForTeamAsync(int teamId, CancellationToken cancellationToken = default)
@@ -107,7 +107,9 @@ public class KrkCalculationService : IKrkCalculationService
             ? Math.Clamp((double)bonus / maxBonus * 10d, 0d, 10d)
             : 0d;
 
-        var krk = baseNormalized * BaseWeight + cohesionNormalized * CohesionWeight + challengeNormalized * ChallengeWeight;
+        var krk = baseNormalized * _options.BaseWeight
+                  + cohesionNormalized * _options.CohesionWeight
+                  + challengeNormalized * _options.ChallengeWeight;
         return Math.Round(Math.Clamp(krk, 0d, 10d), 1);
     }
 }

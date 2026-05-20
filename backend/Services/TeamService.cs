@@ -49,16 +49,17 @@ public class TeamService : ITeamService
 
     public async Task<TeamResponse?> GetForUserAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var user = await _dbContext.Users
+        var teamId = await GetTeamIdForUserAsync(userId, cancellationToken);
+        return teamId is null ? null : await GetByIdAsync(teamId.Value, cancellationToken);
+    }
+
+    public Task<int?> GetTeamIdForUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Users
             .AsNoTracking()
-            .SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
-
-        if (user?.TeamId is null)
-        {
-            return null;
-        }
-
-        return await GetByIdAsync(user.TeamId.Value, cancellationToken);
+            .Where(user => user.Id == userId)
+            .Select(user => user.TeamId)
+            .SingleOrDefaultAsync(cancellationToken);
     }
 
     public async Task<CreateTeamResult> CreateAsync(int userId, CreateTeamDto request, CancellationToken cancellationToken = default)
@@ -188,7 +189,7 @@ public class TeamService : ITeamService
         }
     }
 
-    internal static TeamResponse MapTeamResponse(Team team)
+    private static TeamResponse MapTeamResponse(Team team)
     {
         return new TeamResponse
         {
@@ -212,32 +213,12 @@ public class TeamService : ITeamService
                     Email = member.Email,
                     Role = member.Role,
                     IsCaptain = team.CaptainId == member.Id,
-                    DisplayName = BuildDisplayName(member),
+                    DisplayName = DisplayNameFormatter.Format(member),
                     RoleLabel = team.CaptainId == member.Id ? "КАПИТАН" : "УЧАСТНИК",
                     AvatarUrl = member.AvatarUrl,
                     UserPoints = member.UserPoints
                 })
                 .ToList()
         };
-    }
-
-    private static string BuildDisplayName(User member)
-    {
-        var lname = (member.LastName ?? string.Empty).Trim();
-        var fname = (member.FirstName ?? string.Empty).Trim();
-        if (lname.Length > 0 || fname.Length > 0)
-        {
-            var fnameInitial = fname.Length > 0 ? $" {fname[..1].ToUpperInvariant()}." : string.Empty;
-            var baseName = (lname + fnameInitial).Trim();
-            if (baseName.Length > 0)
-            {
-                return baseName.ToUpperInvariant();
-            }
-        }
-        if (!string.IsNullOrWhiteSpace(member.Nickname))
-        {
-            return member.Nickname.Trim().ToUpperInvariant();
-        }
-        return (member.UserName ?? string.Empty).Trim().ToUpperInvariant();
     }
 }
