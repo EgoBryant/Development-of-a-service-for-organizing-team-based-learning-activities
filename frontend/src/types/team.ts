@@ -2,13 +2,9 @@ export type TeamEventModalKind = "none" | "create" | "success";
 
 export type NoTeamView = "landing" | "create-form";
 
-export interface TeamEventCreateDraft {
-    topic: string;
-    tag: string;
-    description: string;
-    format: string;
-    dateTime: string;
-}
+import type { EventCreateDraft } from "./event";
+
+export type TeamEventCreateDraft = EventCreateDraft;
 
 export interface TeamCreateDraft {
     name: string;

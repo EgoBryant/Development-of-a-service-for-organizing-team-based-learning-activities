@@ -1,6 +1,11 @@
 import QRCode from "qrcode";
 import { getAppBridge } from "../app/bridge";
-import { renderCreateEventModal, isTeamEventDraftComplete } from "../components/modals/CreateEventModal";
+import { renderCreateEventModal } from "../components/modals/CreateEventModal";
+import {
+    bindEventCreateFormSubmit,
+    syncEventCreateDraftFromForm as syncSharedEventCreateDraftFromForm,
+    wireEventCreateFormInputs
+} from "../components/modals/eventCreateForm";
 import { renderSuccessEventModal } from "../components/modals/SuccessEventModal";
 import { renderActiveTeamBlock } from "../components/team/ActiveTeamBlock";
 import { renderNoTeamBlock } from "../components/team/NoTeamBlock";
@@ -14,8 +19,7 @@ import {
 import {
     isHTMLButtonElement,
     isHTMLFormElement,
-    isHTMLInputElement,
-    isHTMLTextAreaElement
+    isHTMLInputElement
 } from "../utils/dom";
 
 function buildTeamEventShareLink(): string {
@@ -69,27 +73,7 @@ export async function paintTeamPageEventSuccessQr(root: HTMLElement): Promise<vo
 }
 
 function syncTeamEventDraftFromForm(root: HTMLElement): void {
-    const topic = root.querySelector("#teamEventCreateTopicInput");
-    const tag = root.querySelector("#teamEventCreateTagInput");
-    const description = root.querySelector("#teamEventCreateDescriptionInput");
-    const format = root.querySelector("#teamEventCreateFormatInput");
-    const dateTime = root.querySelector("#teamEventCreateDateTimeInput");
-
-    if (isHTMLInputElement(topic)) {
-        teamFlowState.eventDraft.topic = topic.value;
-    }
-    if (isHTMLInputElement(tag)) {
-        teamFlowState.eventDraft.tag = tag.value;
-    }
-    if (isHTMLTextAreaElement(description)) {
-        teamFlowState.eventDraft.description = description.value;
-    }
-    if (isHTMLInputElement(format)) {
-        teamFlowState.eventDraft.format = format.value;
-    }
-    if (isHTMLInputElement(dateTime)) {
-        teamFlowState.eventDraft.dateTime = dateTime.value;
-    }
+    syncSharedEventCreateDraftFromForm(root, "teamEventCreate", teamFlowState.eventDraft);
 }
 
 export function wireTeamPageEvents(root: HTMLElement): void {
@@ -238,44 +222,30 @@ export function wireTeamPageEvents(root: HTMLElement): void {
             });
         }
 
-        const bindInput = (selector: string, key: keyof typeof teamFlowState.eventDraft): void => {
-            const el = root.querySelector(selector);
-            if (isHTMLInputElement(el)) {
-                el.addEventListener("input", () => {
-                    teamFlowState.eventDraft[key] = el.value;
-                    teamFlowState.eventShowValidationError = false;
-                });
-            } else if (isHTMLTextAreaElement(el)) {
-                el.addEventListener("input", () => {
-                    teamFlowState.eventDraft[key] = el.value;
-                    teamFlowState.eventShowValidationError = false;
-                });
-            }
-        };
+        wireEventCreateFormInputs(root, "teamEventCreate", teamFlowState.eventDraft, () => {
+            teamFlowState.eventShowValidationError = false;
+        });
 
-        bindInput("#teamEventCreateTopicInput", "topic");
-        bindInput("#teamEventCreateTagInput", "tag");
-        bindInput("#teamEventCreateDescriptionInput", "description");
-        bindInput("#teamEventCreateFormatInput", "format");
-        bindInput("#teamEventCreateDateTimeInput", "dateTime");
-
-        const createForm = root.querySelector("#teamEventCreateForm");
-        if (isHTMLFormElement(createForm)) {
-            createForm.addEventListener("submit", (event) => {
-                event.preventDefault();
+        bindEventCreateFormSubmit(
+            root,
+            "teamEventCreate",
+            teamFlowState.eventDraft,
+            "teamEventCreateForm",
+            () => {
                 syncTeamEventDraftFromForm(root);
-
-                if (!isTeamEventDraftComplete(teamFlowState.eventDraft)) {
-                    teamFlowState.eventShowValidationError = true;
-                    bridge.render();
-                    return;
-                }
-
+                const added = bridge.addCalendarEventFromDraft({ ...teamFlowState.eventDraft });
                 const link = buildTeamEventShareLink();
                 openTeamEventSuccessModal(link);
+                if (added) {
+                    bridge.setStatus("Событие добавлено в календарь.");
+                }
                 bridge.render();
-            });
-        }
+            },
+            () => {
+                teamFlowState.eventShowValidationError = true;
+                bridge.render();
+            }
+        );
 
         return;
     }

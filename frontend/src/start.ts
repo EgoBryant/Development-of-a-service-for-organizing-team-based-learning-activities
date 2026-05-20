@@ -12,6 +12,23 @@ import {
 } from "./pages/TeamPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
 import type { TeamMemberView } from "./types/team";
+import type { CalendarEventItem, EventCreateDraft } from "./types/event";
+import {
+    bindEventCreateFormSubmit,
+    createEmptyEventCreateDraft,
+    syncEventCreateDraftFromForm as syncSharedEventCreateDraftFromForm,
+    wireEventCreateFormInputs
+} from "./components/modals/eventCreateForm";
+import { renderEventsDashboardCreateModal } from "./components/modals/CreateEventModal";
+import { renderCalendarEventCard } from "./components/events/CalendarEventCard";
+import {
+    addUserCalendarEventFromDraft,
+    getUserEventsForWeekDay,
+    getWeekOffsetForEventDateTime,
+    getWeekStartForOffset,
+    loadPersistedUserEvents
+} from "./state/eventsCalendarState";
+import { parseEventDateTimeLocal } from "./utils/calendarEvents";
 
 type View = "home" | "sign-in" | "sign-up" | "account";
 
@@ -20,19 +37,6 @@ type DashboardSection = "profile" | "team" | "rating" | "events";
 type EventsCalendarScope = "all" | "mine";
 type EventsFeedTab = "activity" | "news";
 type EventsModalKind = "none" | "create" | "success";
-
-interface EventCreateDraft {
-    topic: string;
-    tag: string;
-    description: string;
-    format: string;
-    dateTime: string;
-}
-
-interface CalendarEventItem {
-    id: string;
-    isMine: boolean;
-}
 
 interface NewsFeedItem {
     id: string;
@@ -240,6 +244,7 @@ interface AppState {
     eventsWeekOffset: number;
     eventsModal: EventsModalKind;
     eventsCreateDraft: EventCreateDraft | null;
+    eventsShowValidationError: boolean;
     eventsShareLink: string;
     teamVoteMemberIndex: number;
     teamRequestsInviteLink: string;
@@ -306,6 +311,7 @@ const appState: AppState = {
     eventsWeekOffset: 0,
     eventsModal: "none",
     eventsCreateDraft: null,
+    eventsShowValidationError: false,
     eventsShareLink: "",
     teamVoteMemberIndex: 0,
     teamRequestsInviteLink: "",
@@ -457,6 +463,8 @@ function createTeamFromBridge(name: string, direction: string): void {
 }
 
 async function bootstrap(): Promise<void> {
+    loadPersistedUserEvents();
+
     setAppBridge({
         render,
         setStatus,
@@ -475,6 +483,14 @@ async function bootstrap(): Promise<void> {
             persistDashboardSectionToStorage();
             clearStatus();
             render();
+        },
+        addCalendarEventFromDraft: (draft: EventCreateDraft) => {
+            const added = appendCreatedEventToCalendar(draft);
+            if (added) {
+                appState.dashboardSection = "events";
+                persistDashboardSectionToStorage();
+            }
+            return added;
         }
     });
 
@@ -833,23 +849,72 @@ const EVENTS_MONTH_LABELS = [
 ] as const;
 
 /** Пн 20.04.2026 — якорь недели из макета; сдвиг через eventsWeekOffset. */
-const EVENTS_WEEK_ANCHOR = new Date(2026, 3, 20);
 
 const DEMO_WEEK_CALENDAR_EVENTS: CalendarEventItem[][] = [
-    [{ id: "ev-mon-1", isMine: true }],
-    [{ id: "ev-tue-1", isMine: false }],
     [
-        { id: "ev-wed-1", isMine: true },
-        { id: "ev-wed-2", isMine: true }
+        {
+            id: "ev-mon-1",
+            topic: "Семинар по КРК",
+            tag: "Обучение",
+            format: "Очный",
+            description: "Разбор формулы командного рейтинга.",
+            dateTime: "2026-04-20T10:00",
+            isMine: true
+        }
     ],
     [
-        { id: "ev-thu-1", isMine: false },
-        { id: "ev-thu-2", isMine: true }
+        {
+            id: "ev-tue-1",
+            topic: "Кино на крыше",
+            tag: "Культура",
+            format: "Очный",
+            description: "Встреча команд на открытом показе.",
+            dateTime: "2026-04-21T19:00",
+            isMine: false
+        }
+    ],
+    [
+        {
+            id: "ev-wed-1",
+            topic: "Мини-турнир",
+            tag: "Спорт",
+            format: "Очный",
+            description: "Командные соревнования в зале.",
+            dateTime: "2026-04-22T16:30",
+            isMine: true
+        },
+        {
+            id: "ev-wed-2",
+            topic: "Онлайн Q&A",
+            tag: "Встреча",
+            format: "Дистанционный",
+            description: "Ответы куратора в Teams.",
+            dateTime: "2026-04-22T20:00",
+            isMine: true
+        }
+    ],
+    [
+        {
+            id: "ev-thu-1",
+            topic: "Лекция по ML",
+            tag: "Наука",
+            format: "Дистанционный",
+            description: "Гостевая лекция из другого института.",
+            dateTime: "2026-04-23T12:00",
+            isMine: false
+        },
+        {
+            id: "ev-thu-2",
+            topic: "Созвон капитанов",
+            tag: "Встреча",
+            format: "Дистанционный",
+            description: "Согласование челленджа недели.",
+            dateTime: "2026-04-23T18:00",
+            isMine: true
+        }
     ],
     []
 ];
-
-const eventsUserCreatedByDay: CalendarEventItem[][] = [[], [], [], [], []];
 
 const DEMO_ACTIVITY_FEED_ITEMS = [
     { id: "act-1", hasPoints: true },
@@ -863,9 +928,7 @@ const DEMO_NEWS_FEED_ITEMS: NewsFeedItem[] = [
 ];
 
 function getEventsWeekStart(): Date {
-    const start = new Date(EVENTS_WEEK_ANCHOR);
-    start.setDate(start.getDate() + appState.eventsWeekOffset * 7);
-    return start;
+    return getWeekStartForOffset(appState.eventsWeekOffset);
 }
 
 function formatEventsMonthLabel(weekStart: Date): string {
@@ -873,10 +936,28 @@ function formatEventsMonthLabel(weekStart: Date): string {
     return `${month} ${weekStart.getFullYear()} Г.`;
 }
 
+function getDemoEventsForDay(dayIndex: number): CalendarEventItem[] {
+    if (appState.eventsWeekOffset !== 0) {
+        return [];
+    }
+
+    return DEMO_WEEK_CALENDAR_EVENTS[dayIndex] ?? [];
+}
+
+function getUserEventsForDay(dayIndex: number): CalendarEventItem[] {
+    return getUserEventsForWeekDay(getEventsWeekStart(), dayIndex);
+}
+
+function sortEventsByTime(events: CalendarEventItem[]): CalendarEventItem[] {
+    return [...events].sort((left, right) => {
+        const leftDate = parseEventDateTimeLocal(left.dateTime)?.getTime() ?? 0;
+        const rightDate = parseEventDateTimeLocal(right.dateTime)?.getTime() ?? 0;
+        return leftDate - rightDate;
+    });
+}
+
 function getMergedCalendarEvents(dayIndex: number): CalendarEventItem[] {
-    const base = DEMO_WEEK_CALENDAR_EVENTS[dayIndex] ?? [];
-    const user = eventsUserCreatedByDay[dayIndex] ?? [];
-    return [...base, ...user];
+    return sortEventsByTime([...getDemoEventsForDay(dayIndex), ...getUserEventsForDay(dayIndex)]);
 }
 
 function getFilteredCalendarEvents(dayIndex: number): CalendarEventItem[] {
@@ -888,7 +969,7 @@ function getFilteredCalendarEvents(dayIndex: number): CalendarEventItem[] {
 }
 
 function renderEventsCalendarEventCard(event: CalendarEventItem): string {
-    return `<div class="events-calendar-card" role="listitem" aria-label="Событие ${escapeHtml(event.id)}"></div>`;
+    return renderCalendarEventCard(event);
 }
 
 function renderEventsCalendarColumn(dayIndex: number): string {
@@ -921,7 +1002,20 @@ function renderEventsCalendarBlock(): string {
             <header class="events-calendar-toolbar">
                 <div class="events-calendar-month-group">
                     <span class="events-calendar-month-pill">${escapeHtml(monthLabel)}</span>
-                    <button type="button" class="events-calendar-month-toggle" id="eventsWeekNavButton" aria-label="Следующая неделя"></button>
+                    <div class="events-calendar-week-nav" role="group" aria-label="Переключение недели">
+                        <button
+                            type="button"
+                            class="events-calendar-week-nav-btn events-calendar-week-nav-btn--prev"
+                            id="eventsWeekPrevButton"
+                            aria-label="Предыдущая неделя"
+                        ></button>
+                        <button
+                            type="button"
+                            class="events-calendar-week-nav-btn events-calendar-week-nav-btn--next"
+                            id="eventsWeekNextButton"
+                            aria-label="Следующая неделя"
+                        ></button>
+                    </div>
                 </div>
                 <div class="events-calendar-toolbar-end">
                     <div class="events-calendar-scope" role="group" aria-label="Фильтр событий">
@@ -1057,9 +1151,18 @@ function wireEventsDashboardEvents(): void {
         return;
     }
 
-    const weekNav = profileMount.querySelector("#eventsWeekNavButton");
-    if (isHTMLButtonElement(weekNav)) {
-        weekNav.addEventListener("click", () => {
+    const weekPrev = profileMount.querySelector("#eventsWeekPrevButton");
+    if (isHTMLButtonElement(weekPrev)) {
+        weekPrev.addEventListener("click", () => {
+            appState.eventsWeekOffset -= 1;
+            clearStatus();
+            render();
+        });
+    }
+
+    const weekNext = profileMount.querySelector("#eventsWeekNextButton");
+    if (isHTMLButtonElement(weekNext)) {
+        weekNext.addEventListener("click", () => {
             appState.eventsWeekOffset += 1;
             clearStatus();
             render();
@@ -1096,19 +1199,13 @@ function wireEventsDashboardEvents(): void {
     }
 }
 
-function createEmptyEventCreateDraft(): EventCreateDraft {
-    return {
-        topic: "",
-        tag: "",
-        description: "",
-        format: "",
-        dateTime: ""
-    };
+function createEmptyEventCreateDraftState(): EventCreateDraft {
+    return createEmptyEventCreateDraft();
 }
 
 function ensureEventCreateDraft(): EventCreateDraft {
     if (!appState.eventsCreateDraft) {
-        appState.eventsCreateDraft = createEmptyEventCreateDraft();
+        appState.eventsCreateDraft = createEmptyEventCreateDraftState();
     }
     return appState.eventsCreateDraft;
 }
@@ -1128,6 +1225,7 @@ function openEventsCreateModal(): void {
     appState.profileModal = "none";
     appState.teamModal = "none";
     appState.eventsModal = "create";
+    appState.eventsShowValidationError = false;
     ensureEventCreateDraft();
     persistDashboardSectionToStorage();
     clearStatus();
@@ -1142,16 +1240,22 @@ function openEventsSuccessModal(): void {
 
 function closeEventsModal(): void {
     appState.eventsModal = "none";
+    appState.eventsShowValidationError = false;
     render();
 }
 
-function appendCreatedEventToCalendar(): void {
-    const dayIndex = eventsUserCreatedByDay.findIndex((day) => day.length === 0);
-    const targetDay = dayIndex >= 0 ? dayIndex : 4;
-    eventsUserCreatedByDay[targetDay].push({
-        id: `ev-user-${Date.now().toString(36)}`,
-        isMine: true
-    });
+function appendCreatedEventToCalendar(draft: EventCreateDraft): boolean {
+    const added = addUserCalendarEventFromDraft(draft);
+    if (!added) {
+        return false;
+    }
+
+    const weekOffset = getWeekOffsetForEventDateTime(draft.dateTime);
+    if (weekOffset !== null) {
+        appState.eventsWeekOffset = weekOffset;
+    }
+
+    return true;
 }
 
 async function paintEventSuccessQr(): Promise<void> {
@@ -1186,86 +1290,12 @@ function syncEventCreateDraftFromForm(): void {
         return;
     }
 
-    const draft = ensureEventCreateDraft();
-    const topic = profileMount.querySelector("#eventCreateTopicInput");
-    const tag = profileMount.querySelector("#eventCreateTagInput");
-    const description = profileMount.querySelector("#eventCreateDescriptionInput");
-    const format = profileMount.querySelector("#eventCreateFormatInput");
-    const dateTime = profileMount.querySelector("#eventCreateDateTimeInput");
-
-    if (isHTMLInputElement(topic)) {
-        draft.topic = topic.value;
-    }
-    if (isHTMLInputElement(tag)) {
-        draft.tag = tag.value;
-    }
-    if (description instanceof HTMLTextAreaElement) {
-        draft.description = description.value;
-    }
-    if (isHTMLInputElement(format)) {
-        draft.format = format.value;
-    }
-    if (isHTMLInputElement(dateTime)) {
-        draft.dateTime = dateTime.value;
-    }
+    syncSharedEventCreateDraftFromForm(profileMount, "eventCreate", ensureEventCreateDraft());
 }
 
 function renderEventsModal(): string {
     if (appState.eventsModal === "create") {
-        const draft = ensureEventCreateDraft();
-        return `
-                <div class="profile-modal team-overlay-modal team-rescue-modal event-create-modal" role="dialog" aria-modal="true" aria-label="Создание события">
-                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-events-modal="1"></div>
-                    <div class="profile-modal-card team-rescue-card">
-                        <button type="button" class="team-rescue-close" id="eventsCloseCreateButton" aria-label="Закрыть"></button>
-                        <h2 class="team-rescue-title">СОБЫТИЕ</h2>
-                        <form id="eventCreateForm" class="team-rescue-form" novalidate>
-                            <div class="team-rescue-topic-row">
-                                <input
-                                    id="eventCreateTopicInput"
-                                    class="team-rescue-field team-rescue-field--topic"
-                                    type="text"
-                                    placeholder="ТЕМА"
-                                    value="${escapeHtml(draft.topic)}"
-                                    autocomplete="off"
-                                >
-                                <input
-                                    id="eventCreateTagInput"
-                                    class="team-rescue-field team-rescue-field--tag"
-                                    type="text"
-                                    placeholder="ТЕГ"
-                                    value="${escapeHtml(draft.tag)}"
-                                    autocomplete="off"
-                                >
-                            </div>
-                            <textarea
-                                id="eventCreateDescriptionInput"
-                                class="team-rescue-textarea"
-                                placeholder=" "
-                                aria-label="Описание события"
-                            >${escapeHtml(draft.description)}</textarea>
-                            <div class="team-rescue-duo-row">
-                                <input
-                                    id="eventCreateFormatInput"
-                                    class="team-rescue-field team-rescue-field--duo"
-                                    type="text"
-                                    placeholder="ФОРМАТ"
-                                    value="${escapeHtml(draft.format)}"
-                                    autocomplete="off"
-                                >
-                                <input
-                                    id="eventCreateDateTimeInput"
-                                    class="team-rescue-field team-rescue-field--duo"
-                                    type="text"
-                                    placeholder="ДАТА, ВРЕМЯ"
-                                    value="${escapeHtml(draft.dateTime)}"
-                                    autocomplete="off"
-                                >
-                            </div>
-                            <button type="submit" class="team-rescue-submit">СОЗДАТЬ</button>
-                        </form>
-                    </div>
-                </div>`;
+        return renderEventsDashboardCreateModal(ensureEventCreateDraft(), appState.eventsShowValidationError);
     }
 
     if (appState.eventsModal === "success") {
@@ -1314,51 +1344,32 @@ function wireEventsModalEvents(): void {
             });
         }
 
-        const topic = profileMount.querySelector("#eventCreateTopicInput");
-        const tag = profileMount.querySelector("#eventCreateTagInput");
-        const description = profileMount.querySelector("#eventCreateDescriptionInput");
-        const format = profileMount.querySelector("#eventCreateFormatInput");
-        const dateTime = profileMount.querySelector("#eventCreateDateTimeInput");
-        const createForm = profileMount.querySelector("#eventCreateForm");
+        wireEventCreateFormInputs(profileMount, "eventCreate", draft, () => {
+            appState.eventsShowValidationError = false;
+        });
 
-        const bindInput = (
-            el: Element | null,
-            key: keyof Pick<EventCreateDraft, "topic" | "tag" | "format" | "dateTime">
-        ): void => {
-            if (!isHTMLInputElement(el)) {
-                return;
-            }
-            el.addEventListener("input", () => {
-                draft[key] = el.value;
-            });
-        };
-
-        bindInput(topic, "topic");
-        bindInput(tag, "tag");
-        bindInput(format, "format");
-        bindInput(dateTime, "dateTime");
-
-        if (description instanceof HTMLTextAreaElement) {
-            description.addEventListener("input", () => {
-                draft.description = description.value;
-            });
-        }
-
-        if (isHTMLFormElement(createForm)) {
-            createForm.addEventListener("submit", (event) => {
-                event.preventDefault();
-                syncEventCreateDraftFromForm();
-
-                if (!draft.topic.trim()) {
-                    setStatus("Укажите тему события.", "error");
+        bindEventCreateFormSubmit(
+            profileMount,
+            "eventCreate",
+            draft,
+            "eventCreateForm",
+            () => {
+                const draft = ensureEventCreateDraft();
+                if (!appendCreatedEventToCalendar(draft)) {
+                    appState.eventsShowValidationError = true;
+                    setStatus("Не удалось добавить событие в календарь. Проверьте дату и время.", "error");
                     render();
                     return;
                 }
 
-                appendCreatedEventToCalendar();
+                appState.eventsShowValidationError = false;
                 openEventsSuccessModal();
-            });
-        }
+            },
+            () => {
+                appState.eventsShowValidationError = true;
+                render();
+            }
+        );
 
         return;
     }
@@ -1367,7 +1378,8 @@ function wireEventsModalEvents(): void {
         const closeSuccess = profileMount.querySelector("#eventsCloseSuccessButton");
         if (isHTMLButtonElement(closeSuccess)) {
             closeSuccess.addEventListener("click", () => {
-                appState.eventsCreateDraft = createEmptyEventCreateDraft();
+                appState.eventsCreateDraft = createEmptyEventCreateDraftState();
+                appState.eventsShowValidationError = false;
                 closeEventsModal();
                 setStatus("Событие создано.");
                 render();
@@ -1391,7 +1403,8 @@ function wireEventsModalEvents(): void {
         const done = profileMount.querySelector("#eventsSuccessDoneButton");
         if (isHTMLButtonElement(done)) {
             done.addEventListener("click", () => {
-                appState.eventsCreateDraft = createEmptyEventCreateDraft();
+                appState.eventsCreateDraft = createEmptyEventCreateDraftState();
+                appState.eventsShowValidationError = false;
                 closeEventsModal();
                 setStatus("Событие создано.");
                 render();

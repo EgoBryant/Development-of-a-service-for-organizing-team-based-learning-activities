@@ -1,6 +1,5 @@
+import type { EventCreateDraft } from "../types/event";
 import type { TeamMemberView } from "../types/team";
-
-export type StatusTone = "default" | "error";
 
 export interface JoinTeamResult {
     ok: boolean;
@@ -21,7 +20,10 @@ export interface AppBridge {
     openTeamOverlayModal: (kind: "vote" | "requests" | "rescue", memberIndex?: number) => void;
     openTeamRescue: () => void;
     navigateToRating: () => void;
+    addCalendarEventFromDraft: (draft: EventCreateDraft) => boolean;
 }
+
+export type StatusTone = "default" | "error";
 
 let bridge: AppBridge | null = null;
 
