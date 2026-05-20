@@ -7,6 +7,10 @@ _build_verify/
 _tz_extract/
 temp-*.pid
 
+# Frontend generated artifacts (built inside Docker)
+frontend/node_modules/
+frontend/dist/
+
 # User-specific files
 *.user
 *.rsuser
