@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { setAppBridge } from "./app/bridge";
 import type { JoinTeamResult } from "./app/bridge";
 import { isDemoInviteCodeValid, normalizeInviteCode } from "./data/demoTeam";
+import { DEMO_WEEK_CALENDAR_EVENTS, EVENTS_MONTH_LABELS, EVENTS_WEEKDAY_LABELS } from "./data/demoEvents";
 import { renderRatingPageMain, renderRatingPageModals, wireRatingPageEvents } from "./pages/RatingPage";
 import {
     paintTeamPageEventSuccessQr,
@@ -11,7 +12,6 @@ import {
     wireTeamPageEvents
 } from "./pages/TeamPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
-import type { TeamMemberView } from "./types/team";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
 import {
     bindEventCreateFormSubmit,
@@ -34,256 +34,49 @@ import {
 import { loadPersistedActivityFeed, pushActivityFeedItem } from "./state/activityFeedState";
 import { loadPersistedNewsFeed, pushNewsPost } from "./state/newsFeedState";
 import type { ActivityFeedPushInput } from "./types/activity";
+import type {
+    AppState,
+    DashboardSection,
+    EventsCalendarScope,
+    EventsFeedTab,
+    EventsModalKind,
+    ProfileModalKind,
+    View
+} from "./types/app";
+import type { AuthResponse, UserProfileResponse } from "./types/auth";
 import type { NewsCreateDraft } from "./types/news";
+import type { PersistedClientProfileV1, ProfileEdits } from "./types/profile";
+import type {
+    LocalCreatedTeam,
+    PersistedLocalTeamV1,
+    TeamMemberRow,
+    TeamModalKind,
+    TeamRescueDraft,
+    TeamMemberView
+} from "./types/team";
 import { parseEventDateTimeLocal } from "./utils/calendarEvents";
-
-type View = "home" | "sign-in" | "sign-up" | "account";
-
-type DashboardSection = "profile" | "team" | "rating" | "events";
-
-type EventsCalendarScope = "all" | "mine";
-type EventsFeedTab = "activity" | "news";
-type EventsModalKind = "none" | "create" | "success" | "createNews";
-
-type TeamModalKind = "none" | "vote" | "requests" | "rescue";
-
-interface TeamRescueDraft {
-    topic: string;
-    tag: string;
-    description: string;
-    league: string;
-    deadline: string;
-    photoFileName: string;
-}
+import {
+    getInputValue,
+    getRequiredElement,
+    isHTMLButtonElement,
+    isHTMLElement,
+    isHTMLFormElement,
+    isHTMLInputElement
+} from "./utils/dom";
+import { escapeHtml } from "./utils/html";
+import { renderProfileAchievementModal, renderProfileAchievementStrip } from "./components/profile/ProfileAchievements";
+import { getProfileAchievementById } from "./data/profileAchievements";
+import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
+import { getErrorMessage } from "./services/httpClient";
+import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
+import { buildPersonalProfilePutBody } from "./services/profilePayload";
+import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
 
 /** Событие открытия модалки «Спасение» с любого места UI. */
 export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
-type ProfileModalKind =
-    | "none"
-    | "personal"
-    | "password"
-    | "noTeam"
-    | "createTeam"
-    | "teamSuccess"
-    | "achievement";
-
-interface ProfileEdits {
-    fullName: string;
-    group: string;
-    avatarDataUrl: string | null;
-}
-
-interface AuthResponse {
-    /** С сервера с login/register; если нет (старый API), делаем GET /me. */
-    id?: number;
-    token: string;
-    expiresAtUtc: string;
-    userName: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    nickname: string;
-    bio: string;
-    avatarUrl: string;
-    contactEmail: string;
-    telegramHandle: string;
-    phoneNumber: string;
-    studentTicketNumber: number | null;
-    groupId: number | null;
-    groupTitle: string;
-    teamId: number | null;
-    teamName: string;
-    teamInviteCode: string;
-    isCaptain: boolean;
-    teamScore: number;
-}
-
-function buildUserProfileFromAuthResponse(auth: AuthResponse & { id: number }): UserProfileResponse {
-    return {
-        id: auth.id,
-        userName: auth.userName,
-        email: auth.email,
-        role: auth.role,
-        firstName: auth.firstName,
-        lastName: auth.lastName,
-        middleName: auth.middleName,
-        nickname: auth.nickname,
-        bio: auth.bio,
-        avatarUrl: auth.avatarUrl,
-        contactEmail: auth.contactEmail,
-        telegramHandle: auth.telegramHandle,
-        phoneNumber: auth.phoneNumber,
-        studentTicketNumber: auth.studentTicketNumber,
-        groupId: auth.groupId,
-        groupTitle: auth.groupTitle,
-        teamId: auth.teamId,
-        teamName: auth.teamName,
-        teamInviteCode: auth.teamInviteCode,
-        isCaptain: auth.isCaptain,
-        teamScore: auth.teamScore
-    };
-}
-
-interface UserProfileResponse {
-    id: number;
-    userName: string;
-    email: string;
-    role: string;
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    nickname: string;
-    bio: string;
-    avatarUrl: string;
-    contactEmail: string;
-    telegramHandle: string;
-    phoneNumber: string;
-    studentTicketNumber: number | null;
-    groupId: number | null;
-    groupTitle: string;
-    teamId: number | null;
-    teamName: string;
-    teamInviteCode: string;
-    isCaptain: boolean;
-    teamScore: number;
-}
-
-/** JSON для PUT /api/profile (сервер: UpdateProfileDto, camelCase). */
-interface UpdateProfileJsonBody {
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    nickname: string;
-    bio: string;
-    avatarUrl: string;
-    contactEmail: string;
-    telegramHandle: string;
-    phoneNumber: string;
-    studentTicketNumber: number | null;
-    groupId: number | null;
-    academicGroupLabel: string;
-}
-
-interface ProblemLike {
-    title?: string;
-    detail?: string;
-    message?: string;
-    /** ASP.NET 400 model validation: поле -> сообщения */
-    errors?: Record<string, string[]>;
-}
-
-interface SessionState {
-    token: string;
-    expiresAtUtc: string;
-}
-
-interface SignInState {
-    email: string;
-    password: string;
-}
-
-interface SignUpState {
-    email: string;
-    password: string;
-    passwordConfirm: string;
-}
-
-interface TeamMemberRow {
-    id: string;
-    displayName: string;
-    roleLabel: string;
-    avatarUrl: string;
-    isCaptain: boolean;
-}
-
-interface LocalCreatedTeam {
-    name: string;
-    inviteCode: string;
-    direction: string;
-    members: TeamMemberRow[];
-}
-
-interface PersistedLocalTeamV1 {
-    name: string;
-    inviteCode: string;
-    inviteLink?: string;
-    direction?: string;
-    members?: TeamMemberRow[];
-    /** @deprecated только для чтения старых сохранений */
-    voteCommitted?: Record<string, boolean>;
-    /** @deprecated старые локальные оценки; игнорируется */
-    voteSavedPoints?: Record<string, string>;
-}
-
-interface PersistedClientProfileV1 {
-    fullName: string;
-    group: string;
-    avatarDataUrl: string | null;
-    dashboardSection?: DashboardSection;
-}
-
-interface AppState {
-    view: View;
-    signIn: SignInState;
-    signUp: SignUpState;
-    profile: UserProfileResponse | null;
-    profileEdits: ProfileEdits | null;
-    profileModal: ProfileModalKind;
-    profileAchievementTitle: string;
-    profileCreateTeamName: string;
-    profileCreateTeamDirection: string;
-    profileInviteLink: string;
-    profileFormDraft: ProfileEdits | null;
-    dashboardSection: DashboardSection;
-    teamModal: TeamModalKind;
-    teamRescueDraft: TeamRescueDraft | null;
-    eventsCalendarScope: EventsCalendarScope;
-    eventsFeedTab: EventsFeedTab;
-    eventsWeekOffset: number;
-    eventsModal: EventsModalKind;
-    eventsCreateDraft: EventCreateDraft | null;
-    eventsShowValidationError: boolean;
-    eventsShareLink: string;
-    newsCreateDraft: NewsCreateDraft | null;
-    newsShowValidationError: boolean;
-    teamVoteMemberIndex: number;
-    teamRequestsInviteLink: string;
-    localCreatedTeam: LocalCreatedTeam | null;
-    statusMessage: string;
-    statusTone: "default" | "error";
-    isSubmitting: boolean;
-}
-
-const SESSION_KEY = "team-exam-auth";
 const LOCAL_TEAM_STORAGE_PREFIX = "team-exam-local-team:";
 const LOCAL_PROFILE_STORAGE_PREFIX = "team-exam-profile:";
-
-const DEFAULT_LOCAL_API = "http://127.0.0.1:8080";
-
-/**
- * По умолчанию — прямой вызов API (CORS на бэке уже открыт): и dev, и prod без путаницы с портом Vite.
- * Явно `VITE_API_BASE_URL=` (пусто) — только если поднимаете прокси на том же origin, что и страница.
- */
-function resolveApiBaseUrl(): string {
-    const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
-    if (raw === "") {
-        return "";
-    }
-    if (import.meta.env.PROD) {
-        const explicit = (raw?.trim() ?? "") || "";
-        if (explicit.length === 0) {
-            return "";
-        }
-        return explicit.replace(/\/$/, "");
-    }
-    const trimmed = raw?.trim().replace(/\/$/, "") ?? "";
-    return trimmed || DEFAULT_LOCAL_API;
-}
-
-const API_BASE_URL = resolveApiBaseUrl();
 
 let profileAchievementScrollResizeObserver: ResizeObserver | undefined;
 
@@ -301,7 +94,7 @@ const appState: AppState = {
     profile: null,
     profileEdits: null,
     profileModal: "none",
-    profileAchievementTitle: "",
+    profileAchievementId: "",
     profileCreateTeamName: "",
     profileCreateTeamDirection: "",
     profileInviteLink: "",
@@ -336,35 +129,6 @@ const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 
 void bootstrap();
-
-function isHTMLElement(node: Element | null): node is HTMLElement {
-    return node instanceof HTMLElement;
-}
-
-function isHTMLInputElement(node: Element | RadioNodeList | null): node is HTMLInputElement {
-    return node instanceof HTMLInputElement;
-}
-
-function isHTMLButtonElement(node: Element | null): node is HTMLButtonElement {
-    return node instanceof HTMLButtonElement;
-}
-
-function isHTMLFormElement(node: Element | null): node is HTMLFormElement {
-    return node instanceof HTMLFormElement;
-}
-
-function getRequiredElement<T extends Element>(selector: string, guard: (node: Element | null) => node is T): T {
-    const node = document.querySelector(selector);
-    if (!guard(node)) {
-        throw new Error(`Required element not found: ${selector}`);
-    }
-
-    return node;
-}
-
-function getInputValue(field: Element | RadioNodeList | null): string {
-    return isHTMLInputElement(field) ? field.value : "";
-}
 
 function setView(nextView: View): void {
     appState.view = nextView;
@@ -535,7 +299,7 @@ async function bootstrap(): Promise<void> {
     render();
 
     try {
-        appState.profile = await fetchMe(session.token);
+        appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
         appState.view = "account";
         setStatus("Сессия восстановлена.");
@@ -596,21 +360,27 @@ function renderAuthView(): void {
     }
 
     authModalCard.classList.toggle("mode-sign-up", appState.view === "sign-up");
+    authModalCard.classList.toggle("mode-recovery", appState.view === "password-recovery");
 
     if (appState.view === "sign-in") {
         authSwitchColumn.innerHTML = `
-            <button type="button" class="auth-switch-pill" data-view="sign-up">РЕГИСТРАЦИЯ</button>
+            ${renderAuthSwitchPanel(
+                "Новый игрок?",
+                "Твоей будущей команде не хватает именно тебя. Создай аккаунт, зарабатывай ачивки и прокачивай КРК!",
+                "РЕГИСТРАЦИЯ",
+                "sign-up"
+            )}
         `;
 
         formContent.innerHTML = `
             <form id="signInForm" class="auth-form auth-form-modal">
-                <h1 class="auth-modal-heading">ВХОД</h1>
-                ${renderStatusBlock()}
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" required>
+                <h1 class="auth-modal-heading">Уже с нами?</h1>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required>
                 <div class="auth-login-password-row">
-                    <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" required>
-                    <button class="auth-inline-pill" type="button" id="signInRestoreButton">ВОССТАНОВИТЬ</button>
+                    <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
+                    <button class="auth-inline-pill" type="button" id="signInRestoreButton">ЗАБЫЛИ?</button>
                 </div>
+                ${renderStatusBlock()}
                 <button class="auth-submit-pill" type="submit" ${appState.isSubmitting ? "disabled" : ""}>
                     ${appState.isSubmitting ? "ПОДКЛЮЧЕНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
@@ -621,8 +391,8 @@ function renderAuthView(): void {
         const restoreButton = signInForm.querySelector("#signInRestoreButton");
         if (isHTMLButtonElement(restoreButton)) {
             restoreButton.addEventListener("click", () => {
-                setStatus("Восстановление пароля скоро будет доступно.");
-                updateStatusBlock();
+                clearStatus();
+                setView("password-recovery");
             });
         }
 
@@ -648,16 +418,25 @@ function renderAuthView(): void {
 
     if (appState.view === "sign-up") {
         authSwitchColumn.innerHTML = `
-            <button type="button" class="auth-switch-pill" data-view="sign-in">ВХОД</button>
+            ${renderAuthSwitchPanel(
+                "Уже с нами?",
+                "Войди в профиль и продолжи работу с командой.",
+                "ВХОД",
+                "sign-in"
+            )}
         `;
 
         formContent.innerHTML = `
             <form id="signUpForm" class="auth-form auth-form-modal">
-                <h1 class="auth-modal-heading">РЕГИСТРАЦИЯ</h1>
+                <h1 class="auth-modal-heading">Новый игрок?</h1>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required>
+                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell>
+                    <input class="auth-modal-field" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                </div>
+                <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell>
+                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
+                </div>
                 ${renderStatusBlock()}
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" required>
-                <input class="auth-modal-field" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" required minlength="6">
-                <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" required minlength="6">
                 <button class="auth-submit-pill" type="submit" ${appState.isSubmitting ? "disabled" : ""}>
                     ${appState.isSubmitting ? "СОЗДАНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
@@ -665,6 +444,50 @@ function renderAuthView(): void {
         `;
 
         initializeSignUpForm(getRequiredElement<HTMLFormElement>("#signUpForm", isHTMLFormElement));
+    }
+
+    if (appState.view === "password-recovery") {
+        authSwitchColumn.innerHTML = `
+            ${renderAuthSwitchPanel(
+                "Уже с нами?",
+                "Вернись ко входу, если пароль вспомнился.",
+                "ВХОД",
+                "sign-in"
+            )}
+        `;
+
+        formContent.innerHTML = `
+            <form id="recoveryForm" class="auth-form auth-form-modal">
+                <h1 class="auth-modal-heading">Новый игрок?</h1>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email">
+                <div class="auth-login-password-row auth-code-row">
+                    <input class="auth-modal-field auth-modal-field-password" name="code" type="text" placeholder="КОД" inputmode="numeric">
+                    <button class="auth-inline-pill" type="button" id="repeatRecoveryCode">ПОВТОРИТЬ</button>
+                </div>
+                ${renderStatusBlock()}
+                <button class="auth-submit-pill" type="button" disabled>ПРИСОЕДИНИТЬСЯ</button>
+            </form>
+        `;
+
+        const recoveryForm = getRequiredElement<HTMLFormElement>("#recoveryForm", isHTMLFormElement);
+        const emailInput = recoveryForm.elements.namedItem("email");
+        if (isHTMLInputElement(emailInput)) {
+            emailInput.addEventListener("input", () => {
+                appState.signIn.email = emailInput.value;
+            });
+        }
+
+        const repeatButton = recoveryForm.querySelector("#repeatRecoveryCode");
+        if (isHTMLButtonElement(repeatButton)) {
+            repeatButton.addEventListener("click", () => {
+                setStatus("Код отправлен повторно.");
+                updateStatusBlock();
+            });
+        }
+
+        recoveryForm.addEventListener("submit", (event: SubmitEvent) => {
+            event.preventDefault();
+        });
     }
 
     authLayout.querySelectorAll<HTMLElement>("[data-view]").forEach((button) => {
@@ -680,26 +503,58 @@ function renderAuthView(): void {
     });
 }
 
+function renderAuthSwitchPanel(title: string, copy: string, buttonLabel: string, nextView: View): string {
+    return `
+        <div class="auth-switch-panel">
+            <h2 class="auth-panel-title">${escapeHtml(title)}</h2>
+            <p class="auth-panel-copy">${escapeHtml(copy)}</p>
+            <button type="button" class="auth-switch-pill" data-view="${nextView}">${escapeHtml(buttonLabel)}</button>
+        </div>
+    `;
+}
+
 function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const emailInput = signUpForm.elements.namedItem("email");
     const passwordInput = signUpForm.elements.namedItem("password");
     const passwordConfirmInput = signUpForm.elements.namedItem("passwordConfirm");
+    const passwordShell = signUpForm.querySelector<HTMLElement>("[data-signup-password-shell]");
+    const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
 
-    if (!isHTMLInputElement(emailInput) || !isHTMLInputElement(passwordInput) || !isHTMLInputElement(passwordConfirmInput)) {
+    if (
+        !isHTMLInputElement(emailInput) ||
+        !isHTMLInputElement(passwordInput) ||
+        !isHTMLInputElement(passwordConfirmInput) ||
+        !passwordShell ||
+        !confirmShell
+    ) {
         return;
     }
 
+    const syncVisibleFields = (): void => {
+        const hasEmail = Boolean(appState.signUp.email.trim());
+        const hasPassword = Boolean(appState.signUp.password);
+
+        passwordShell.classList.toggle("hidden", !hasEmail);
+        passwordInput.disabled = !hasEmail;
+        confirmShell.classList.toggle("hidden", !hasPassword);
+        passwordConfirmInput.disabled = !hasPassword;
+    };
+
     emailInput.addEventListener("input", () => {
         appState.signUp.email = emailInput.value;
+        syncVisibleFields();
     });
 
     passwordInput.addEventListener("input", () => {
         appState.signUp.password = passwordInput.value;
+        syncVisibleFields();
     });
 
     passwordConfirmInput.addEventListener("input", () => {
         appState.signUp.passwordConfirm = passwordConfirmInput.value;
     });
+
+    syncVisibleFields();
 
     signUpForm.addEventListener("submit", (event: SubmitEvent) => {
         event.preventDefault();
@@ -735,7 +590,7 @@ function getAvatarDisplay(): string {
 function resetProfileUi(): void {
     appState.profileEdits = null;
     appState.profileModal = "none";
-    appState.profileAchievementTitle = "";
+    appState.profileAchievementId = "";
     appState.profileCreateTeamName = "";
     appState.profileCreateTeamDirection = "";
     appState.profileInviteLink = "";
@@ -854,91 +709,6 @@ function hydrateProfileClientStateFromStorage(): void {
         appState.dashboardSection = data.dashboardSection;
     }
 }
-
-const EVENTS_WEEKDAY_LABELS = ["ПН", "ВТ", "СР", "ЧТ", "ПТ"] as const;
-
-const EVENTS_MONTH_LABELS = [
-    "ЯНВАРЬ",
-    "ФЕВРАЛЬ",
-    "МАРТ",
-    "АПРЕЛЬ",
-    "МАЙ",
-    "ИЮНЬ",
-    "ИЮЛЬ",
-    "АВГУСТ",
-    "СЕНТЯБРЬ",
-    "ОКТЯБРЬ",
-    "НОЯБРЬ",
-    "ДЕКАБРЬ"
-] as const;
-
-/** Пн 20.04.2026 — якорь недели из макета; сдвиг через eventsWeekOffset. */
-
-const DEMO_WEEK_CALENDAR_EVENTS: CalendarEventItem[][] = [
-    [
-        {
-            id: "ev-mon-1",
-            topic: "Семинар по КРК",
-            tag: "Обучение",
-            format: "Очный",
-            description: "Разбор формулы командного рейтинга.",
-            dateTime: "2026-04-20T10:00",
-            isMine: true
-        }
-    ],
-    [
-        {
-            id: "ev-tue-1",
-            topic: "Кино на крыше",
-            tag: "Культура",
-            format: "Очный",
-            description: "Встреча команд на открытом показе.",
-            dateTime: "2026-04-21T19:00",
-            isMine: false
-        }
-    ],
-    [
-        {
-            id: "ev-wed-1",
-            topic: "Мини-турнир",
-            tag: "Спорт",
-            format: "Очный",
-            description: "Командные соревнования в зале.",
-            dateTime: "2026-04-22T16:30",
-            isMine: true
-        },
-        {
-            id: "ev-wed-2",
-            topic: "Онлайн Q&A",
-            tag: "Встреча",
-            format: "Дистанционный",
-            description: "Ответы куратора в Teams.",
-            dateTime: "2026-04-22T20:00",
-            isMine: true
-        }
-    ],
-    [
-        {
-            id: "ev-thu-1",
-            topic: "Лекция по ML",
-            tag: "Наука",
-            format: "Дистанционный",
-            description: "Гостевая лекция из другого института.",
-            dateTime: "2026-04-23T12:00",
-            isMine: false
-        },
-        {
-            id: "ev-thu-2",
-            topic: "Созвон капитанов",
-            tag: "Встреча",
-            format: "Дистанционный",
-            description: "Согласование челленджа недели.",
-            dateTime: "2026-04-23T18:00",
-            isMine: true
-        }
-    ],
-    []
-];
 
 function getEventsWeekStart(): Date {
     return getWeekStartForOffset(appState.eventsWeekOffset);
@@ -2014,21 +1784,6 @@ function closeProfileModal(): void {
     render();
 }
 
-const PROFILE_ACHIEVEMENT_STRIP_COUNT = 20;
-
-function renderProfileAchievementStrip(): string {
-    const items = Array.from({ length: PROFILE_ACHIEVEMENT_STRIP_COUNT }, (_, index) => index);
-    return items
-        .map(
-            (i) => `
-        <button type="button" class="profile-achievement-item" data-achievement-index="${i}">
-            <span class="profile-achievement-circle"></span>
-            <span class="profile-achievement-caption">НАЗВАНИЕ</span>
-        </button>`
-        )
-        .join("");
-}
-
 function renderProfileModal(): string {
     const draft = appState.profileFormDraft;
 
@@ -2117,21 +1872,7 @@ function renderProfileModal(): string {
                 </div>
             `;
         case "achievement":
-            return `
-                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Достижение">
-                    <div class="profile-modal-backdrop" data-close-modal="1"></div>
-                    <div class="profile-modal-card profile-modal-card-achievement">
-                        <button type="button" class="profile-modal-dot" id="profileCloseAchievementButton" aria-label="Закрыть"></button>
-                        <div class="profile-achievement-hero"></div>
-                        <p class="profile-achievement-name">${escapeHtml(appState.profileAchievementTitle || "НАЗВАНИЕ")}</p>
-                        <div class="profile-achievement-body"></div>
-                        <div class="profile-achievement-meta">
-                            <span class="profile-achievement-meta-label">БАЛЛЫ</span>
-                            <span class="profile-achievement-meta-value"></span>
-                        </div>
-                    </div>
-                </div>
-            `;
+            return renderProfileAchievementModal(getProfileAchievementById(appState.profileAchievementId));
         default:
             return "";
     }
@@ -2164,10 +1905,11 @@ function renderProfileView(): void {
 
     const profile = appState.profile;
     const leagueLabel = "ЛИГА";
-    const pointsValue = String(profile?.teamScore ?? 0);
+    const actualPoints = profile?.teamScore ?? 0;
+    const pointsValue = String(actualPoints > 0 ? actualPoints : 100);
     const ratingLabel = "РЕЙТИНГ";
-    const ratingValue = "—";
-    const leagueValue = "—";
+    const ratingValue = "1 место";
+    const leagueValue = "Легенда";
     const fullName = getFullNameDisplay();
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
@@ -2180,6 +1922,15 @@ function renderProfileView(): void {
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
+    const profileAppModeClass = appState.dashboardSection === "profile" ? " profile-app--dashboard-profile" : "";
+    const extraNavHtml =
+        appState.dashboardSection === "profile"
+            ? `
+                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="tasks">ЗАДАНИЯ</button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>`
+            : `
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>
+                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="news">НОВОСТИ</button>`;
 
     const mainColumn =
         appState.dashboardSection === "team"
@@ -2230,14 +1981,13 @@ function renderProfileView(): void {
             </section>`;
 
     profileMount.innerHTML = `
-        <div class="profile-app">
+        <div class="profile-app${profileAppModeClass}">
             <aside class="profile-sidebar" aria-label="Разделы">
                 <nav class="profile-nav-top">
                     <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
                     <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
                     <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating">РЕЙТИНГ</button>
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="news">НОВОСТИ</button>
+                    ${extraNavHtml}
                 </nav>
                 <nav class="profile-nav-bottom">
                     <button type="button" class="profile-nav-button" id="profileSettingsButton">НАСТРОЙКИ</button>
@@ -2432,7 +2182,8 @@ function wireProfileViewEvents(): void {
 
     profileMount.querySelectorAll<HTMLButtonElement>(".profile-achievement-item").forEach((button) => {
         button.addEventListener("click", () => {
-            appState.profileAchievementTitle = "НАЗВАНИЕ";
+            const achievementId = button.dataset.achievementId ?? "";
+            appState.profileAchievementId = getProfileAchievementById(achievementId).id;
             openProfileModal("achievement");
         });
     });
@@ -2619,12 +2370,9 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
     render();
 
     try {
-        const auth = await request<AuthResponse>("/api/auth/login", {
-            method: "POST",
-            body: JSON.stringify({
-                email: appState.signIn.email,
-                password: appState.signIn.password
-            })
+        const auth = await login({
+            email: appState.signIn.email,
+            password: appState.signIn.password
         });
 
         saveSession(auth);
@@ -2635,7 +2383,7 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
             applyPersistedClientStateAfterMe();
             void syncProfileWithServerInBackground(auth.token);
         } else {
-            appState.profile = await fetchMe(auth.token);
+            appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
         }
         appState.signIn.password = "";
@@ -2679,13 +2427,10 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
     render();
 
     try {
-        const auth = await request<AuthResponse>("/api/auth/register", {
-            method: "POST",
-            body: JSON.stringify({
-                userName: buildUserName(appState.signUp.email),
-                email: appState.signUp.email,
-                password: appState.signUp.password
-            })
+        const auth = await register({
+            userName: buildUserName(appState.signUp.email),
+            email: appState.signUp.email,
+            password: appState.signUp.password
         });
 
         saveSession(auth);
@@ -2696,7 +2441,7 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
             applyPersistedClientStateAfterMe();
             void syncProfileWithServerInBackground(auth.token);
         } else {
-            appState.profile = await fetchMe(auth.token);
+            appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
         }
         appState.view = "account";
@@ -2724,7 +2469,7 @@ async function refreshProfile(): Promise<void> {
     render();
 
     try {
-        appState.profile = await fetchMe(session.token);
+        appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
         setStatus("Данные обновлены.");
     } catch (error) {
@@ -2735,51 +2480,6 @@ async function refreshProfile(): Promise<void> {
     }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-    const headers = new Headers(init?.headers);
-    headers.set("Accept", "application/json");
-
-    if (init?.body && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-    }
-
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        ...init,
-        headers
-    });
-
-    if (!response.ok) {
-        let message = `Ошибка ${response.status}`;
-
-        try {
-            const body = (await response.json()) as ProblemLike;
-            if (body.errors) {
-                const fromModel = Object.values(body.errors)
-                    .flat()
-                    .find((line) => line?.trim().length);
-                if (fromModel) {
-                    message = fromModel;
-                }
-            }
-            if (message === `Ошибка ${response.status}`) {
-                message = body.detail || body.message || body.title || message;
-            }
-        } catch {
-            message = response.statusText || message;
-        }
-
-        throw new Error(translateApiErrorMessage(message));
-    }
-
-    return await response.json() as T;
-}
-
-function fetchMe(bearerToken: string): Promise<UserProfileResponse> {
-    return request<UserProfileResponse>("/api/auth/me", {
-        headers: { Authorization: `Bearer ${bearerToken}` }
-    });
-}
-
 /**
  * Не блокирует вход: login/register уже отдают тот же профиль + id.
  * При успехе обновляет данные; при ошибке /me остаётся state из auth.
@@ -2787,7 +2487,7 @@ function fetchMe(bearerToken: string): Promise<UserProfileResponse> {
 function syncProfileWithServerInBackground(bearerToken: string): void {
     void (async () => {
         try {
-            const p = await fetchMe(bearerToken);
+            const p = await fetchCurrentUser(bearerToken);
             const session = loadSession();
             if (session?.token !== bearerToken || appState.view !== "account") {
                 return;
@@ -2799,37 +2499,6 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             /* сессия уже валидна с данными из тела login/register */
         }
     })();
-}
-
-function saveSession(auth: AuthResponse): void {
-    const session: SessionState = {
-        token: auth.token,
-        expiresAtUtc: auth.expiresAtUtc
-    };
-
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-}
-
-function loadSession(): SessionState | null {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) {
-        return null;
-    }
-
-    try {
-        const parsed = JSON.parse(raw) as SessionState;
-        if (!parsed.token || !parsed.expiresAtUtc) {
-            return null;
-        }
-
-        return parsed;
-    } catch {
-        return null;
-    }
-}
-
-function clearSession(): void {
-    localStorage.removeItem(SESSION_KEY);
 }
 
 function buildUserName(email: string): string {
@@ -2853,76 +2522,6 @@ function renderStatusBlock(): string {
     const toneClass = appState.statusTone === "error" ? "status-error" : "";
     const hiddenClass = appState.statusMessage ? "" : "hidden";
     return `<p class="status-message ${toneClass} ${hiddenClass}">${escapeHtml(appState.statusMessage)}</p>`;
-}
-
-function getErrorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : "Не удалось выполнить запрос.";
-}
-
-function translateApiErrorMessage(message: string): string {
-    const known: Record<string, string> = {
-        "User with this email already exists.": "Пользователь с таким email уже зарегистрирован.",
-        "Invalid email or password.": "Неверная почта или пароль."
-    };
-
-    return known[message] ?? message;
-}
-
-function escapeHtml(value: string): string {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
-function splitFullNameForApi(fullName: string): { firstName: string; lastName: string } {
-    const parts = fullName.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) {
-        return { firstName: "", lastName: "" };
-    }
-
-    if (parts.length === 1) {
-        return { firstName: parts[0] ?? "", lastName: "" };
-    }
-
-    return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
-}
-
-/**
- * Собирает тело PUT /api/profile из формы «личные данные» и текущего снимка с сервера
- * (остальные поля пока не редактируются в UI — копируются с server).
- */
-function buildPersonalProfilePutBody(server: UserProfileResponse, draft: ProfileEdits): UpdateProfileJsonBody {
-    const { firstName, lastName } = splitFullNameForApi(draft.fullName);
-    const draftGroup = draft.group.trim();
-    const serverGroupTitle = (server.groupTitle ?? "").trim();
-    const groupId =
-        draftGroup === serverGroupTitle && server.groupId != null && server.groupId > 0
-            ? server.groupId
-            : null;
-
-    const newDataUrl = draft.avatarDataUrl && draft.avatarDataUrl.startsWith("data:");
-    const avatarUrl: string = newDataUrl
-        ? (draft.avatarDataUrl as string)
-        : (draft.avatarDataUrl ?? server.avatarUrl ?? "");
-
-    const st = server.studentTicketNumber;
-    return {
-        firstName,
-        lastName,
-        middleName: server.middleName ?? "",
-        nickname: server.nickname ?? "",
-        bio: server.bio ?? "",
-        avatarUrl,
-        contactEmail: server.contactEmail ?? "",
-        telegramHandle: server.telegramHandle ?? "",
-        phoneNumber: server.phoneNumber ?? "",
-        studentTicketNumber: st && st > 0 ? st : null,
-        groupId: groupId && groupId > 0 ? groupId : null,
-        academicGroupLabel: draftGroup
-    };
 }
 
 async function submitPersonalProfileSave(): Promise<void> {
@@ -2975,13 +2574,7 @@ async function submitPersonalProfileSave(): Promise<void> {
     if (session) {
         void (async () => {
             try {
-                const updated = await request<UserProfileResponse>("/api/profile", {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${session.token}`
-                    },
-                    body: JSON.stringify(putBody)
-                });
+                const updated = await updateProfile(session.token, putBody);
                 appState.profile = updated;
                 setStatus("Данные сохранены на сервере и в этом браузере.");
             } catch (error) {

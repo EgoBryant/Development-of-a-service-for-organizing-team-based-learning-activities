@@ -1,0 +1,156 @@
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #061b43;
+    color: #16215d;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+.single-page-app {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.screen {
+    width: 100%;
+}
+
+.screen-active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-screen {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: url("../../src/assets/team-exam-background.png") center / cover no-repeat;
+    transition: filter 240ms ease, transform 240ms ease, opacity 240ms ease;
+}
+
+.menu-screen::after {
+    content: none;
+}
+
+body.modal-open .menu-screen {
+    pointer-events: none;
+    user-select: none;
+}
+
+.menu-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.logo-box {
+    display: none;
+}
+
+.logo-box::before,
+.logo-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.logo-box::before {
+    background:
+        radial-gradient(circle at 50% 23%, #ffffff 0 9%, transparent 9.5%),
+        radial-gradient(circle at 28% 56%, #ffffff 0 8%, transparent 8.5%),
+        radial-gradient(circle at 72% 56%, #ffffff 0 8%, transparent 8.5%),
+        linear-gradient(145deg, transparent 0 39%, #ffffff 39% 48%, transparent 48% 100%),
+        linear-gradient(35deg, transparent 0 39%, #ffffff 39% 48%, transparent 48% 100%);
+}
+
+.logo-box::after {
+    width: 62%;
+    height: 45%;
+    left: 19%;
+    top: 41%;
+    border: clamp(9px, 0.9vw, 15px) solid #ffffff;
+    border-top: 0;
+    border-radius: 0 0 999px 999px;
+    box-sizing: border-box;
+}
+
+.home-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.start-pill-button {
+    position: absolute;
+    left: 50%;
+    top: 67.2%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(230px, 18vw, 360px);
+    height: clamp(70px, 8vh, 104px);
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: transparent;
+    font-size: 1px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+    cursor: pointer;
+    box-shadow: none;
+    transform: translate(-50%, -50%);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.start-pill-button:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.start-pill-button:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 6px;
+}
+
+@media (max-width: 640px) {
+    .menu-card {
+        min-height: 100vh;
+    }
+
+    .start-pill-button {
+        top: 67%;
+        width: min(52vw, 260px);
+        height: 72px;
+    }
+}
