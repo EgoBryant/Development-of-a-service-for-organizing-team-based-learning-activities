@@ -23,6 +23,10 @@ export interface AuthResponse {
     teamInviteCode: string;
     isCaptain: boolean;
     teamScore: number;
+    userPoints: number;
+    personalRating: number;
+    personalContribution: number;
+    personalLeague: string;
 }
 
 export interface UserProfileResponse {
@@ -47,6 +51,10 @@ export interface UserProfileResponse {
     teamInviteCode: string;
     isCaptain: boolean;
     teamScore: number;
+    userPoints: number;
+    personalRating: number;
+    personalContribution: number;
+    personalLeague: string;
 }
 
 /** JSON для PUT /api/profile (сервер: UpdateProfileDto, camelCase). */

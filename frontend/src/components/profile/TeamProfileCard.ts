@@ -1,5 +1,5 @@
 import { getAppBridge } from "../../app/bridge";
-import { getRatingTeamById } from "../../data/demoRating";
+import { getRatingTeamById } from "../../state/ratingDataState";
 import { openRatingUserProfile, openRatingRescueModal } from "../../state/ratingFlowState";
 import { escapeHtml } from "../../utils/html";
 
@@ -21,6 +21,16 @@ export function renderTeamProfileCard(teamId: string): string {
               .join("")
         : `<p class="rating-team-members-empty">Участники пока не добавлены.</p>`;
 
+    const history = team.activityHistory ?? [];
+    const historyHtml = history.length
+        ? history.map((item) => `
+            <div class="rating-team-member-row rating-team-history-row">
+                <span class="rating-team-member-name">${escapeHtml(item.title)}</span>
+                <span class="rating-team-member-role">${escapeHtml(item.meta)}</span>
+            </div>`)
+            .join("")
+        : `<p class="rating-team-members-empty">История активности пока пуста.</p>`;
+
     return `
         <section class="rating-profile-card rating-profile-card--team" aria-label="Профиль команды">
             <button type="button" class="rating-back-btn" data-rating-back>НАЗАД</button>
@@ -36,6 +46,18 @@ export function renderTeamProfileCard(teamId: string): string {
                         <span class="rating-team-meta-label">БАЛЛЫ</span>
                         <span class="rating-team-meta-value">${escapeHtml(String(team.points))}</span>
                     </div>
+                    <div class="rating-team-meta-row">
+                        <span class="rating-team-meta-label">ЛИГА</span>
+                        <span class="rating-team-meta-value">${escapeHtml(team.league ?? "—")}</span>
+                    </div>
+                    <div class="rating-team-meta-row">
+                        <span class="rating-team-meta-label">СПЛОЧЕННОСТЬ</span>
+                        <span class="rating-team-meta-value">${escapeHtml(team.cohesion ? `${team.cohesion}/5` : "—")}</span>
+                    </div>
+                    <div class="rating-team-meta-row">
+                        <span class="rating-team-meta-label">БОНУСЫ</span>
+                        <span class="rating-team-meta-value">${escapeHtml(String(team.challengeBonus ?? 0))}</span>
+                    </div>
                 </div>
                 <div class="rating-team-block rating-team-block--members">
                     <h3 class="rating-team-block-title">УЧАСТНИКИ</h3>
@@ -45,7 +67,9 @@ export function renderTeamProfileCard(teamId: string): string {
                 </div>
                 <div class="rating-team-block rating-team-block--history">
                     <h3 class="rating-team-block-title">ИСТОРИЯ АКТИВНОСТИ</h3>
-                    <div class="rating-team-history-rows rating-team-history-rows--empty" aria-label="История активности пока пуста"></div>
+                    <div class="rating-team-members-list" aria-label="История активности">
+                        ${historyHtml}
+                    </div>
                 </div>
             </div>
             <button

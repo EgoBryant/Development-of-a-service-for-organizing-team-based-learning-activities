@@ -18,6 +18,9 @@ public static class ActivityFeedItemTypes
 {
     public const string TeamCreated = "TEAM_CREATED";
     public const string TeamJoined = "TEAM_JOINED";
+    public const string TeamJoinRequestCreated = "TEAM_JOIN_REQUEST_CREATED";
+    public const string TeamJoinRequestAccepted = "TEAM_JOIN_REQUEST_ACCEPTED";
+    public const string TeamJoinRequestRejected = "TEAM_JOIN_REQUEST_REJECTED";
     public const string CheckIn = "CHECKIN";
     public const string Vote = "VOTE";
     public const string HelpRequestCreated = "HELP_CREATED";

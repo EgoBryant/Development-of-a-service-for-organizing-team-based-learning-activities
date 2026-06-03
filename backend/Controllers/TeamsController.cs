@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TeamExamProject.Contracts.ActivityFeed;
 using TeamExamProject.Contracts.Teams;
 using TeamExamProject.Infrastructure.Authorization;
 using TeamExamProject.Models;
@@ -30,6 +31,30 @@ public class TeamsController : ApiControllerBase
     public async Task<ActionResult<IEnumerable<TeamResponse>>> GetAll()
     {
         return Ok(await _teamService.GetAllAsync(HttpContext.RequestAborted));
+    }
+
+    [HttpGet("search")]
+    [ProducesResponseType<IEnumerable<TeamResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<TeamResponse>>> Search([FromQuery] string? query, [FromQuery] int limit = 20)
+    {
+        return Ok(await _teamService.SearchAsync(query, limit, HttpContext.RequestAborted));
+    }
+
+    [HttpGet("invite/{inviteCode}")]
+    [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TeamResponse>> GetByInviteCode(string inviteCode)
+    {
+        var team = await _teamService.GetByInviteCodeAsync(inviteCode, HttpContext.RequestAborted);
+        if (team is null)
+        {
+            return NotFound(Problem(
+                title: "Team not found",
+                detail: "Team with this invite code was not found.",
+                statusCode: StatusCodes.Status404NotFound));
+        }
+
+        return Ok(team);
     }
 
     /// <summary>
@@ -146,6 +171,121 @@ public class TeamsController : ApiControllerBase
             _ => Problem(
                 title: "Team join failed",
                 detail: "The user could not join the team.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    [HttpGet("me/activity")]
+    [ProducesResponseType<IEnumerable<ActivityFeedItemResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<ActivityFeedItemResponse>>> MyTeamActivity([FromQuery] int limit = 30)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await _teamService.GetActivityForUserTeamAsync(userId.Value, limit, HttpContext.RequestAborted));
+    }
+
+    [HttpGet("join-requests")]
+    [ProducesResponseType<IEnumerable<TeamJoinRequestResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<TeamJoinRequestResponse>>> GetJoinRequests([FromQuery] string? scope = null)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await _teamService.GetJoinRequestsAsync(userId.Value, scope, HttpContext.RequestAborted));
+    }
+
+    [HttpPost("join-requests")]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType<TeamJoinRequestResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<TeamJoinRequestResponse>> CreateJoinRequest(CreateTeamJoinRequestDto request)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.CreateJoinRequestAsync(userId.Value, request, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            TeamJoinRequestResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            TeamJoinRequestResultType.TeamNotFound => NotFound(Problem(
+                title: "Team not found",
+                detail: $"Team {request.TeamId} was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            TeamJoinRequestResultType.AlreadyInTeam => Conflict(Problem(
+                title: "Team membership conflict",
+                detail: "User already belongs to a team.",
+                statusCode: StatusCodes.Status409Conflict)),
+            TeamJoinRequestResultType.AlreadyPending => Conflict(Problem(
+                title: "Join request already exists",
+                detail: "User already has a pending request for this team.",
+                statusCode: StatusCodes.Status409Conflict)),
+            TeamJoinRequestResultType.Created when result.Request is not null => CreatedAtAction(
+                nameof(GetJoinRequests),
+                new { scope = "outgoing" },
+                result.Request),
+            _ => Problem(
+                title: "Join request failed",
+                detail: "The join request could not be created.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    [HttpPatch("join-requests/{id:int}/status")]
+    [ProducesResponseType<TeamJoinRequestResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<TeamJoinRequestResponse>> UpdateJoinRequestStatus(int id, UpdateTeamJoinRequestStatusDto request)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.UpdateJoinRequestStatusAsync(userId.Value, id, request, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            TeamJoinRequestResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            TeamJoinRequestResultType.RequestNotFound => NotFound(Problem(
+                title: "Join request not found",
+                detail: $"Join request {id} was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            TeamJoinRequestResultType.InvalidStatus => BadRequest(Problem(
+                title: "Invalid join request status",
+                detail: "Only Pending requests can be changed to Accepted, Rejected or Cancelled.",
+                statusCode: StatusCodes.Status400BadRequest)),
+            TeamJoinRequestResultType.Forbidden => Forbid(),
+            TeamJoinRequestResultType.ApplicantAlreadyInTeam => Conflict(Problem(
+                title: "Team membership conflict",
+                detail: "The applicant already belongs to a team.",
+                statusCode: StatusCodes.Status409Conflict)),
+            TeamJoinRequestResultType.Updated when result.Request is not null => Ok(result.Request),
+            _ => Problem(
+                title: "Join request update failed",
+                detail: "The join request could not be updated.",
                 statusCode: StatusCodes.Status500InternalServerError)
         };
     }

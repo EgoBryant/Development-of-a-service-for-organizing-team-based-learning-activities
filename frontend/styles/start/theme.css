@@ -21,7 +21,7 @@
     height: 100dvh;
     min-height: 100dvh;
     max-height: 100dvh;
-    padding: clamp(18px, 2vh, 28px) clamp(24px, 4vw, 72px);
+    padding: clamp(18px, 2vh, 28px) clamp(36px, 4.2vw, 80px);
     border-radius: 0;
     overflow: hidden;
     background:
@@ -31,9 +31,9 @@
 }
 
 .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar {
-    flex: 0 0 clamp(238px, 17.5vw, 320px);
-    width: clamp(238px, 17.5vw, 320px);
-    padding: clamp(24px, 3vh, 40px) clamp(22px, 2.1vw, 34px);
+    flex: 0 0 clamp(250px, 18.5vw, 340px);
+    width: clamp(250px, 18.5vw, 340px);
+    padding: clamp(24px, 3vh, 42px) clamp(24px, 2.2vw, 38px);
     border-radius: 40px;
     background: var(--exam-surface);
     box-shadow: var(--exam-shadow);
@@ -41,17 +41,18 @@
 
 .profile-app:not(.profile-app--dashboard-profile) .profile-nav-top,
 .profile-app:not(.profile-app--dashboard-profile) .profile-nav-bottom {
-    gap: clamp(14px, 2.3vh, 24px);
+    gap: clamp(16px, 2.6vh, 28px);
 }
 
 .profile-app:not(.profile-app--dashboard-profile) .profile-nav-button,
 .profile-nav-button {
-    min-height: 52px;
+    min-height: clamp(46px, 5.4vh, 58px);
+    padding: 12px 24px;
     border: none;
     border-radius: 999px;
     background: var(--exam-gradient-vertical);
     color: #ffffff;
-    font-size: clamp(13px, 1vw, 18px);
+    font-size: clamp(16px, 1.15vw, 22px);
     font-weight: 800;
     letter-spacing: 0.02em;
     box-shadow: 0 10px 18px rgba(78, 95, 205, 0.24);
@@ -79,7 +80,7 @@
     min-height: 0;
     max-height: 100%;
     margin: 0;
-    padding: clamp(22px, 3vh, 34px) clamp(24px, 2.8vw, 48px);
+    padding: clamp(26px, 3.2vh, 36px) clamp(34px, 3vw, 58px) clamp(22px, 2.8vh, 32px);
     border-radius: 40px;
     background: var(--exam-panel);
     box-shadow:
@@ -528,8 +529,8 @@
 
 @media (max-width: 900px) {
     .profile-app:not(.profile-app--dashboard-profile) {
-        padding: 16px;
-        gap: 16px;
+        padding: 18px;
+        gap: 18px;
         overflow-y: auto;
     }
 
@@ -537,7 +538,17 @@
         flex: 0 0 auto;
         width: 100%;
         border-radius: 32px;
-        padding: 20px;
+        padding: 22px;
+    }
+
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-bottom {
+        gap: 12px;
+    }
+
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-button {
+        min-height: 52px;
+        font-size: 13px;
     }
 
     .profile-app:not(.profile-app--dashboard-profile) .profile-main,
@@ -545,7 +556,7 @@
     .rating-dashboard-main,
     .events-dashboard-main {
         border-radius: 32px;
-        padding: 22px 18px;
+        padding: 28px 20px 24px;
     }
 
     .team-top-bar {
@@ -555,26 +566,26 @@
 
 @media (max-width: 520px) {
     .profile-app:not(.profile-app--dashboard-profile) {
-        padding: 10px;
+        padding: 18px;
     }
 
     .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar {
-        padding: 14px;
-        border-radius: 26px;
+        padding: 22px;
+        border-radius: 32px;
     }
 
     .profile-app:not(.profile-app--dashboard-profile) .profile-nav-button,
     .profile-nav-button {
-        min-height: 46px;
-        font-size: 11px;
+        min-height: 52px;
+        font-size: 13px;
     }
 
     .profile-app:not(.profile-app--dashboard-profile) .profile-main,
     .team-dashboard-main,
     .rating-dashboard-main,
     .events-dashboard-main {
-        padding: 18px 12px;
-        border-radius: 26px;
+        padding: 28px 20px 24px;
+        border-radius: 32px;
     }
 
     .team-no-team-block,

@@ -29,9 +29,10 @@ public class RatingsController : ApiControllerBase
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int? limit,
+        [FromQuery] string? league,
         CancellationToken cancellationToken)
     {
-        var query = new RatingQuery { Search = search, Sort = sort, Limit = limit };
+        var query = new RatingQuery { Search = search, Sort = sort, Limit = limit, League = league };
         return Ok(await _ratingsService.GetTeamsAsync(query, cancellationToken));
     }
 
@@ -58,9 +59,12 @@ public class RatingsController : ApiControllerBase
         [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int? limit,
+        [FromQuery] int? teamId,
+        [FromQuery] string? group,
+        [FromQuery] string? league,
         CancellationToken cancellationToken)
     {
-        var query = new RatingQuery { Search = search, Sort = sort, Limit = limit };
+        var query = new RatingQuery { Search = search, Sort = sort, Limit = limit, TeamId = teamId, Group = group, League = league };
         return Ok(await _ratingsService.GetUsersAsync(query, cancellationToken));
     }
 

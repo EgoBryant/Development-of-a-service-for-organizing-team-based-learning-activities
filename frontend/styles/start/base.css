@@ -131,11 +131,11 @@ body.modal-open .menu-screen {
     cursor: pointer;
     box-shadow: none;
     transform: translate(-50%, -50%);
-    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    transition: none;
 }
 
 .start-pill-button:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: transparent;
 }
 
 .start-pill-button:focus-visible {

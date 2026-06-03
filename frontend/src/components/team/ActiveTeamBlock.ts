@@ -7,6 +7,10 @@ export function renderActiveTeamBlock(): string {
     const subtitle = bridge.getTeamSubtitle();
     const members = bridge.getTeamMembers();
     const isCaptain = bridge.isCurrentUserCaptain();
+    const history = bridge.getTeamHistory();
+    const krk = bridge.getTeamKrk();
+    const score = bridge.getTeamScore();
+    const inviteCode = bridge.getTeamInviteCode();
 
     const requestsControl = isCaptain
         ? `<button type="button" class="team-top-pill team-top-pill-plus" id="teamOpenRequestsHeaderButton" aria-label="Заявки">+</button>`
@@ -23,11 +27,29 @@ export function renderActiveTeamBlock(): string {
                 <div class="team-member-avatar" aria-hidden="true">${avatarInner}</div>
                 <div class="team-member-name">${escapeHtml(member.displayName)}</div>
                 <div class="team-member-role">${escapeHtml(member.roleLabel)}</div>
-                <button type="button" class="team-member-action" data-team-card-action="vote" data-member-index="${index}">ГОЛОСОВАТЬ</button>
+                <button
+                    type="button"
+                    class="team-member-action"
+                    data-team-card-action="vote"
+                    data-member-index="${index}"
+                    ${member.canVote === false ? "disabled" : ""}
+                >${member.voteScore ? `${member.voteScore}/5` : member.canVote === false ? "ВЫ" : "ГОЛОСОВАТЬ"}</button>
             </div>`;
               })
               .join("")
         : `<p class="team-members-empty">Участники появятся здесь после приглашения в команду.</p>`;
+
+    const historyHtml = history
+        .map((item) => `
+            <div class="team-history-row">
+                <span class="team-history-kind">${escapeHtml(item.label)}</span>
+                <span class="team-history-text">
+                    <strong>${escapeHtml(item.title)}</strong>
+                    <small>${escapeHtml(item.meta)}</small>
+                </span>
+                ${item.pointsLabel ? `<span class="team-history-points-pill">${escapeHtml(item.pointsLabel)}</span>` : ""}
+            </div>`)
+        .join("");
 
     return `
         <div class="team-active-wrap">
@@ -50,7 +72,15 @@ export function renderActiveTeamBlock(): string {
                     </div>
                     <div class="team-info-row">
                         <span class="team-info-label">КРК</span>
-                        <span class="team-info-value">—</span>
+                        <span class="team-info-value">${escapeHtml(krk)}</span>
+                    </div>
+                    <div class="team-info-row">
+                        <span class="team-info-label">БАЛЛЫ</span>
+                        <span class="team-info-value">${escapeHtml(score)}</span>
+                    </div>
+                    <div class="team-info-row">
+                        <span class="team-info-label">КОД</span>
+                        <span class="team-info-value">${escapeHtml(inviteCode || "—")}</span>
                     </div>
                 </div>
 
@@ -64,9 +94,11 @@ export function renderActiveTeamBlock(): string {
                 <div class="team-panel team-history-panel">
                     <div class="team-history-head">
                         <h3 class="team-block-title">ИСТОРИЯ АКТИВНОСТИ</h3>
-                        <button type="button" class="team-top-pill team-check-in-pill" id="teamCheckInButton">CHECK-IN</button>
+                        <button type="button" class="team-top-pill team-check-in-pill" id="teamCheckInButton" ${isCaptain ? "" : "disabled"}>CHECK-IN</button>
                     </div>
-                    <div class="team-history-rows team-history-rows--empty" aria-label="История активности пока пуста"></div>
+                    <div class="team-history-rows" aria-label="История активности команды">
+                        ${historyHtml}
+                    </div>
                 </div>
             </div>
 

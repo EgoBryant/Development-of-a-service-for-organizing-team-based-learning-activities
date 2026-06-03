@@ -22,6 +22,7 @@ public class Team
     public ICollection<KnowledgePost> KnowledgePosts { get; set; } = new List<KnowledgePost>();
     public ICollection<HelpRequest> OutgoingHelpRequests { get; set; } = new List<HelpRequest>();
     public ICollection<HelpRequest> IncomingHelpRequests { get; set; } = new List<HelpRequest>();
+    public ICollection<TeamJoinRequest> JoinRequests { get; set; } = new List<TeamJoinRequest>();
     public ICollection<Vote> Votes { get; set; } = new List<Vote>();
     public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
     public ICollection<TeamChallengeProgress> ChallengeProgress { get; set; } = new List<TeamChallengeProgress>();

@@ -8,6 +8,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, __dirname, "");
     const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8080";
+    const allowedHosts = [
+        "f178-144-31-18-111.ngrok-free.app",
+        ...(env.VITE_ALLOWED_HOSTS ?? "")
+            .split(",")
+            .map((host) => host.trim())
+            .filter((host) => host.length > 0)
+    ];
     // Для dev и preview: относительные запросы /api/* иначе попадают на статик-сервер → 404.
     const apiProxy = {
         "/api": {
@@ -23,12 +30,14 @@ export default defineConfig(({ mode }) => {
             port: 4173,
             strictPort: true,
             open: false,
+            allowedHosts,
             proxy: { ...apiProxy }
         },
         preview: {
             host: "127.0.0.1",
             port: 4174,
             strictPort: true,
+            allowedHosts,
             proxy: { ...apiProxy }
         },
         build: {

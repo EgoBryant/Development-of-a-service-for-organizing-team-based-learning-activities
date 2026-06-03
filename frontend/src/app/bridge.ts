@@ -1,6 +1,6 @@
 import type { ActivityFeedPushInput } from "../types/activity";
 import type { EventCreateDraft } from "../types/event";
-import type { TeamMemberView } from "../types/team";
+import type { TeamHistoryItem, TeamMemberView, TeamRescueDraft, TeamSearchItem } from "../types/team";
 
 export interface JoinTeamResult {
     ok: boolean;
@@ -16,9 +16,19 @@ export interface AppBridge {
     getTeamTitle: () => string;
     getTeamSubtitle: () => string;
     getTeamMembers: () => TeamMemberView[];
-    joinTeamByInviteCode: (code: string) => JoinTeamResult;
-    createTeam: (name: string, direction: string) => void;
-    openTeamOverlayModal: (kind: "vote" | "requests" | "rescue", memberIndex?: number) => void;
+    getTeamKrk: () => string;
+    getTeamScore: () => string;
+    getTeamInviteCode: () => string;
+    getTeamHistory: () => TeamHistoryItem[];
+    getJoinableTeams: () => TeamSearchItem[];
+    joinTeamByInviteCode: (code: string) => Promise<JoinTeamResult>;
+    requestTeamJoin: (teamId: number) => Promise<void>;
+    createTeam: (name: string, direction: string) => Promise<void>;
+    createTeamCheckIn: (weekNumber: number, reportText: string) => Promise<void>;
+    submitTeamVote: (memberId: string, score: number) => Promise<void>;
+    createTeamRescueRequest: (draft: TeamRescueDraft) => Promise<void>;
+    updateTeamHelpRequestStatus: (id: number, status: string) => Promise<void>;
+    openTeamOverlayModal: (kind: "vote" | "requests" | "rescue" | "checkIn", memberIndex?: number) => void;
     openTeamRescue: () => void;
     navigateToRating: () => void;
     addCalendarEventFromDraft: (draft: EventCreateDraft) => boolean;

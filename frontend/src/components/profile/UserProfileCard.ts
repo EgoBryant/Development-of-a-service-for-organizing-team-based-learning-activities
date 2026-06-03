@@ -1,5 +1,5 @@
 import { getAppBridge } from "../../app/bridge";
-import { getRatingUserById } from "../../data/demoRating";
+import { getRatingUserById } from "../../state/ratingDataState";
 import { openRatingTeamProfile } from "../../state/ratingFlowState";
 import { ratingFlowState } from "../../state/ratingFlowState";
 import { escapeHtml } from "../../utils/html";
@@ -57,8 +57,20 @@ export function renderUserProfileCard(userId: string): string {
                     <span class="rating-profile-stat-value">${escapeHtml(String(user.points))}</span>
                 </div>
                 <div class="rating-profile-stat-row">
+                    <span class="rating-profile-stat-label">ВКЛАД</span>
+                    <span class="rating-profile-stat-value">${escapeHtml(user.contribution ? `${user.contribution}/5` : "—")}</span>
+                </div>
+                <div class="rating-profile-stat-row">
                     <span class="rating-profile-stat-label">ЛИГА</span>
                     <span class="rating-profile-stat-value">${escapeHtml(user.league)}</span>
+                </div>
+                <div class="rating-profile-stat-row">
+                    <span class="rating-profile-stat-label">КОМАНДА</span>
+                    <span class="rating-profile-stat-value">${escapeHtml(user.teamName || "—")}</span>
+                </div>
+                <div class="rating-profile-stat-row">
+                    <span class="rating-profile-stat-label">ПОТОК</span>
+                    <span class="rating-profile-stat-value">${escapeHtml(user.groupTitle || "—")}</span>
                 </div>`
                         : `
                 <div class="rating-achievements-grid">

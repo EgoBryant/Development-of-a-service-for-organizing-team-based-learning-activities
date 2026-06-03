@@ -4,11 +4,15 @@ export interface TeamFlowState {
     noTeamView: NoTeamView;
     inviteCodeInput: string;
     inviteCodeError: string;
+    searchQuery: string;
     createTeamDraft: TeamCreateDraft;
     eventModal: TeamEventModalKind;
     eventDraft: TeamEventCreateDraft;
     eventShareLink: string;
     eventShowValidationError: boolean;
+    checkInWeek: string;
+    checkInReport: string;
+    checkInError: string;
 }
 
 export function createEmptyTeamEventDraft(): TeamEventCreateDraft {
@@ -32,11 +36,15 @@ export const teamFlowState: TeamFlowState = {
     noTeamView: "landing",
     inviteCodeInput: "",
     inviteCodeError: "",
+    searchQuery: "",
     createTeamDraft: createEmptyTeamCreateDraft(),
     eventModal: "none",
     eventDraft: createEmptyTeamEventDraft(),
     eventShareLink: "",
-    eventShowValidationError: false
+    eventShowValidationError: false,
+    checkInWeek: "",
+    checkInReport: "",
+    checkInError: ""
 };
 
 export function openTeamEventCreateModal(): void {

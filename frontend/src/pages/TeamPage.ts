@@ -89,6 +89,15 @@ export function wireTeamPageEvents(root: HTMLElement): void {
             });
         }
 
+        const openSearch = root.querySelector("#teamOpenSearchButton");
+        if (isHTMLButtonElement(openSearch)) {
+            openSearch.addEventListener("click", () => {
+                teamFlowState.noTeamView = "search";
+                teamFlowState.inviteCodeError = "";
+                bridge.render();
+            });
+        }
+
         root.querySelectorAll<HTMLButtonElement>("[data-team-no-team-back]").forEach((button) => {
             button.addEventListener("click", () => {
                 teamFlowState.noTeamView = "landing";
@@ -112,16 +121,53 @@ export function wireTeamPageEvents(root: HTMLElement): void {
 
         const confirmCreate = root.querySelector("#teamConfirmCreateButton");
         if (isHTMLButtonElement(confirmCreate)) {
-            confirmCreate.addEventListener("click", () => {
+            confirmCreate.addEventListener("click", async () => {
                 const name = teamFlowState.createTeamDraft.name.trim() || "КОМАНДА";
                 const direction = teamFlowState.createTeamDraft.direction.trim();
-                bridge.createTeam(name, direction);
-                teamFlowState.noTeamView = "landing";
-                teamFlowState.createTeamDraft = { name: "", direction: "" };
-                bridge.setStatus("Команда создана (демо).");
-                bridge.render();
+                try {
+                    await bridge.createTeam(name, direction);
+                    teamFlowState.noTeamView = "landing";
+                    teamFlowState.createTeamDraft = { name: "", direction: "" };
+                    bridge.setStatus("Команда создана.");
+                    bridge.render();
+                } catch (error) {
+                    bridge.setStatus(error instanceof Error ? error.message : "Не удалось создать команду.", "error");
+                    bridge.render();
+                }
             });
         }
+
+        const searchInput = root.querySelector("#teamSearchInput");
+        if (isHTMLInputElement(searchInput)) {
+            searchInput.addEventListener("input", () => {
+                teamFlowState.searchQuery = searchInput.value;
+                const query = teamFlowState.searchQuery.trim().toLowerCase();
+                root.querySelectorAll<HTMLElement>("[data-team-search-text]").forEach((card) => {
+                    const haystack = card.dataset.teamSearchText ?? "";
+                    card.hidden = Boolean(query) && !haystack.includes(query);
+                });
+            });
+        }
+
+        root.querySelectorAll<HTMLButtonElement>("[data-team-request-id]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const teamId = Number(button.dataset.teamRequestId ?? "0");
+                if (!Number.isInteger(teamId) || teamId <= 0) {
+                    return;
+                }
+
+                try {
+                    button.disabled = true;
+                    await bridge.requestTeamJoin(teamId);
+                    bridge.setStatus("Заявка отправлена капитану команды.");
+                    bridge.render();
+                } catch (error) {
+                    button.disabled = false;
+                    bridge.setStatus(error instanceof Error ? error.message : "Не удалось отправить заявку.", "error");
+                    bridge.render();
+                }
+            });
+        });
 
         const inviteInput = root.querySelector("#teamInviteCodeInput");
         if (isHTMLInputElement(inviteInput)) {
@@ -133,12 +179,12 @@ export function wireTeamPageEvents(root: HTMLElement): void {
 
         const joinForm = root.querySelector("#teamJoinByCodeForm");
         if (isHTMLFormElement(joinForm)) {
-            joinForm.addEventListener("submit", (event) => {
+            joinForm.addEventListener("submit", async (event) => {
                 event.preventDefault();
                 if (isHTMLInputElement(inviteInput)) {
                     teamFlowState.inviteCodeInput = inviteInput.value;
                 }
-                const result = bridge.joinTeamByInviteCode(teamFlowState.inviteCodeInput);
+                const result = await bridge.joinTeamByInviteCode(teamFlowState.inviteCodeInput);
                 if (!result.ok) {
                     teamFlowState.inviteCodeError = result.errorMessage;
                     bridge.render();
@@ -146,7 +192,7 @@ export function wireTeamPageEvents(root: HTMLElement): void {
                 }
                 teamFlowState.inviteCodeInput = "";
                 teamFlowState.inviteCodeError = "";
-                bridge.setStatus("Вы вступили в команду (демо).");
+                bridge.setStatus("Вы вступили в команду.");
                 bridge.render();
             });
         }
@@ -172,13 +218,7 @@ export function wireTeamPageEvents(root: HTMLElement): void {
     const teamCheckIn = root.querySelector("#teamCheckInButton");
     if (isHTMLButtonElement(teamCheckIn)) {
         teamCheckIn.addEventListener("click", () => {
-            bridge.pushActivity({
-                kind: "check_in",
-                title: "CHECK-IN",
-                description: "Отметка посещения зарегистрирована."
-            });
-            bridge.setStatus("Check-in зарегистрирован (демо).");
-            bridge.render();
+            bridge.openTeamOverlayModal("checkIn");
         });
     }
 

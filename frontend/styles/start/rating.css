@@ -472,6 +472,10 @@
     text-align: left;
 }
 
+.rating-team-history-row {
+    cursor: default;
+}
+
 .rating-team-member-name,
 .rating-team-member-role {
     font-size: 11px;

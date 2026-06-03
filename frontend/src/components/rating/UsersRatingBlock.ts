@@ -1,4 +1,4 @@
-import { DEMO_RATING_USERS } from "../../data/demoRating";
+import { getRatingUsers } from "../../state/ratingDataState";
 import { ratingFlowState } from "../../state/ratingFlowState";
 import type { RatingLeaderboardEntry } from "../../types/rating";
 import { escapeHtml } from "../../utils/html";
@@ -11,10 +11,12 @@ import {
 } from "./ratingBlockUtils";
 
 function toLeaderboardEntries(): RatingLeaderboardEntry[] {
-    return DEMO_RATING_USERS.map((user) => ({
+    return getRatingUsers().map((user) => ({
         rank: user.rank,
         label: user.name,
-        points: user.points
+        points: user.points,
+        pointsLabel: String(user.points),
+        searchText: `${user.name} ${user.teamName ?? ""} ${user.groupTitle ?? ""} ${user.league}`
     }));
 }
 
@@ -26,7 +28,7 @@ export function renderUsersRatingBlock(): string {
     const rest = top10.filter((entry) => entry.rank >= 4);
     const listHtml = rest.length
         ? rest.map((entry) => {
-              const user = DEMO_RATING_USERS.find((u) => u.rank === entry.rank);
+              const user = getRatingUsers().find((u) => u.rank === entry.rank);
               return renderListRowHtml(entry, "data-rating-user-id", user?.id ?? String(entry.rank));
           }).join("")
         : `<p class="rating-list-empty">Ничего не найдено</p>`;
@@ -39,7 +41,7 @@ export function renderUsersRatingBlock(): string {
                     type="search"
                     class="rating-search-input"
                     id="ratingUsersSearchInput"
-                    placeholder="ПОИСК"
+                    placeholder="ПОИСК ПО ИМЕНИ / КОМАНДЕ / ПОТОКУ"
                     value="${escapeHtml(search)}"
                     autocomplete="off"
                 >

@@ -476,6 +476,58 @@ namespace TeamExamProject.Migrations
                     b.ToTable("Teams");
                 });
 
+            modelBuilder.Entity("TeamExamProject.Models.TeamJoinRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("DecidedByUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TeamId", "UserId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Pending'");
+
+                    b.HasIndex("TeamId", "UserId", "Status");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TeamJoinRequests");
+                });
+
             modelBuilder.Entity("TeamExamProject.Models.TeamChallengeProgress", b =>
                 {
                     b.Property<int>("Id")
@@ -788,6 +840,32 @@ namespace TeamExamProject.Migrations
                     b.Navigation("Captain");
                 });
 
+            modelBuilder.Entity("TeamExamProject.Models.TeamJoinRequest", b =>
+                {
+                    b.HasOne("TeamExamProject.Models.User", "DecidedByUser")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TeamExamProject.Models.Team", "Team")
+                        .WithMany("JoinRequests")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TeamExamProject.Models.User", "User")
+                        .WithMany("TeamJoinRequests")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DecidedByUser");
+
+                    b.Navigation("Team");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TeamExamProject.Models.TeamChallengeProgress", b =>
                 {
                     b.HasOne("TeamExamProject.Models.Challenge", "Challenge")
@@ -901,6 +979,8 @@ namespace TeamExamProject.Migrations
 
                     b.Navigation("IncomingHelpRequests");
 
+                    b.Navigation("JoinRequests");
+
                     b.Navigation("KnowledgePosts");
 
                     b.Navigation("Members");
@@ -919,6 +999,8 @@ namespace TeamExamProject.Migrations
                     b.Navigation("KnowledgePosts");
 
                     b.Navigation("OutgoingVotes");
+
+                    b.Navigation("TeamJoinRequests");
                 });
 #pragma warning restore 612, 618
         }

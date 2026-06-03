@@ -1,4 +1,4 @@
-import { DEMO_RATING_TEAMS } from "../../data/demoRating";
+import { getRatingTeams } from "../../state/ratingDataState";
 import { ratingFlowState } from "../../state/ratingFlowState";
 import type { RatingLeaderboardEntry } from "../../types/rating";
 import { escapeHtml } from "../../utils/html";
@@ -11,10 +11,12 @@ import {
 } from "./ratingBlockUtils";
 
 function toLeaderboardEntries(): RatingLeaderboardEntry[] {
-    return DEMO_RATING_TEAMS.map((team) => ({
+    return getRatingTeams().map((team) => ({
         rank: team.rank,
         label: team.name,
-        points: team.points
+        points: team.krk,
+        pointsLabel: `КРК ${team.krk.toFixed(1)}`,
+        searchText: `${team.name} ${team.league ?? ""} ${team.captainName ?? ""}`
     }));
 }
 
@@ -26,7 +28,7 @@ export function renderTeamsRatingBlock(): string {
     const rest = top10.filter((entry) => entry.rank >= 4);
     const listHtml = rest.length
         ? rest.map((entry) => {
-              const team = DEMO_RATING_TEAMS.find((t) => t.rank === entry.rank);
+              const team = getRatingTeams().find((t) => t.rank === entry.rank);
               return renderListRowHtml(entry, "data-rating-team-id", team?.id ?? String(entry.rank));
           }).join("")
         : `<p class="rating-list-empty">Ничего не найдено</p>`;
@@ -39,7 +41,7 @@ export function renderTeamsRatingBlock(): string {
                     type="search"
                     class="rating-search-input"
                     id="ratingTeamsSearchInput"
-                    placeholder="ПОИСК"
+                    placeholder="ПОИСК ПО КОМАНДЕ / ЛИГЕ"
                     value="${escapeHtml(search)}"
                     autocomplete="off"
                 >

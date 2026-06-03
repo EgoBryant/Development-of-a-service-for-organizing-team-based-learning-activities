@@ -8,6 +8,8 @@ namespace TeamExamProject.Infrastructure.Extensions;
 
 public static class WebApplicationExtensions
 {
+    private const string FrontendCorsPolicyName = "Frontend";
+
     public static async Task InitializeDatabaseAsync(
         this WebApplication app,
         string connectionString)
@@ -32,7 +34,7 @@ public static class WebApplicationExtensions
         }
 
         app.UseExceptionHandler();
-        app.UseCors(ServiceCollectionExtensions.GetFrontendCorsPolicyName());
+        app.UseCors(FrontendCorsPolicyName);
         app.UseAuthentication();
         app.UseAuthorization();
 

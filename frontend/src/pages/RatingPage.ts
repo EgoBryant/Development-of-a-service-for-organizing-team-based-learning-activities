@@ -285,15 +285,32 @@ export function wireRatingPageEvents(root: HTMLElement): void {
 
             ratingFlowState.rescueShowError = false;
             const topic = ratingFlowState.rescueDraft.topic.trim() || "Запрос";
-            ratingFlowState.rescueDraft = createEmptyRescueDraft();
-            closeRatingRescueModal();
-            bridge.pushActivity({
-                kind: "rescue_sent",
-                title: "ЗАПРОС СПАСЕНИЯ",
-                description: `Тема: «${topic}». Запрос отправлен в биржу помощи.`
-            });
-            bridge.setStatus("Спасение: запрос помощи отправлен (демо).");
-            bridge.render();
+            const targetTeamId = ratingFlowState.selectedTeamId ?? "";
+
+            void bridge.createTeamRescueRequest({
+                targetTeamId,
+                topic,
+                tag: ratingFlowState.rescueDraft.tag,
+                description: ratingFlowState.rescueDraft.description,
+                league: "",
+                deadline: ratingFlowState.rescueDraft.dateTime,
+                photoFileName: ""
+            })
+                .then(() => {
+                    ratingFlowState.rescueDraft = createEmptyRescueDraft();
+                    closeRatingRescueModal();
+                    bridge.pushActivity({
+                        kind: "rescue_sent",
+                        title: "ЗАПРОС СПАСЕНИЯ",
+                        description: `Тема: «${topic}». Запрос отправлен в биржу помощи.`
+                    });
+                    bridge.setStatus("Спасение: запрос помощи отправлен.");
+                    bridge.render();
+                })
+                .catch((error: unknown) => {
+                    bridge.setStatus(error instanceof Error ? error.message : "Не удалось отправить запрос помощи.", "error");
+                    bridge.render();
+                });
         });
     }
 }

@@ -23,4 +23,8 @@ public class UserProfileResponse
     public string TeamInviteCode { get; set; } = string.Empty;
     public bool IsCaptain { get; set; }
     public int TeamScore { get; set; }
+    public int UserPoints { get; set; }
+    public int PersonalRating { get; set; }
+    public double PersonalContribution { get; set; }
+    public string PersonalLeague { get; set; } = string.Empty;
 }

@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<KnowledgePost> KnowledgePosts => Set<KnowledgePost>();
     public DbSet<HelpRequest> HelpRequests => Set<HelpRequest>();
+    public DbSet<TeamJoinRequest> TeamJoinRequests => Set<TeamJoinRequest>();
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
@@ -72,6 +73,31 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(team => team.CaptainId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TeamJoinRequest>(entity =>
+        {
+            entity.HasKey(request => request.Id);
+            entity.Property(request => request.Message).HasMaxLength(1000);
+            entity.Property(request => request.Status).HasMaxLength(32).IsRequired();
+            entity.HasIndex(request => request.Status);
+            entity.HasIndex(request => request.CreatedAtUtc);
+            entity.HasIndex(request => new { request.TeamId, request.UserId, request.Status });
+            entity.HasIndex(request => new { request.TeamId, request.UserId })
+                .IsUnique()
+                .HasFilter("\"Status\" = 'Pending'");
+            entity.HasOne(request => request.Team)
+                .WithMany(team => team.JoinRequests)
+                .HasForeignKey(request => request.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(request => request.User)
+                .WithMany(user => user.TeamJoinRequests)
+                .HasForeignKey(request => request.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(request => request.DecidedByUser)
+                .WithMany()
+                .HasForeignKey(request => request.DecidedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Group>(entity =>

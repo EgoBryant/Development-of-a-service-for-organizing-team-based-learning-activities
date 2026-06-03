@@ -1,6 +1,15 @@
 import type { EventCreateDraft } from "./event";
 import type { NewsCreateDraft } from "./news";
-import type { LocalCreatedTeam, TeamModalKind, TeamRescueDraft } from "./team";
+import type {
+    CheckInResponse,
+    HelpRequestResponse,
+    LocalCreatedTeam,
+    MyVoteResponse,
+    TeamJoinRequestResponse,
+    TeamModalKind,
+    TeamRescueDraft,
+    TeamResponse
+} from "./team";
 import type { ProfileEdits } from "./profile";
 import type { SignInState, SignUpState, UserProfileResponse } from "./auth";
 
@@ -47,6 +56,12 @@ export interface AppState {
     teamVoteMemberIndex: number;
     teamRequestsInviteLink: string;
     localCreatedTeam: LocalCreatedTeam | null;
+    currentTeam: TeamResponse | null;
+    teamCatalog: TeamResponse[];
+    teamCheckIns: CheckInResponse[];
+    teamHelpRequests: HelpRequestResponse[];
+    teamJoinRequests: TeamJoinRequestResponse[];
+    teamMyVotes: MyVoteResponse[];
     statusMessage: string;
     statusTone: "default" | "error";
     isSubmitting: boolean;

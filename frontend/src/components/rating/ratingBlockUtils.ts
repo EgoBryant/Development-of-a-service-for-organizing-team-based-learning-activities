@@ -11,6 +11,7 @@ export function filterEntries(entries: RatingLeaderboardEntry[], search: string)
         return (
             String(entry.rank).includes(query) ||
             entry.label.toLowerCase().includes(query) ||
+            (entry.searchText ?? "").toLowerCase().includes(query) ||
             String(entry.points).includes(query)
         );
     });
@@ -44,7 +45,7 @@ export function renderPodiumSlot(place: 1 | 2 | 3, entry?: RatingLeaderboardEntr
                 <span class="rating-podium-rank">${place}</span>
                 ${label ? `<span class="rating-podium-label">${escapeHtml(label)}</span>` : ""}
             </div>
-            <span class="rating-podium-points">БАЛЛЫ</span>
+            <span class="rating-podium-points">${escapeHtml(entry?.pointsLabel ?? String(entry?.points ?? ""))}</span>
         </article>`;
 }
 
@@ -95,6 +96,6 @@ export function renderListRowHtml(
         <button type="button" class="rating-list-row rating-list-row--clickable" role="listitem" ${dataAttr}="${escapeHtml(dataValue)}">
             <span class="rating-list-main">${escapeHtml(String(entry.rank))}</span>
             <span class="rating-list-label">${escapeHtml(entry.label)}</span>
-            <span class="rating-list-points">БАЛЛЫ</span>
+            <span class="rating-list-points">${escapeHtml(entry.pointsLabel ?? String(entry.points))}</span>
         </button>`;
 }

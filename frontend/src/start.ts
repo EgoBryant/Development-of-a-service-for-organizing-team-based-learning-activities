@@ -49,10 +49,17 @@ import type { PersistedClientProfileV1, ProfileEdits } from "./types/profile";
 import type {
     LocalCreatedTeam,
     PersistedLocalTeamV1,
+    CheckInResponse,
+    HelpRequestResponse,
+    MyVoteResponse,
+    TeamJoinRequestResponse,
     TeamMemberRow,
+    TeamResponse,
+    TeamHistoryItem,
     TeamModalKind,
     TeamRescueDraft,
-    TeamMemberView
+    TeamMemberView,
+    TeamSearchItem
 } from "./types/team";
 import { parseEventDateTimeLocal } from "./utils/calendarEvents";
 import {
@@ -67,10 +74,28 @@ import { escapeHtml } from "./utils/html";
 import { renderProfileAchievementModal, renderProfileAchievementStrip } from "./components/profile/ProfileAchievements";
 import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
+import { fetchRatingTeams, fetchRatingUsers } from "./services/ratingApi";
+import {
+    createCheckIn,
+    createHelpRequest,
+    createTeam as createTeamApi,
+    createTeamJoinRequest,
+    createVote,
+    fetchCheckIns,
+    fetchHelpRequests,
+    fetchMyTeam,
+    fetchMyVotes,
+    fetchTeams,
+    fetchTeamJoinRequests,
+    joinTeam as joinTeamApi,
+    updateHelpRequestStatus,
+    updateTeamJoinRequestStatus
+} from "./services/teamApi";
 import { getErrorMessage } from "./services/httpClient";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
+import { clearRatingData, setRatingData } from "./state/ratingDataState";
 
 /** Событие открытия модалки «Спасение» с любого места UI. */
 export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
@@ -114,6 +139,12 @@ const appState: AppState = {
     teamVoteMemberIndex: 0,
     teamRequestsInviteLink: "",
     localCreatedTeam: null,
+    currentTeam: null,
+    teamCatalog: [],
+    teamCheckIns: [],
+    teamHelpRequests: [],
+    teamJoinRequests: [],
+    teamMyVotes: [],
     statusMessage: "",
     statusTone: "default",
     isSubmitting: false
@@ -147,6 +178,7 @@ function clearStatus(): void {
 
 function createEmptyTeamRescueDraft(): TeamRescueDraft {
     return {
+        targetTeamId: "",
         topic: "",
         tag: "",
         description: "",
@@ -171,20 +203,141 @@ function openRescueModal(): void {
     openTeamModal("rescue");
 }
 
-function getTeamMembersForView(): TeamMemberView[] {
-    return getTeamRoster().map((member) => ({
-        id: member.id,
-        displayName: member.displayName,
-        roleLabel: member.roleLabel,
-        avatarUrl: member.avatarUrl
-    }));
-}
-
 function pushUserActivity(input: ActivityFeedPushInput): void {
     pushActivityFeedItem(input);
 }
 
-function joinTeamByInviteCode(code: string): JoinTeamResult {
+async function submitTeamCheckIn(weekNumber: number, reportText: string): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        pushUserActivity({
+            kind: "check_in",
+            title: "CHECK-IN",
+            description: `Отчет за ${weekNumber} неделю сохранен локально.`
+        });
+        return;
+    }
+
+    const created = await createCheckIn(token, { weekNumber, reportText });
+    appState.teamCheckIns = [created, ...appState.teamCheckIns.filter((item) => item.id !== created.id)];
+    await refreshTeamWorkspace();
+}
+
+async function submitTeamVote(memberId: string, score: number): Promise<void> {
+    const token = getSessionToken();
+    const numericMemberId = Number(memberId);
+    if (!token || !Number.isFinite(numericMemberId) || numericMemberId <= 0) {
+        pushUserActivity({
+            kind: "team_achievement",
+            title: "ГОЛОС КОМАНДЫ",
+            description: `Оценка ${score}/5 сохранена локально.`
+        });
+        return;
+    }
+
+    await createVote(token, numericMemberId, score);
+    appState.teamMyVotes = await fetchMyVotes(token).catch(() => appState.teamMyVotes);
+    await refreshTeamWorkspace();
+}
+
+function parseLocalDateTimeToUtc(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    const date = new Date(trimmed);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
+    const token = getSessionToken();
+    const toTeamId = Number(draft.targetTeamId);
+    if (!token || !Number.isFinite(toTeamId) || toTeamId <= 0) {
+        pushUserActivity({
+            kind: "rescue_sent",
+            title: "ЗАПРОС СПАСЕНИЯ",
+            description: `Тема: «${draft.topic.trim()}». Запрос сохранен локально.`
+        });
+        return;
+    }
+
+    const created = await createHelpRequest(token, {
+        toTeamId,
+        topic: draft.topic.trim(),
+        tag: draft.tag.trim(),
+        description: draft.description.trim(),
+        format: "Воркшоп",
+        scheduledAtUtc: parseLocalDateTimeToUtc(draft.deadline),
+        leagueLabel: draft.league.trim(),
+        bonusPoints: 10
+    });
+    appState.teamHelpRequests = [created, ...appState.teamHelpRequests.filter((item) => item.id !== created.id)];
+    await refreshTeamWorkspace();
+}
+
+async function submitHelpRequestStatus(id: number, status: string): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        return;
+    }
+
+    const updated = await updateHelpRequestStatus(token, id, status);
+    appState.teamHelpRequests = appState.teamHelpRequests.map((item) => item.id === updated.id ? updated : item);
+    await refreshTeamWorkspace();
+}
+
+async function requestTeamJoin(teamId: number): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        pushUserActivity({
+            kind: "invite_sent",
+            title: "ЗАЯВКА В КОМАНДУ",
+            description: "Заявка сохранена локально. Войдите в аккаунт, чтобы отправить её капитану."
+        });
+        return;
+    }
+
+    const created = await createTeamJoinRequest(token, teamId, "Хочу присоединиться к команде.");
+    appState.teamJoinRequests = [
+        created,
+        ...appState.teamJoinRequests.filter((item) => item.id !== created.id)
+    ];
+    await refreshTeamWorkspace();
+}
+
+async function submitTeamJoinRequestStatus(id: number, status: string): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        return;
+    }
+
+    const updated = await updateTeamJoinRequestStatus(token, id, status);
+    appState.teamJoinRequests = appState.teamJoinRequests.map((item) => item.id === updated.id ? updated : item);
+    await refreshCurrentUserProfile();
+    await refreshTeamWorkspace();
+}
+
+async function joinTeamByInviteCode(code: string): Promise<JoinTeamResult> {
+    const token = getSessionToken();
+    if (token) {
+        try {
+            const team = await joinTeamApi(token, code.trim());
+            appState.currentTeam = team;
+            appState.localCreatedTeam = null;
+            await refreshCurrentUserProfile();
+            await refreshTeamWorkspace();
+            pushUserActivity({
+                kind: "team_joined",
+                title: "ВСТУПЛЕНИЕ В КОМАНДУ",
+                description: `Вы присоединились к команде «${team.name}».`
+            });
+            return { ok: true, errorMessage: "" };
+        } catch (error) {
+            return { ok: false, errorMessage: getErrorMessage(error) };
+        }
+    }
+
     if (!isDemoInviteCodeValid(code)) {
         return { ok: false, errorMessage: "НЕВЕРНЫЙ КОД ПРИГЛАШЕНИЯ" };
     }
@@ -217,8 +370,27 @@ function joinTeamByInviteCode(code: string): JoinTeamResult {
     return { ok: true, errorMessage: "" };
 }
 
-function createTeamFromBridge(name: string, direction: string): void {
+async function createTeamFromBridge(name: string, direction: string): Promise<void> {
     const teamName = name.trim() || "КОМАНДА";
+    const token = getSessionToken();
+    if (token) {
+        const team = await createTeamApi(token, {
+            name: teamName,
+            description: direction.trim()
+        });
+        appState.currentTeam = team;
+        appState.localCreatedTeam = null;
+        appState.profileInviteLink = buildTeamInviteLink();
+        await refreshCurrentUserProfile();
+        await refreshTeamWorkspace();
+        pushUserActivity({
+            kind: "team_created",
+            title: "КОМАНДА СОЗДАНА",
+            description: `Создана команда «${team.name}»${team.description ? ` · ${team.description}` : ""}.`
+        });
+        return;
+    }
+
     const invite = appState.profile?.teamInviteCode?.trim() || `local-${Date.now().toString(36)}`;
     const link = `${window.location.origin}/team/${encodeURIComponent(teamName)}?invite=${encodeURIComponent(invite)}`;
     appState.profileInviteLink = link;
@@ -259,16 +431,31 @@ async function bootstrap(): Promise<void> {
         isCurrentUserCaptain: isTeamCaptain,
         hasTeamAccess,
         getTeamTitle: () => getEffectiveTeamName() || "НАЗВАНИЕ",
-        getTeamSubtitle: () => appState.localCreatedTeam?.direction?.trim() ?? "",
+        getTeamSubtitle: () => getEffectiveTeamDescription(),
         getTeamMembers: getTeamMembersForView,
+        getTeamKrk: () => getEffectiveTeamKrk(),
+        getTeamScore: () => getEffectiveTeamScore(),
+        getTeamInviteCode: () => getEffectiveInviteCode(),
+        getTeamHistory: getTeamHistoryItems,
+        getJoinableTeams: getJoinableTeams,
         joinTeamByInviteCode,
+        requestTeamJoin,
         createTeam: createTeamFromBridge,
+        createTeamCheckIn: submitTeamCheckIn,
+        submitTeamVote,
+        createTeamRescueRequest: submitTeamRescueRequest,
+        updateTeamHelpRequestStatus: submitHelpRequestStatus,
         openTeamOverlayModal: (kind, memberIndex) => openTeamModal(kind, memberIndex),
         openTeamRescue: openRescueModal,
         navigateToRating: () => {
             appState.dashboardSection = "rating";
             persistDashboardSectionToStorage();
             clearStatus();
+            void refreshRatingWorkspace().then(() => {
+                if (appState.dashboardSection === "rating") {
+                    render();
+                }
+            });
             render();
         },
         addCalendarEventFromDraft: (draft: EventCreateDraft) => {
@@ -301,6 +488,8 @@ async function bootstrap(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshTeamWorkspace();
+        await refreshRatingWorkspace();
         appState.view = "account";
         setStatus("Сессия восстановлена.");
     } catch (error) {
@@ -363,6 +552,8 @@ function renderAuthView(): void {
     authModalCard.classList.toggle("mode-recovery", appState.view === "password-recovery");
 
     if (appState.view === "sign-in") {
+        const signInSubmitDisabled = appState.isSubmitting || !isSignInReady();
+
         authSwitchColumn.innerHTML = `
             ${renderAuthSwitchPanel(
                 "Новый игрок?",
@@ -381,13 +572,20 @@ function renderAuthView(): void {
                     <button class="auth-inline-pill" type="button" id="signInRestoreButton">ЗАБЫЛИ?</button>
                 </div>
                 ${renderStatusBlock()}
-                <button class="auth-submit-pill" type="submit" ${appState.isSubmitting ? "disabled" : ""}>
+                <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
                     ${appState.isSubmitting ? "ПОДКЛЮЧЕНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
             </form>
         `;
 
         const signInForm = getRequiredElement<HTMLFormElement>("#signInForm", isHTMLFormElement);
+        const signInSubmitButton = signInForm.querySelector(".auth-submit-pill");
+        const syncSignInSubmitState = (): void => {
+            if (isHTMLButtonElement(signInSubmitButton)) {
+                signInSubmitButton.disabled = appState.isSubmitting || !isSignInReady();
+            }
+        };
+
         const restoreButton = signInForm.querySelector("#signInRestoreButton");
         if (isHTMLButtonElement(restoreButton)) {
             restoreButton.addEventListener("click", () => {
@@ -400,6 +598,7 @@ function renderAuthView(): void {
         if (isHTMLInputElement(passwordInput)) {
             passwordInput.addEventListener("input", () => {
                 appState.signIn.password = passwordInput.value;
+                syncSignInSubmitState();
             });
         }
 
@@ -407,16 +606,25 @@ function renderAuthView(): void {
         if (isHTMLInputElement(emailInput)) {
             emailInput.addEventListener("input", () => {
                 appState.signIn.email = emailInput.value;
+                syncSignInSubmitState();
             });
         }
 
+        syncSignInSubmitState();
+
         signInForm.addEventListener("submit", (event: SubmitEvent) => {
             event.preventDefault();
+            if (!isSignInReady()) {
+                syncSignInSubmitState();
+                return;
+            }
             void submitLogin(signInForm);
         });
     }
 
     if (appState.view === "sign-up") {
+        const signUpSubmitDisabled = appState.isSubmitting || !isSignUpReady();
+
         authSwitchColumn.innerHTML = `
             ${renderAuthSwitchPanel(
                 "Уже с нами?",
@@ -437,7 +645,7 @@ function renderAuthView(): void {
                     <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
                 ${renderStatusBlock()}
-                <button class="auth-submit-pill" type="submit" ${appState.isSubmitting ? "disabled" : ""}>
+                <button class="auth-submit-pill" type="submit" ${signUpSubmitDisabled ? "disabled" : ""}>
                     ${appState.isSubmitting ? "СОЗДАНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
             </form>
@@ -513,12 +721,25 @@ function renderAuthSwitchPanel(title: string, copy: string, buttonLabel: string,
     `;
 }
 
+function isSignInReady(): boolean {
+    return appState.signIn.email.trim().length > 0 && appState.signIn.password.length > 0;
+}
+
+function isSignUpReady(): boolean {
+    return (
+        appState.signUp.email.trim().length > 0 &&
+        appState.signUp.password.length > 0 &&
+        appState.signUp.passwordConfirm.length > 0
+    );
+}
+
 function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const emailInput = signUpForm.elements.namedItem("email");
     const passwordInput = signUpForm.elements.namedItem("password");
     const passwordConfirmInput = signUpForm.elements.namedItem("passwordConfirm");
     const passwordShell = signUpForm.querySelector<HTMLElement>("[data-signup-password-shell]");
     const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
+    const submitButton = signUpForm.querySelector(".auth-submit-pill");
 
     if (
         !isHTMLInputElement(emailInput) ||
@@ -538,6 +759,10 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         passwordInput.disabled = !hasEmail;
         confirmShell.classList.toggle("hidden", !hasPassword);
         passwordConfirmInput.disabled = !hasPassword;
+
+        if (isHTMLButtonElement(submitButton)) {
+            submitButton.disabled = appState.isSubmitting || !isSignUpReady();
+        }
     };
 
     emailInput.addEventListener("input", () => {
@@ -552,12 +777,17 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
 
     passwordConfirmInput.addEventListener("input", () => {
         appState.signUp.passwordConfirm = passwordConfirmInput.value;
+        syncVisibleFields();
     });
 
     syncVisibleFields();
 
     signUpForm.addEventListener("submit", (event: SubmitEvent) => {
         event.preventDefault();
+        if (!isSignUpReady()) {
+            syncVisibleFields();
+            return;
+        }
         void submitRegister(signUpForm);
     });
 }
@@ -600,6 +830,13 @@ function resetProfileUi(): void {
     appState.teamVoteMemberIndex = 0;
     appState.teamRequestsInviteLink = "";
     appState.localCreatedTeam = null;
+    appState.currentTeam = null;
+    appState.teamCatalog = [];
+    appState.teamCheckIns = [];
+    appState.teamHelpRequests = [];
+    appState.teamJoinRequests = [];
+    appState.teamMyVotes = [];
+    clearRatingData();
 }
 
 function renderVoteModalRowsHtml(): string {
@@ -615,22 +852,55 @@ function renderVoteModalRowsHtml(): string {
 }
 
 function hasTeamAccess(): boolean {
-    return Boolean(appState.profile?.teamId) || Boolean(appState.localCreatedTeam);
+    return Boolean(appState.currentTeam) || Boolean(appState.profile?.teamId) || Boolean(appState.localCreatedTeam);
 }
 
 function getEffectiveTeamName(): string {
     return (
+        appState.currentTeam?.name?.trim() ||
         appState.profile?.teamName?.trim() ||
         appState.localCreatedTeam?.name ||
         ""
     );
 }
 
+function getEffectiveTeamDescription(): string {
+    return (
+        appState.currentTeam?.description?.trim() ||
+        appState.localCreatedTeam?.direction?.trim() ||
+        ""
+    );
+}
+
+function getEffectiveInviteCode(): string {
+    return (
+        appState.currentTeam?.inviteCode?.trim() ||
+        appState.profile?.teamInviteCode?.trim() ||
+        appState.localCreatedTeam?.inviteCode ||
+        ""
+    );
+}
+
+function getEffectiveTeamKrk(): string {
+    if (appState.currentTeam) {
+        return appState.currentTeam.krk.toFixed(1);
+    }
+
+    return "—";
+}
+
+function getEffectiveTeamScore(): string {
+    if (appState.currentTeam) {
+        return String(appState.currentTeam.score);
+    }
+
+    return appState.profile?.teamScore ? String(appState.profile.teamScore) : "—";
+}
+
 function buildTeamInviteLink(): string {
     const name = getEffectiveTeamName().trim() || "КОМАНДА";
     const invite =
-        appState.profile?.teamInviteCode?.trim() ||
-        appState.localCreatedTeam?.inviteCode ||
+        getEffectiveInviteCode() ||
         "DEMO-INVITE";
     return `${window.location.origin}/team/${encodeURIComponent(name)}?invite=${encodeURIComponent(invite)}`;
 }
@@ -1314,9 +1584,96 @@ function applyPersistedClientStateAfterMe(): void {
     syncCurrentUserInLocalTeamRoster();
 }
 
+function getSessionToken(): string | null {
+    return loadSession()?.token ?? null;
+}
+
+async function refreshCurrentUserProfile(): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        return;
+    }
+
+    appState.profile = await fetchCurrentUser(token);
+    hydrateProfileClientStateFromStorage();
+}
+
+async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> {
+    if (!token) {
+        clearRatingData();
+        return;
+    }
+
+    const [teams, users] = await Promise.all([
+        fetchRatingTeams(token).catch(() => []),
+        fetchRatingUsers(token).catch(() => [])
+    ]);
+
+    setRatingData(teams, users);
+}
+
+async function refreshTeamWorkspace(): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        return;
+    }
+
+    try {
+        appState.teamCatalog = await fetchTeams(token);
+    } catch {
+        appState.teamCatalog = [];
+    }
+
+    try {
+        appState.teamJoinRequests = await fetchTeamJoinRequests(token);
+    } catch {
+        appState.teamJoinRequests = [];
+    }
+
+    try {
+        appState.currentTeam = await fetchMyTeam(token);
+        appState.localCreatedTeam = null;
+        if (appState.profile) {
+            appState.profile = {
+                ...appState.profile,
+                teamId: appState.currentTeam.id,
+                teamName: appState.currentTeam.name,
+                teamInviteCode: appState.currentTeam.inviteCode,
+                isCaptain: appState.currentTeam.captainId === appState.profile.id,
+                teamScore: appState.currentTeam.score
+            };
+        }
+    } catch {
+        appState.currentTeam = null;
+    }
+
+    if (!appState.currentTeam) {
+        appState.teamCheckIns = [];
+        appState.teamHelpRequests = [];
+        appState.teamMyVotes = [];
+        await refreshRatingWorkspace(token);
+        return;
+    }
+
+    const [checkIns, helpRequests, myVotes] = await Promise.all([
+        fetchCheckIns(token).catch(() => [] as CheckInResponse[]),
+        fetchHelpRequests(token).catch(() => [] as HelpRequestResponse[]),
+        fetchMyVotes(token).catch(() => [] as MyVoteResponse[])
+    ]);
+
+    appState.teamCheckIns = checkIns;
+    appState.teamHelpRequests = helpRequests;
+    appState.teamMyVotes = myVotes;
+    await refreshRatingWorkspace(token);
+}
+
 function isTeamCaptain(): boolean {
     if (!appState.profile) {
         return false;
+    }
+
+    if (appState.currentTeam?.captainId === appState.profile.id) {
+        return true;
     }
 
     if (appState.profile.isCaptain) {
@@ -1370,6 +1727,16 @@ function parseTeamMemberRow(raw: unknown): TeamMemberRow | null {
 }
 
 function getTeamRoster(): TeamMemberRow[] {
+    if (appState.currentTeam) {
+        return appState.currentTeam.members.map((member) => ({
+            id: String(member.id),
+            displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
+            roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
+            avatarUrl: member.avatarUrl,
+            isCaptain: member.isCaptain
+        }));
+    }
+
     if (appState.localCreatedTeam) {
         const members = appState.localCreatedTeam.members;
         if (members.length > 0) {
@@ -1387,6 +1754,109 @@ function getTeamRoster(): TeamMemberRow[] {
     }
 
     return [];
+}
+
+function getTeamMembersForView(): TeamMemberView[] {
+    const currentUserId = appState.profile?.id;
+    const voteByTarget = new Map(appState.teamMyVotes.map((vote) => [vote.toUserId, vote.score]));
+
+    if (appState.currentTeam) {
+        return appState.currentTeam.members.map((member) => ({
+            id: String(member.id),
+            displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
+            roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
+            avatarUrl: member.avatarUrl,
+            userPoints: member.userPoints,
+            canVote: member.id !== currentUserId && !voteByTarget.has(member.id),
+            voteScore: voteByTarget.get(member.id) ?? null
+        }));
+    }
+
+    return getTeamRoster().map((member) => ({
+        id: member.id,
+        displayName: member.displayName,
+        roleLabel: member.roleLabel,
+        avatarUrl: member.avatarUrl,
+        canVote: member.id !== `user-${currentUserId ?? ""}`,
+        voteScore: null
+    }));
+}
+
+function formatShortDate(value: string | null | undefined): string {
+    if (!value) {
+        return "";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+}
+
+function getTeamHistoryItems(): TeamHistoryItem[] {
+    const checkIns = appState.teamCheckIns.map<TeamHistoryItem>((checkIn) => ({
+        label: "CHECK-IN",
+        title: `${checkIn.weekNumber} неделя · ${checkIn.status || "Submitted"}`,
+        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc)
+    }));
+
+    const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
+        label: "СПАСЕНИЕ",
+        title: `${request.topic || "Запрос помощи"} · ${request.status}`,
+        meta: `${request.fromTeamName} → ${request.toTeamName}`,
+        pointsLabel: request.bonusPoints > 0 ? `+${request.bonusPoints}` : undefined
+    }));
+
+    const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
+        label: "ЗАЯВКА",
+        title: `${request.displayName || request.userName || "Участник"} · ${request.status}`,
+        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
+    }));
+
+    const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
+        label: "ГОЛОС",
+        title: `${vote.toUserName || "Участник"} · ${vote.score}/5`,
+        meta: formatShortDate(vote.createdAtUtc)
+    }));
+
+    const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
+    return items.length > 0
+        ? items
+        : [
+              {
+                  label: "СТАРТ",
+                  title: "История активности появится после check-in, спасения или голосования.",
+                  meta: "MVP"
+              }
+          ];
+}
+
+function getJoinableTeams(): TeamSearchItem[] {
+    const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId;
+    const query = teamFlowState.searchQuery.trim().toLowerCase();
+
+    return appState.teamCatalog
+        .filter((team) => team.id !== currentTeamId)
+        .filter((team) => {
+            if (!query) {
+                return true;
+            }
+
+            return `${team.name} ${team.description} ${team.inviteCode}`.toLowerCase().includes(query);
+        })
+        .map((team) => ({
+            id: team.id,
+            name: team.name,
+            description: team.description,
+            inviteCode: team.inviteCode,
+            memberCount: team.memberCount,
+            krk: team.krk,
+            joinRequestStatus: appState.teamJoinRequests.find((request) =>
+                request.teamId === team.id && request.status === "Pending"
+            )?.status
+        }));
 }
 
 function persistLocalTeam(): void {
@@ -1503,6 +1973,11 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
         ensureTeamRescueDraft();
     }
 
+    if (kind === "checkIn") {
+        teamFlowState.checkInWeek = teamFlowState.checkInWeek || String(Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
+        teamFlowState.checkInError = "";
+    }
+
     render();
 }
 
@@ -1517,12 +1992,16 @@ function syncTeamRescueDraftFromForm(): void {
     }
 
     const draft = ensureTeamRescueDraft();
+    const target = profileMount.querySelector("#teamRescueTargetInput");
     const topic = profileMount.querySelector("#teamRescueTopicInput");
     const tag = profileMount.querySelector("#teamRescueTagInput");
     const description = profileMount.querySelector("#teamRescueDescriptionInput");
     const league = profileMount.querySelector("#teamRescueLeagueInput");
     const deadline = profileMount.querySelector("#teamRescueDeadlineInput");
 
+    if (target instanceof HTMLSelectElement) {
+        draft.targetTeamId = target.value;
+    }
     if (isHTMLInputElement(topic)) {
         draft.topic = topic.value;
     }
@@ -1555,6 +2034,7 @@ function wireTeamRescueModalEvents(): void {
         });
     }
 
+    const target = profileMount.querySelector("#teamRescueTargetInput");
     const topic = profileMount.querySelector("#teamRescueTopicInput");
     const tag = profileMount.querySelector("#teamRescueTagInput");
     const description = profileMount.querySelector("#teamRescueDescriptionInput");
@@ -1578,6 +2058,12 @@ function wireTeamRescueModalEvents(): void {
     bindInput(league, "league");
     bindInput(deadline, "deadline");
 
+    if (target instanceof HTMLSelectElement) {
+        target.addEventListener("change", () => {
+            draft.targetTeamId = target.value;
+        });
+    }
+
     if (description instanceof HTMLTextAreaElement) {
         description.addEventListener("input", () => {
             draft.description = description.value;
@@ -1599,21 +2085,35 @@ function wireTeamRescueModalEvents(): void {
             event.preventDefault();
             syncTeamRescueDraftFromForm();
 
+            if (!draft.targetTeamId.trim()) {
+                setStatus("Выберите команду для запроса спасения.", "error");
+                render();
+                return;
+            }
+
             if (!draft.topic.trim()) {
                 setStatus("Укажите тему запроса на спасение.", "error");
                 render();
                 return;
             }
 
-            appState.teamRescueDraft = createEmptyTeamRescueDraft();
-            closeTeamModal();
-            pushUserActivity({
-                kind: "rescue_sent",
-                title: "ЗАПРОС СПАСЕНИЯ",
-                description: `Тема: «${topic}». Запрос отправлен в биржу помощи.`
-            });
-            setStatus("Спасение: запрос помощи отправлен (демо).");
-            render();
+            if (!draft.description.trim()) {
+                setStatus("Опишите ситуацию для запроса спасения.", "error");
+                render();
+                return;
+            }
+
+            void submitTeamRescueRequest({ ...draft })
+                .then(() => {
+                    appState.teamRescueDraft = createEmptyTeamRescueDraft();
+                    closeTeamModal();
+                    setStatus("Спасение: запрос помощи отправлен.");
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
         });
     }
 }
@@ -1622,25 +2122,72 @@ function renderTeamModal(): string {
     if (appState.teamModal === "vote") {
         const roster = getTeamRoster();
         const member = roster[appState.teamVoteMemberIndex] ?? roster[0];
+        const existingVote = member ? appState.teamMyVotes.find((vote) => String(vote.toUserId) === member.id) : undefined;
         const voteAvatarInner = member?.avatarUrl
             ? `<img src="${escapeHtml(member.avatarUrl)}" alt="" loading="lazy">`
             : "";
         const voteRole = member?.roleLabel ?? "РОЛЬ";
         const avatarClass = voteAvatarInner ? "team-vote-avatar has-image" : "team-vote-avatar";
+        const voteButtons = [1, 2, 3, 4, 5]
+            .map((score) => `
+                <button
+                    type="button"
+                    class="team-vote-score${existingVote?.score === score ? " is-active" : ""}"
+                    data-team-vote-score="${score}"
+                    ${existingVote ? "disabled" : ""}
+                >${score}</button>`)
+            .join("");
 
         return `
                 <div class="profile-modal team-overlay-modal" role="dialog" aria-modal="true" aria-label="Голосование">
                     <div class="profile-modal-backdrop" data-close-team-modal="1"></div>
-                    <div class="profile-modal-card team-vote-card">
+                    <div class="profile-modal-card team-vote-card" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
                         <button type="button" class="profile-modal-dot" id="teamCloseVoteButton" aria-label="Закрыть"></button>
                         <h2 class="profile-modal-title">ГОЛОСОВАНИЕ</h2>
                         <div class="team-vote-hero">
                             <div class="${avatarClass}" aria-hidden="true">${voteAvatarInner}</div>
                             <div class="team-vote-role-pill">${escapeHtml(voteRole)}</div>
+                            <p class="team-vote-name">${escapeHtml(member?.displayName ?? "УЧАСТНИК")}</p>
                         </div>
-                        <div class="team-history-rows team-vote-rows">
-                            ${renderVoteModalRowsHtml()}
+                        <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале">
+                            ${voteButtons}
                         </div>
+                        ${existingVote ? `<p class="team-vote-hint">Ваша оценка уже сохранена.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
+                    </div>
+                </div>`;
+    }
+
+    if (appState.teamModal === "checkIn") {
+        const nextWeek = String(teamFlowState.checkInWeek || Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
+        const errorHtml = teamFlowState.checkInError
+            ? `<p class="team-validation-error team-validation-error--modal">${escapeHtml(teamFlowState.checkInError)}</p>`
+            : "";
+
+        return `
+                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Check-in команды">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-rescue-card">
+                        <button type="button" class="team-rescue-close" id="teamCloseCheckInButton" aria-label="Закрыть"></button>
+                        <h2 class="team-rescue-title">CHECK-IN</h2>
+                        ${errorHtml}
+                        <form id="teamCheckInForm" class="team-rescue-form" novalidate>
+                            <input
+                                id="teamCheckInWeekInput"
+                                class="team-rescue-field"
+                                type="number"
+                                min="1"
+                                max="52"
+                                placeholder="НЕДЕЛЯ"
+                                value="${escapeHtml(nextWeek)}"
+                            >
+                            <textarea
+                                id="teamCheckInReportInput"
+                                class="team-rescue-textarea"
+                                placeholder="Кратко опишите прогресс, риски и договоренности команды"
+                                aria-label="Отчет команды"
+                            >${escapeHtml(teamFlowState.checkInReport)}</textarea>
+                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
+                        </form>
                     </div>
                 </div>`;
     }
@@ -1648,6 +2195,11 @@ function renderTeamModal(): string {
     if (appState.teamModal === "rescue") {
         const draft = ensureTeamRescueDraft();
         const photoLabel = draft.photoFileName.trim() || "ФОТО";
+        const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId;
+        const targetOptions = appState.teamCatalog
+            .filter((team) => team.id !== currentTeamId)
+            .map((team) => `<option value="${team.id}" ${draft.targetTeamId === String(team.id) ? "selected" : ""}>${escapeHtml(team.name)}</option>`)
+            .join("");
         return `
                 <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
                     <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
@@ -1655,6 +2207,10 @@ function renderTeamModal(): string {
                         <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
                         <h2 class="team-rescue-title">СПАСЕНИЕ</h2>
                         <form id="teamRescueForm" class="team-rescue-form" novalidate>
+                            <select id="teamRescueTargetInput" class="team-rescue-field" aria-label="Команда для помощи">
+                                <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
+                                ${targetOptions}
+                            </select>
                             <div class="team-rescue-topic-row">
                                 <input
                                     id="teamRescueTopicInput"
@@ -1718,43 +2274,65 @@ function renderTeamModal(): string {
 
     if (appState.teamModal === "requests") {
         const link = appState.teamRequestsInviteLink || buildTeamInviteLink();
+        const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId ?? 0;
+        const joinRequests = appState.teamJoinRequests.filter((request) =>
+            request.teamId === currentTeamId || request.userId === appState.profile?.id
+        );
+        const joinRequestsHtml = joinRequests.length
+            ? joinRequests.map((request) => {
+                  const incoming = request.teamId === currentTeamId;
+                  const canAct = incoming && isTeamCaptain() && request.status === "Pending";
+                  return `
+                    <article class="team-request-row">
+                        <div>
+                            <h3 class="team-request-title">${escapeHtml(request.displayName || request.userName || "Участник")}</h3>
+                            <p class="team-request-meta">${escapeHtml(request.teamName)} · ${escapeHtml(request.status)}</p>
+                            ${request.message ? `<p class="team-request-meta">${escapeHtml(request.message)}</p>` : ""}
+                        </div>
+                        ${canAct ? `
+                            <div class="team-request-actions">
+                                <button type="button" class="team-request-dot-pill" data-team-join-request-status="Accepted" data-team-join-request-id="${request.id}" aria-label="Принять"></button>
+                                <button type="button" class="team-request-dot-pill is-decline" data-team-join-request-status="Rejected" data-team-join-request-id="${request.id}" aria-label="Отклонить"></button>
+                            </div>` : ""}
+                    </article>`;
+              }).join("")
+            : `<p class="team-list-empty">Заявок на вступление пока нет.</p>`;
+
+        const helpRequestsHtml = appState.teamHelpRequests.length
+            ? appState.teamHelpRequests.map((request) => {
+                  const incoming = request.toTeamId === currentTeamId;
+                  const canAct = incoming && isTeamCaptain() && request.status === "Open";
+                  return `
+                    <article class="team-request-row">
+                        <div>
+                            <h3 class="team-request-title">${escapeHtml(request.topic || "Спасение")}</h3>
+                            <p class="team-request-meta">${escapeHtml(request.fromTeamName)} → ${escapeHtml(request.toTeamName)}</p>
+                            <p class="team-request-meta">${escapeHtml(request.status)}${request.bonusPoints ? ` · +${escapeHtml(String(request.bonusPoints))}` : ""}</p>
+                        </div>
+                        ${canAct ? `
+                            <div class="team-request-actions">
+                                <button type="button" class="team-request-dot-pill" data-help-request-status="Accepted" data-help-request-id="${request.id}" aria-label="Принять"></button>
+                                <button type="button" class="team-request-dot-pill is-decline" data-help-request-status="Rejected" data-help-request-id="${request.id}" aria-label="Отклонить"></button>
+                            </div>` : ""}
+                    </article>`;
+              }).join("")
+            : `<p class="team-list-empty">Запросов «спасения» пока нет.</p>`;
         return `
                 <div class="profile-modal team-overlay-modal" role="dialog" aria-modal="true" aria-label="Заявки">
                     <div class="profile-modal-backdrop" data-close-team-modal="1"></div>
                     <div class="profile-modal-card team-requests-card">
                         <button type="button" class="profile-modal-dot" id="teamCloseRequestsButton" aria-label="Закрыть"></button>
                         <h2 class="profile-modal-title">ЗАЯВКИ</h2>
-                        <div class="team-requests-carousel" aria-hidden="false">
-                            <div class="team-request-slide is-dim">
-                                <div class="team-request-avatar"></div>
-                                <p class="team-request-label">ИМЯ ФАМИЛИЯ</p>
-                                <div class="team-request-mini-row">
-                                    <button type="button" class="team-request-dot-pill" disabled aria-hidden="true"></button>
-                                    <button type="button" class="team-request-dot-pill is-muted" disabled aria-hidden="true"></button>
-                                </div>
-                            </div>
-                            <div class="team-request-slide is-center">
-                                <div class="team-request-avatar"></div>
-                                <p class="team-request-label">ИМЯ ФАМИЛИЯ</p>
-                                <div class="team-request-mini-row">
-                                    <button type="button" class="team-request-dot-pill" id="teamRequestAcceptButton" aria-label="Принять"></button>
-                                    <button type="button" class="team-request-dot-pill is-decline" id="teamRequestDeclineButton" aria-label="Отклонить"></button>
-                                </div>
-                            </div>
-                            <div class="team-request-slide is-dim">
-                                <div class="team-request-avatar"></div>
-                                <p class="team-request-label">ИМЯ ФАМИЛИЯ</p>
-                                <div class="team-request-mini-row">
-                                    <button type="button" class="team-request-dot-pill" disabled aria-hidden="true"></button>
-                                    <button type="button" class="team-request-dot-pill is-muted" disabled aria-hidden="true"></button>
-                                </div>
-                            </div>
+                        <div class="team-request-list">
+                            <h3 class="team-request-section-title">ВСТУПЛЕНИЕ</h3>
+                            ${joinRequestsHtml}
+                            <h3 class="team-request-section-title">СПАСЕНИЕ</h3>
+                            ${helpRequestsHtml}
                         </div>
                         <div class="profile-link-row team-requests-link-row">
-                            <div class="profile-link-field">ССЫЛКА</div>
+                            <div class="profile-link-field">${escapeHtml(link)}</div>
                             <button type="button" class="profile-link-copy" id="teamRequestsCopyLinkButton">СКОПИРОВАТЬ</button>
                         </div>
-                        <div class="team-requests-bottom-placeholder" aria-hidden="true"></div>
                     </div>
                 </div>`;
     }
@@ -1905,11 +2483,11 @@ function renderProfileView(): void {
 
     const profile = appState.profile;
     const leagueLabel = "ЛИГА";
-    const actualPoints = profile?.teamScore ?? 0;
-    const pointsValue = String(actualPoints > 0 ? actualPoints : 100);
+    const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
+    const pointsValue = String(actualPoints);
     const ratingLabel = "РЕЙТИНГ";
-    const ratingValue = "1 место";
-    const leagueValue = "Легенда";
+    const ratingValue = profile?.personalRating ? String(profile.personalRating) : "—";
+    const leagueValue = profile?.personalLeague || "Старт";
     const fullName = getFullNameDisplay();
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
@@ -2124,6 +2702,86 @@ function wireProfileViewEvents(): void {
         });
     }
 
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-vote-score]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const card = button.closest<HTMLElement>("[data-team-vote-member-id]");
+            const memberId = card?.dataset.teamVoteMemberId ?? "";
+            const score = Number(button.dataset.teamVoteScore ?? "0");
+            if (!memberId || score < 1 || score > 5) {
+                return;
+            }
+
+            void submitTeamVote(memberId, score)
+                .then(() => {
+                    setStatus("Голос сохранен.");
+                    closeTeamModal();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
+        });
+    });
+
+    const teamCloseCheckIn = profileMount.querySelector("#teamCloseCheckInButton");
+    if (isHTMLButtonElement(teamCloseCheckIn)) {
+        teamCloseCheckIn.addEventListener("click", () => {
+            closeTeamModal();
+        });
+    }
+
+    const checkInWeek = profileMount.querySelector("#teamCheckInWeekInput");
+    if (isHTMLInputElement(checkInWeek)) {
+        checkInWeek.addEventListener("input", () => {
+            teamFlowState.checkInWeek = checkInWeek.value;
+            teamFlowState.checkInError = "";
+        });
+    }
+
+    const checkInReport = profileMount.querySelector("#teamCheckInReportInput");
+    if (checkInReport instanceof HTMLTextAreaElement) {
+        checkInReport.addEventListener("input", () => {
+            teamFlowState.checkInReport = checkInReport.value;
+            teamFlowState.checkInError = "";
+        });
+    }
+
+    const checkInForm = profileMount.querySelector("#teamCheckInForm");
+    if (isHTMLFormElement(checkInForm)) {
+        checkInForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const week = Number(isHTMLInputElement(checkInWeek) ? checkInWeek.value : teamFlowState.checkInWeek);
+            const report = checkInReport instanceof HTMLTextAreaElement
+                ? checkInReport.value.trim()
+                : teamFlowState.checkInReport.trim();
+
+            if (!Number.isInteger(week) || week < 1 || week > 52) {
+                teamFlowState.checkInError = "Укажите неделю от 1 до 52.";
+                render();
+                return;
+            }
+
+            if (!report) {
+                teamFlowState.checkInError = "Заполните текст отчета.";
+                render();
+                return;
+            }
+
+            void submitTeamCheckIn(week, report)
+                .then(() => {
+                    teamFlowState.checkInWeek = "";
+                    teamFlowState.checkInReport = "";
+                    teamFlowState.checkInError = "";
+                    setStatus("Check-in отправлен.");
+                    closeTeamModal();
+                })
+                .catch((error: unknown) => {
+                    teamFlowState.checkInError = getErrorMessage(error);
+                    render();
+                });
+        });
+    }
+
     const teamCloseRequests = profileMount.querySelector("#teamCloseRequestsButton");
     if (isHTMLButtonElement(teamCloseRequests)) {
         teamCloseRequests.addEventListener("click", () => {
@@ -2144,6 +2802,46 @@ function wireProfileViewEvents(): void {
             render();
         });
     }
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-help-request-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const id = Number(button.dataset.helpRequestId ?? "0");
+            const status = button.dataset.helpRequestStatus ?? "";
+            if (!Number.isInteger(id) || id <= 0 || !status) {
+                return;
+            }
+
+            void submitHelpRequestStatus(id, status)
+                .then(() => {
+                    setStatus(status === "Accepted" ? "Заявка принята." : "Заявка отклонена.");
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
+        });
+    });
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-join-request-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const id = Number(button.dataset.teamJoinRequestId ?? "0");
+            const status = button.dataset.teamJoinRequestStatus ?? "";
+            if (!Number.isInteger(id) || id <= 0 || !status) {
+                return;
+            }
+
+            void submitTeamJoinRequestStatus(id, status)
+                .then(() => {
+                    setStatus(status === "Accepted" ? "Заявка на вступление принята." : "Заявка на вступление отклонена.");
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
+        });
+    });
 
     const teamAccept = profileMount.querySelector("#teamRequestAcceptButton");
     if (isHTMLButtonElement(teamAccept)) {
@@ -2287,22 +2985,17 @@ function wireProfileViewEvents(): void {
     if (isHTMLButtonElement(confirmCreateTeam)) {
         confirmCreateTeam.addEventListener("click", () => {
             const name = appState.profileCreateTeamName.trim() || "КОМАНДА";
-            const invite =
-                appState.profile?.teamInviteCode?.trim() || `local-${Date.now().toString(36)}`;
-            const link = `${window.location.origin}/team/${encodeURIComponent(name)}?invite=${encodeURIComponent(invite)}`;
-            appState.profileInviteLink = link;
-            const captain = buildLocalCaptainMemberRow();
-            const members = captain ? [captain] : [];
             const direction = appState.profileCreateTeamDirection.trim();
-            appState.localCreatedTeam = { name, inviteCode: invite, direction, members };
-            persistLocalTeam();
-            pushUserActivity({
-                kind: "team_created",
-                title: "КОМАНДА СОЗДАНА",
-                description: `Создана команда «${name}»${direction ? ` · ${direction}` : ""}.`
-            });
-            appState.profileModal = "teamSuccess";
-            render();
+            void createTeamFromBridge(name, direction)
+                .then(() => {
+                    appState.profileInviteLink = buildTeamInviteLink();
+                    appState.profileModal = "teamSuccess";
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
         });
     }
 
@@ -2381,10 +3074,12 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshTeamWorkspace();
         }
         appState.signIn.password = "";
         appState.view = "account";
@@ -2439,10 +3134,12 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshTeamWorkspace();
         }
         appState.view = "account";
         appState.signUp.password = "";
@@ -2471,6 +3168,7 @@ async function refreshProfile(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshTeamWorkspace();
         setStatus("Данные обновлены.");
     } catch (error) {
         setStatus(getErrorMessage(error), "error");
@@ -2494,6 +3192,7 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             }
             appState.profile = p;
             applyPersistedClientStateAfterMe();
+            await refreshTeamWorkspace();
             render();
         } catch {
             /* сессия уже валидна с данными из тела login/register */

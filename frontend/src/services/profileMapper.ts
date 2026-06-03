@@ -22,6 +22,10 @@ export function buildUserProfileFromAuthResponse(auth: AuthResponse & { id: numb
         teamName: auth.teamName,
         teamInviteCode: auth.teamInviteCode,
         isCaptain: auth.isCaptain,
-        teamScore: auth.teamScore
+        teamScore: auth.teamScore,
+        userPoints: auth.userPoints ?? 0,
+        personalRating: auth.personalRating ?? auth.userPoints ?? 0,
+        personalContribution: auth.personalContribution ?? 0,
+        personalLeague: auth.personalLeague ?? "Старт"
     };
 }

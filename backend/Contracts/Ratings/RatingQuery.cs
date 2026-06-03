@@ -10,4 +10,13 @@ public class RatingQuery
 
     /// <summary>Если задано — ограничивает выдачу (для «зала славы» используйте <c>limit=10</c>).</summary>
     public int? Limit { get; set; }
+
+    /// <summary>Фильтр пользователей по команде.</summary>
+    public int? TeamId { get; set; }
+
+    /// <summary>Фильтр пользователей по академической группе/потоку.</summary>
+    public string? Group { get; set; }
+
+    /// <summary>Фильтр по лиге.</summary>
+    public string? League { get; set; }
 }

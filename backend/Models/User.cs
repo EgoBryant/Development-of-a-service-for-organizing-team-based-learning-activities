@@ -28,6 +28,7 @@ public class User
     /// <summary>SaaS-расширение: владелец-институт. В MVP nullable.</summary>
     public int? InstituteId { get; set; }
     public ICollection<KnowledgePost> KnowledgePosts { get; set; } = new List<KnowledgePost>();
+    public ICollection<TeamJoinRequest> TeamJoinRequests { get; set; } = new List<TeamJoinRequest>();
     public ICollection<Vote> OutgoingVotes { get; set; } = new List<Vote>();
     public ICollection<Vote> IncomingVotes { get; set; } = new List<Vote>();
     public ICollection<UserAchievement> Achievements { get; set; } = new List<UserAchievement>();

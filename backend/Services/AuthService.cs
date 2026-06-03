@@ -137,7 +137,11 @@ public class AuthService : IAuthService
             TeamName = profile.TeamName,
             TeamInviteCode = profile.TeamInviteCode,
             IsCaptain = profile.IsCaptain,
-            TeamScore = profile.TeamScore
+            TeamScore = profile.TeamScore,
+            UserPoints = profile.UserPoints,
+            PersonalRating = profile.PersonalRating,
+            PersonalContribution = profile.PersonalContribution,
+            PersonalLeague = profile.PersonalLeague
         };
     }
 

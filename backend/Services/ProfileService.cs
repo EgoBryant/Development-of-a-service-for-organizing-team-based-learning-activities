@@ -45,6 +45,9 @@ public class ProfileService : IProfileService
             ? user.AcademicGroupLabel.Trim()
             : user.Group?.Title ?? string.Empty;
 
+        var personalContribution = await CalculatePersonalContributionAsync(user.Id, cancellationToken);
+        var personalRating = CalculatePersonalRating(user.UserPoints, personalContribution);
+
         return new UserProfileResponse
         {
             Id = user.Id,
@@ -67,7 +70,11 @@ public class ProfileService : IProfileService
             TeamName = team?.Name ?? string.Empty,
             TeamInviteCode = team?.InviteCode ?? string.Empty,
             IsCaptain = team?.CaptainId == user.Id,
-            TeamScore = team?.Score ?? 0
+            TeamScore = team?.Score ?? 0,
+            UserPoints = user.UserPoints,
+            PersonalRating = personalRating,
+            PersonalContribution = personalContribution,
+            PersonalLeague = ResolvePersonalLeague(personalRating)
         };
     }
 
@@ -180,6 +187,40 @@ public class ProfileService : IProfileService
 
     private static string NormalizeGroupKey(string title) =>
         title.Trim().ToUpperInvariant();
+
+    private async Task<double> CalculatePersonalContributionAsync(int userId, CancellationToken cancellationToken)
+    {
+        var votes = await _dbContext.Votes
+            .AsNoTracking()
+            .Where(vote => vote.ToUserId == userId)
+            .Select(vote => vote.Score)
+            .ToListAsync(cancellationToken);
+
+        return votes.Count == 0 ? 0d : Math.Round(votes.Average(), 1);
+    }
+
+    private static int CalculatePersonalRating(int userPoints, double personalContribution) =>
+        userPoints + (int)Math.Round(personalContribution * 20d, MidpointRounding.AwayFromZero);
+
+    private static string ResolvePersonalLeague(int personalRating)
+    {
+        if (personalRating >= 900)
+        {
+            return "Легенда";
+        }
+
+        if (personalRating >= 650)
+        {
+            return "Мастер";
+        }
+
+        if (personalRating >= 350)
+        {
+            return "Профи";
+        }
+
+        return "Старт";
+    }
 
     private async Task<UserProfileResponse> BuildProfileAsync(int userId, CancellationToken cancellationToken)
     {
