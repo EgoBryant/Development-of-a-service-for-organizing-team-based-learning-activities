@@ -2,7 +2,7 @@
 FROM node:20-alpine AS webbuild
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY frontend/ ./
 ENV NODE_ENV=production
 RUN npm run build

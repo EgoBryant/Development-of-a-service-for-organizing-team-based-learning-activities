@@ -14,6 +14,7 @@
     --exam-soft-shadow: 0 14px 28px rgba(34, 79, 155, 0.14);
     --exam-gradient: linear-gradient(95deg, var(--exam-cyan) 0%, var(--exam-blue) 52%, var(--exam-violet) 100%);
     --exam-gradient-vertical: linear-gradient(180deg, #6d6fff 0%, #11d0dc 100%);
+    --exam-dashboard-bg-size: clamp(920px, 92vw, 1260px) auto;
 }
 
 .profile-app:not(.profile-app--dashboard-profile) {
@@ -26,7 +27,8 @@
     overflow: hidden;
     background:
         linear-gradient(rgba(45, 104, 210, 0.12), rgba(45, 104, 210, 0.18)),
-        var(--exam-bg-image) center / cover no-repeat;
+        var(--exam-bg-image) center top / var(--exam-dashboard-bg-size) no-repeat,
+        #2d68d2;
     box-shadow: none;
 }
 
@@ -67,6 +69,44 @@
     box-shadow:
         0 10px 18px rgba(78, 95, 205, 0.24),
         inset 0 4px 0 rgba(30, 39, 180, 0.18);
+}
+
+.profile-app--dashboard-profile .profile-sidebar,
+.profile-sidebar.profile-sidebar--dashboard {
+    position: relative;
+    z-index: 2;
+}
+
+.profile-app--dashboard-profile .profile-nav-button,
+.profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
+    background: rgba(244, 248, 255, 0.94);
+    color: rgb(58, 132, 235);
+    opacity: 1;
+    visibility: visible;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+        0 10px 22px rgba(33, 78, 154, 0.16);
+}
+
+.profile-app--dashboard-profile .profile-nav-button:hover,
+.profile-sidebar.profile-sidebar--dashboard .profile-nav-button:hover {
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+        0 14px 26px rgba(33, 78, 154, 0.22);
+}
+
+.profile-app--dashboard-profile .profile-nav-button.is-active,
+.profile-sidebar.profile-sidebar--dashboard .profile-nav-button.is-active {
+    background: linear-gradient(180deg, rgb(109, 111, 255) 0%, rgb(17, 208, 220) 100%);
+    color: rgb(255, 255, 255);
+    box-shadow:
+        0 12px 24px rgba(78, 95, 205, 0.28),
+        inset 0 4px 0 rgba(30, 39, 180, 0.18);
+}
+
+.profile-sidebar.profile-sidebar--dashboard #profileLogoutButton {
+    background: linear-gradient(180deg, var(--exam-danger) 0%, var(--exam-violet) 100%);
+    color: #ffffff;
 }
 
 #profileLogoutButton {

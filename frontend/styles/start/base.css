@@ -71,6 +71,15 @@ body.modal-open .menu-screen {
     display: none;
 }
 
+.menu-screen--background .logo-box {
+    position: relative;
+    display: block;
+    width: clamp(240px, 20vw, 360px);
+    height: clamp(240px, 20vw, 360px);
+    opacity: 0.98;
+    filter: drop-shadow(0 22px 42px rgba(6, 27, 67, 0.24));
+}
+
 .logo-box::before,
 .logo-box::after {
     content: "";
@@ -143,9 +152,18 @@ body.modal-open .menu-screen {
     outline-offset: 6px;
 }
 
+.menu-screen--background .start-pill-button {
+    display: none;
+}
+
 @media (max-width: 640px) {
     .menu-card {
         min-height: 100vh;
+    }
+
+    .menu-screen--background .logo-box {
+        width: min(60vw, 280px);
+        height: min(60vw, 280px);
     }
 
     .start-pill-button {

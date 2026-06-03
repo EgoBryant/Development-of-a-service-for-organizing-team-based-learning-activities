@@ -161,9 +161,80 @@ const formContent = document.getElementById("formContent");
 
 void bootstrap();
 
+function transitionAuthView(nextView: View): void {
+    // Check if both current and next views are auth views (sign-in, sign-up, password-recovery)
+    const authViews: View[] = ["sign-in", "sign-up", "password-recovery"];
+    const isCurrentAuthView = authViews.includes(appState.view);
+    const isNextAuthView = authViews.includes(nextView);
+
+    // If transition is between auth views, add animation classes
+    if (isCurrentAuthView && isNextAuthView && (!isHTMLElement(authModalCard) || !isHTMLElement(formContent))) {
+        appState.view = nextView;
+        render();
+        return;
+    }
+
+    if (isCurrentAuthView && isNextAuthView && isHTMLElement(authModalCard) && isHTMLElement(formContent)) {
+        const isMovingToSignUp = nextView === "sign-up";
+        const authFormContent = formContent;
+        
+        // Add animation classes to container
+        authModalCard.classList.add(isMovingToSignUp ? "toggle-left" : "toggle-right");
+        authModalCard.classList.add("toggle-switch-panel");
+
+        // Get the form element to add exit animation class
+        const currentForm = authFormContent.querySelector(".auth-form-modal");
+        if (currentForm) {
+            currentForm.classList.add("transition-exit");
+        }
+
+        // Wait for animation to complete (0.6s)
+        setTimeout(() => {
+            appState.view = nextView;
+            
+            // Remove direction classes but keep toggle-switch-panel for enter animation
+            authModalCard.classList.remove("toggle-left", "toggle-right", "toggle-switch-panel");
+            
+            // Render new content
+            render();
+
+            // Add enter animation class to new form
+            const newForm = authFormContent.querySelector(".auth-form-modal");
+            if (newForm) {
+                newForm.classList.add("transition-enter");
+                if (nextView === "password-recovery") {
+                    newForm.classList.add("transition-recovery-enter");
+                    if (isHTMLElement(authSwitchColumn)) {
+                        authSwitchColumn.classList.add("transition-recovery-enter");
+                    }
+                }
+                // Remove exit animation class from previous form if it still exists
+                const exitForms = authFormContent.querySelectorAll(".transition-exit");
+                exitForms.forEach((form) => {
+                    form.classList.remove("transition-exit");
+                });
+            }
+
+            // Wait for enter animation to complete before removing animation classes
+            setTimeout(() => {
+                if (newForm) {
+                    newForm.classList.remove("transition-enter");
+                    newForm.classList.remove("transition-recovery-enter");
+                }
+                if (isHTMLElement(authSwitchColumn)) {
+                    authSwitchColumn.classList.remove("transition-recovery-enter");
+                }
+            }, 600);
+        }, 600);
+    } else {
+        // For non-auth view transitions, just set view normally
+        appState.view = nextView;
+        render();
+    }
+}
+
 function setView(nextView: View): void {
-    appState.view = nextView;
-    render();
+    transitionAuthView(nextView);
 }
 
 function setStatus(message: string, tone: "default" | "error" = "default"): void {
@@ -518,6 +589,8 @@ function render(): void {
     const isAccount = appState.view === "account";
 
     homeScreen.classList.add("screen-active");
+    homeScreen.classList.toggle("menu-screen--background", !isHome);
+    homeScreen.setAttribute("aria-hidden", String(!isHome));
     appScreen.classList.toggle("screen-active", !isHome);
     appScreen.classList.toggle("is-account", isAccount);
     appScreen.setAttribute("aria-hidden", String(isHome));
@@ -554,14 +627,7 @@ function renderAuthView(): void {
     if (appState.view === "sign-in") {
         const signInSubmitDisabled = appState.isSubmitting || !isSignInReady();
 
-        authSwitchColumn.innerHTML = `
-            ${renderAuthSwitchPanel(
-                "Новый игрок?",
-                "Твоей будущей команде не хватает именно тебя. Создай аккаунт, зарабатывай ачивки и прокачивай КРК!",
-                "РЕГИСТРАЦИЯ",
-                "sign-up"
-            )}
-        `;
+        authSwitchColumn.innerHTML = renderAuthSwitchStage();
 
         formContent.innerHTML = `
             <form id="signInForm" class="auth-form auth-form-modal">
@@ -569,7 +635,10 @@ function renderAuthView(): void {
                 <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required>
                 <div class="auth-login-password-row">
                     <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-inline-pill" type="button" id="signInRestoreButton">ЗАБЫЛИ?</button>
+                    <button class="auth-inline-pill auth-inline-pill-compact" type="button" id="signInRestoreButton">ЗАБЫЛИ?</button>
+                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
+                        <span class="auth-password-peek-icon" aria-hidden="true"></span>
+                    </button>
                 </div>
                 ${renderStatusBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
@@ -595,7 +664,12 @@ function renderAuthView(): void {
         }
 
         const passwordInput = signInForm.elements.namedItem("password");
+        const passwordPeekButton = signInForm.querySelector("[data-signin-password-peek]");
         if (isHTMLInputElement(passwordInput)) {
+            if (isHTMLButtonElement(passwordPeekButton)) {
+                bindPressToRevealPassword(passwordPeekButton, passwordInput);
+            }
+
             passwordInput.addEventListener("input", () => {
                 appState.signIn.password = passwordInput.value;
                 syncSignInSubmitState();
@@ -625,21 +699,19 @@ function renderAuthView(): void {
     if (appState.view === "sign-up") {
         const signUpSubmitDisabled = appState.isSubmitting || !isSignUpReady();
 
-        authSwitchColumn.innerHTML = `
-            ${renderAuthSwitchPanel(
-                "Уже с нами?",
-                "Войди в профиль и продолжи работу с командой.",
-                "ВХОД",
-                "sign-in"
-            )}
-        `;
+        authSwitchColumn.innerHTML = renderAuthSwitchStage();
 
         formContent.innerHTML = `
             <form id="signUpForm" class="auth-form auth-form-modal">
                 <h1 class="auth-modal-heading">Новый игрок?</h1>
                 <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required>
                 <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell>
-                    <input class="auth-modal-field" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                    <div class="auth-password-row">
+                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                        <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
+                            <span class="auth-password-peek-icon" aria-hidden="true"></span>
+                        </button>
+                    </div>
                 </div>
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell>
                     <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
@@ -711,12 +783,43 @@ function renderAuthView(): void {
     });
 }
 
+function renderAuthSwitchStage(): string {
+    return `
+        <div class="auth-switch-stage">
+            ${renderAuthSwitchCopy(
+                "auth-switch-copy auth-switch-copy-sign-up",
+                "Уже с нами?",
+                "Войди в профиль и продолжи работу с командой.",
+                "ВХОД",
+                "sign-in"
+            )}
+            ${renderAuthSwitchCopy(
+                "auth-switch-copy auth-switch-copy-sign-in",
+                "Новый игрок?",
+                "Твоей будущей команде не хватает именно тебя. Создай аккаунт, зарабатывай ачивки и прокачивай КРК!",
+                "РЕГИСТРАЦИЯ",
+                "sign-up"
+            )}
+        </div>
+    `;
+}
+
+function renderAuthSwitchCopy(className: string, title: string, copy: string, buttonLabel: string, nextView: View): string {
+    return `
+        <div class="${className}">
+            ${renderAuthSwitchPanel(title, copy, buttonLabel, nextView)}
+        </div>
+    `;
+}
+
 function renderAuthSwitchPanel(title: string, copy: string, buttonLabel: string, nextView: View): string {
     return `
         <div class="auth-switch-panel">
-            <h2 class="auth-panel-title">${escapeHtml(title)}</h2>
-            <p class="auth-panel-copy">${escapeHtml(copy)}</p>
-            <button type="button" class="auth-switch-pill" data-view="${nextView}">${escapeHtml(buttonLabel)}</button>
+            <div class="auth-switch-panel-content">
+                <h2 class="auth-panel-title">${escapeHtml(title)}</h2>
+                <p class="auth-panel-copy">${escapeHtml(copy)}</p>
+                <button type="button" class="auth-switch-pill" data-view="${nextView}">${escapeHtml(buttonLabel)}</button>
+            </div>
         </div>
     `;
 }
@@ -733,12 +836,50 @@ function isSignUpReady(): boolean {
     );
 }
 
+function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTMLInputElement): () => void {
+    const setPasswordVisible = (isVisible: boolean): void => {
+        passwordInput.type = isVisible ? "text" : "password";
+        button.classList.toggle("is-active", isVisible);
+    };
+
+    button.addEventListener("pointerdown", (event: PointerEvent) => {
+        if (button.disabled || passwordInput.disabled) {
+            return;
+        }
+
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        setPasswordVisible(true);
+    });
+
+    button.addEventListener("pointerup", () => {
+        setPasswordVisible(false);
+    });
+
+    button.addEventListener("pointercancel", () => {
+        setPasswordVisible(false);
+    });
+
+    button.addEventListener("lostpointercapture", () => {
+        setPasswordVisible(false);
+    });
+
+    button.addEventListener("blur", () => {
+        setPasswordVisible(false);
+    });
+
+    return () => {
+        setPasswordVisible(false);
+    };
+}
+
 function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const emailInput = signUpForm.elements.namedItem("email");
     const passwordInput = signUpForm.elements.namedItem("password");
     const passwordConfirmInput = signUpForm.elements.namedItem("passwordConfirm");
     const passwordShell = signUpForm.querySelector<HTMLElement>("[data-signup-password-shell]");
     const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
+    const passwordPeekButton = signUpForm.querySelector("[data-signup-password-peek]");
     const submitButton = signUpForm.querySelector(".auth-submit-pill");
 
     if (
@@ -751,6 +892,10 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         return;
     }
 
+    const resetPasswordVisibility = isHTMLButtonElement(passwordPeekButton)
+        ? bindPressToRevealPassword(passwordPeekButton, passwordInput)
+        : () => {};
+
     const syncVisibleFields = (): void => {
         const hasEmail = Boolean(appState.signUp.email.trim());
         const hasPassword = Boolean(appState.signUp.password);
@@ -759,6 +904,11 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         passwordInput.disabled = !hasEmail;
         confirmShell.classList.toggle("hidden", !hasPassword);
         passwordConfirmInput.disabled = !hasPassword;
+        resetPasswordVisibility();
+
+        if (isHTMLButtonElement(passwordPeekButton)) {
+            passwordPeekButton.disabled = !hasEmail;
+        }
 
         if (isHTMLButtonElement(submitButton)) {
             submitButton.disabled = appState.isSubmitting || !isSignUpReady();
@@ -2362,6 +2512,29 @@ function closeProfileModal(): void {
     render();
 }
 
+const ACADEMIC_GROUP_PATTERN = /^[A-ZА-ЯЁ]{2}-\d{6}$/u;
+
+function normalizeAcademicGroupInput(value: string): string {
+    const uppercased = value.toUpperCase();
+    const letters = Array.from(uppercased.matchAll(/[A-ZА-ЯЁ]/gu), (match) => match[0]).slice(0, 2).join("");
+    const digits = Array.from(uppercased.matchAll(/\d/g), (match) => match[0]).slice(0, 6).join("");
+
+    if (!letters) {
+        return digits ? digits : "";
+    }
+
+    if (letters.length < 2) {
+        return `${letters}${digits}`;
+    }
+
+    return digits ? `${letters}-${digits}` : `${letters}-`;
+}
+
+function isAcademicGroupValid(value: string): boolean {
+    const trimmed = value.trim();
+    return !trimmed || ACADEMIC_GROUP_PATTERN.test(trimmed);
+}
+
 function renderProfileModal(): string {
     const draft = appState.profileFormDraft;
 
@@ -2384,7 +2557,16 @@ function renderProfileModal(): string {
                             </label>
                         </div>
                         <input id="profileNameInput" class="profile-modal-input" type="text" placeholder="ИМЯ ФАМИЛИЯ" value="${escapeHtml(draft.fullName)}">
-                        <input id="profileGroupInput" class="profile-modal-input" type="text" placeholder="АКАДЕМ. ГРУППА" value="${escapeHtml(draft.group)}">
+                        <input
+                            id="profileGroupInput"
+                            class="profile-modal-input"
+                            type="text"
+                            placeholder="АКАДЕМ. ГРУППА · РИ-150909"
+                            value="${escapeHtml(draft.group)}"
+                            maxlength="9"
+                            autocapitalize="characters"
+                            spellcheck="false"
+                        >
                         <button type="button" class="profile-pill-wide" id="profileSavePersonalButton">СОХРАНИТЬ</button>
                         <button type="button" class="profile-modal-text" id="profileOpenPasswordButton">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</button>
                     </div>
@@ -2492,9 +2674,7 @@ function renderProfileView(): void {
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
     const teamPillText = teamName || "КОМАНДА";
-    const statusHtml = appState.statusMessage
-        ? `<p class="profile-inline-status ${appState.statusTone === "error" ? "is-error" : ""}">${escapeHtml(appState.statusMessage)}</p>`
-        : "";
+    const statusHtml = "";
 
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
@@ -2519,7 +2699,6 @@ function renderProfileView(): void {
                 ? renderEventsDashboardMain(statusHtml)
                 : `
             <section class="profile-main">
-                ${statusHtml}
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
@@ -2556,11 +2735,11 @@ function renderProfileView(): void {
                         </div>
                     </div>
                 </div>
-            </section>`;
+        </section>`;
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
-            <aside class="profile-sidebar" aria-label="Разделы">
+            <aside class="profile-sidebar profile-sidebar--dashboard" aria-label="Разделы">
                 <nav class="profile-nav-top">
                     <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
                     <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
@@ -2902,7 +3081,9 @@ function wireProfileViewEvents(): void {
     const personalGroupInput = profileMount.querySelector("#profileGroupInput");
     if (isHTMLInputElement(personalGroupInput) && appState.profileFormDraft) {
         personalGroupInput.addEventListener("input", () => {
-            appState.profileFormDraft!.group = personalGroupInput.value;
+            const normalizedValue = normalizeAcademicGroupInput(personalGroupInput.value);
+            personalGroupInput.value = normalizedValue;
+            appState.profileFormDraft!.group = normalizedValue;
         });
     }
 
@@ -3232,6 +3413,13 @@ async function submitPersonalProfileSave(): Promise<void> {
     const p = appState.profile;
     if (!draft || !p) {
         setStatus("Откройте форму через «НАСТРОЙКИ» и попробуйте снова.", "error");
+        render();
+        return;
+    }
+
+    draft.group = normalizeAcademicGroupInput(draft.group);
+    if (!isAcademicGroupValid(draft.group)) {
+        setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
         render();
         return;
     }

@@ -650,6 +650,26 @@
     box-shadow: 0 8px 18px rgba(223, 46, 128, 0.25);
 }
 
+.profile-modal-dot::before,
+.profile-modal-dot::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.profile-modal-dot::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.profile-modal-dot::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
 .profile-link-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -798,7 +818,8 @@
     overflow: hidden;
     background:
         linear-gradient(rgba(45, 104, 210, 0.08), rgba(45, 104, 210, 0.08)),
-        url("../../src/assets/team-exam-background.png") center / cover no-repeat;
+        url("../../src/assets/team-exam-background.png") center top / clamp(920px, 92vw, 1260px) auto no-repeat,
+        #2d68d2;
     box-shadow: none;
 }
 

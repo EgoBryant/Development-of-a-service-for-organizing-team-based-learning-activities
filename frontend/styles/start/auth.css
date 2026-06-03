@@ -8,10 +8,9 @@
     align-items: center;
     justify-content: center;
     padding: clamp(22px, 4vh, 48px);
+    overflow: hidden;
     box-sizing: border-box;
-    background:
-        linear-gradient(180deg, rgba(8, 34, 92, 0.1), rgba(5, 16, 56, 0.32)),
-        url("../../src/assets/team-exam-background.png") center / cover no-repeat;
+    background: rgba(7, 24, 72, 0.14);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -25,7 +24,21 @@
 }
 
 .auth-screen::before {
-    content: none;
+    content: "";
+    position: absolute;
+    inset: -18px;
+    z-index: 0;
+    background:
+        linear-gradient(180deg, rgba(8, 34, 92, 0.1), rgba(5, 16, 56, 0.32)),
+        url("../../src/assets/team-exam-background.png") center / cover no-repeat;
+    filter: blur(0);
+    transform: scale(1.03);
+    transition: filter 260ms ease;
+    pointer-events: none;
+}
+
+.auth-screen.screen-active::before {
+    filter: blur(10px);
 }
 
 .auth-screen.is-account {
@@ -82,23 +95,43 @@
 }
 
 .auth-form-column {
+    z-index: 1;
+    will-change: transform, opacity;
     background: rgba(250, 252, 255, 0.98);
     padding: clamp(44px, 5.4vw, 84px) clamp(38px, 5vw, 68px);
 }
 
 .auth-switch-column {
     position: relative;
+    z-index: 2;
+    will-change: transform;
     overflow: hidden;
     padding: clamp(44px, 5.6vw, 82px);
+    /* inherit border radius from parent so blue panel matches modal corners on all sides */
+    border-radius: inherit;
+    background: none; /* background moved to ::before so it can animate separately */
+}
+
+.auth-switch-column::before {
+    /* animated blue background layer — wider than container so it can slide left/right */
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    left: 0;
+    width: 200%;
     background:
         radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.42), transparent 25%),
-        linear-gradient(135deg, #54f2ff 0%, #2b83ff 48%, #7147ff 100%);
+        linear-gradient(135deg, #276fff 0%, #482aff 48%, #7147ff 100%);
+    background-size: 200% 100%;
+    border-radius: inherit;
 }
 
 .auth-switch-column::after {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: 1;
     background:
         linear-gradient(160deg, transparent 0 52%, rgba(255, 255, 255, 0.2) 52% 53%, transparent 53%),
         linear-gradient(22deg, transparent 0 44%, rgba(255, 255, 255, 0.16) 44% 45%, transparent 45%);
@@ -106,9 +139,48 @@
     pointer-events: none;
 }
 
+.auth-switch-stage {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 2;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+}
+
+.auth-switch-copy {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: inherit;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.auth-switch-copy-sign-up {
+    left: 0;
+}
+
+.auth-switch-copy-sign-in {
+    left: 50%;
+}
+
 .auth-switch-panel {
-    position: relative;
-    z-index: 1;
+    position: absolute;
+    inset: 0;
+    z-index: 2; /* above ::before and ::after so text stays static and visible */
+    will-change: transform;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: inherit;
+    box-sizing: border-box;
+}
+
+.auth-switch-panel-content {
     width: min(100%, 430px);
     display: flex;
     flex-direction: column;
@@ -116,6 +188,37 @@
     justify-content: center;
     text-align: center;
     color: #ffffff;
+}
+
+.auth-switch-copy .auth-switch-panel-content {
+    transition: opacity 0.4s ease, transform 0.45s ease;
+}
+
+.auth-switch-copy-sign-in .auth-switch-panel-content {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.auth-switch-copy-sign-up .auth-switch-panel-content {
+    opacity: 0;
+    transform: translateX(-56px);
+}
+
+.auth-modal-card.mode-sign-up .auth-switch-stage,
+.auth-modal-card.mode-recovery .auth-switch-stage {
+    left: 0;
+}
+
+.auth-modal-card.mode-sign-up .auth-switch-copy-sign-in .auth-switch-panel-content,
+.auth-modal-card.mode-recovery .auth-switch-copy-sign-in .auth-switch-panel-content {
+    opacity: 0;
+    transform: translateX(-56px);
+}
+
+.auth-modal-card.mode-sign-up .auth-switch-copy-sign-up .auth-switch-panel-content,
+.auth-modal-card.mode-recovery .auth-switch-copy-sign-up .auth-switch-panel-content {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .auth-panel-title,
@@ -160,6 +263,25 @@
     letter-spacing: 0;
     cursor: pointer;
     transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-switch-copy-sign-in .auth-switch-pill {
+    pointer-events: auto;
+}
+
+.auth-switch-copy-sign-up .auth-switch-pill {
+    pointer-events: none;
+}
+
+.auth-modal-card.mode-sign-up .auth-switch-copy-sign-in .auth-switch-pill,
+.auth-modal-card.mode-recovery .auth-switch-copy-sign-in .auth-switch-pill,
+.auth-modal-card.toggle-switch-panel .auth-switch-pill {
+    pointer-events: none;
+}
+
+.auth-modal-card.mode-sign-up .auth-switch-copy-sign-up .auth-switch-pill,
+.auth-modal-card.mode-recovery .auth-switch-copy-sign-up .auth-switch-pill {
+    pointer-events: auto;
 }
 
 .auth-switch-pill:hover {
@@ -219,11 +341,32 @@
     margin-bottom: 24px;
 }
 
+.auth-password-row {
+    width: 100%;
+    height: 66px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 66px;
+    align-items: stretch;
+    margin-bottom: 24px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: #eef3ff;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.auth-password-row:focus-within {
+    border-color: rgba(50, 134, 255, 0.62);
+    box-shadow: 0 0 0 5px rgba(62, 151, 255, 0.12);
+    background: #f5f8ff;
+}
+
 .auth-login-password-row {
     width: 100%;
     height: 66px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 252px);
+    grid-template-columns: minmax(0, 1fr) minmax(118px, 132px) 66px;
     align-items: stretch;
     gap: 0;
     margin-bottom: 18px;
@@ -244,7 +387,7 @@
 .auth-modal-field-password {
     height: 100%;
     margin: 0;
-    padding-right: 18px;
+    padding-right: 14px;
     border: none;
     border-radius: 0;
     background: transparent;
@@ -280,6 +423,60 @@
     transform: translateY(-1px);
     box-shadow: 0 12px 22px rgba(27, 97, 224, 0.25);
     filter: saturate(1.05);
+}
+
+.auth-inline-pill-compact {
+    width: calc(100% - 8px);
+    padding: 0 16px;
+    font-size: 15px;
+}
+
+.auth-password-peek-button {
+    width: 54px;
+    height: 54px;
+    align-self: center;
+    justify-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 999px;
+    background: rgba(36, 116, 255, 0.1);
+    color: #315ad4;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.auth-password-peek-button:hover:not(:disabled),
+.auth-password-peek-button.is-active {
+    transform: scale(1.04);
+    background: rgba(36, 116, 255, 0.16);
+}
+
+.auth-password-peek-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.auth-password-peek-icon {
+    position: relative;
+    width: 22px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-radius: 14px / 10px;
+    box-sizing: border-box;
+}
+
+.auth-password-peek-icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
 }
 
 .auth-code-row {
@@ -385,6 +582,22 @@
         padding: 38px 28px;
     }
 
+    .auth-switch-stage {
+        position: absolute;
+        inset: 0;
+        left: 0;
+        width: 100%;
+    }
+
+    .auth-switch-copy {
+        width: 100%;
+    }
+
+    .auth-switch-copy-sign-in,
+    .auth-switch-copy-sign-up {
+        left: 0;
+    }
+
     .auth-panel-title,
     .auth-modal-heading {
         font-size: clamp(36px, 8vw, 48px);
@@ -400,11 +613,11 @@
         align-items: flex-start;
         padding: 12px;
         overflow-y: auto;
-        background: linear-gradient(160deg, #2e7cdd 0%, #1d53b8 48%, #12328b 100%);
+        background: rgba(19, 50, 139, 0.16);
     }
 
-    .auth-screen:not(.is-account)::before {
-        content: none;
+    .auth-screen::before {
+        inset: -12px;
     }
 
     .auth-modal-card {
@@ -417,6 +630,7 @@
     }
 
     .auth-login-password-row,
+    .auth-password-row,
     .auth-code-row {
         height: auto;
         min-height: 66px;
@@ -427,6 +641,12 @@
     .auth-modal-field-password {
         height: 62px;
         padding-right: 28px;
+    }
+
+    .auth-password-peek-button {
+        width: calc(100% - 8px);
+        height: 56px;
+        margin: 0 4px 4px;
     }
 
     .auth-inline-pill {
@@ -448,4 +668,233 @@
         margin-bottom: 32px;
         font-size: 16px;
     }
+}
+
+.form-shell {
+    overflow: hidden;
+}
+
+/* Animation for smooth transitions between auth forms */
+@keyframes slideOutLeft {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+}
+
+@keyframes slideInRight {
+    0% {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutRight {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+}
+
+@keyframes slideInLeft {
+    0% {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes recoveryPanelReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.985);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes recoveryItemReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes switchColumnLeft {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes switchColumnRight {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes switchPanelStaticRight {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes switchPanelStaticLeft {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@keyframes switchCopyHoldStatic {
+    0%,
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes switchCopyEnterFromLeft {
+    0% {
+        opacity: 0;
+        transform: translateX(-72px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes switchCopyExitToLeft {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-72px);
+    }
+}
+
+.form-shell {
+    overflow: hidden;
+}
+
+/* Form animations for right direction (sign-in -> sign-up) */
+.auth-form-modal.transition-exit {
+    animation: slideOutLeft 0.6s ease-in-out forwards;
+}
+
+.auth-form-modal.transition-enter {
+    animation: slideInRight 0.6s ease-in-out forwards;
+}
+
+/* Form animations for left direction (sign-up -> sign-in) */
+.auth-modal-card.toggle-left .auth-form-modal.transition-exit {
+    animation: slideOutRight 0.6s ease-in-out forwards;
+}
+
+.auth-modal-card.toggle-right .auth-form-modal.transition-enter {
+    animation: slideInLeft 0.6s ease-in-out forwards;
+}
+
+.auth-switch-column.transition-recovery-enter .auth-switch-panel-content {
+    animation: recoveryPanelReveal 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-form-modal.transition-recovery-enter > * {
+    opacity: 0;
+    animation: recoveryItemReveal 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-form-modal.transition-recovery-enter > :nth-child(1) {
+    animation-delay: 0.06s;
+}
+
+.auth-form-modal.transition-recovery-enter > :nth-child(2) {
+    animation-delay: 0.14s;
+}
+
+.auth-form-modal.transition-recovery-enter > :nth-child(3) {
+    animation-delay: 0.22s;
+}
+
+.auth-form-modal.transition-recovery-enter > :nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+.auth-form-modal.transition-recovery-enter > :nth-child(5) {
+    animation-delay: 0.36s;
+}
+
+/* Switch column and panel exit animations */
+.auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-column {
+    animation: switchColumnLeft 0.6s ease-in-out forwards;
+}
+
+.auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-stage {
+    animation: switchPanelStaticRight 0.6s ease-in-out forwards;
+}
+
+.auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-copy-sign-in .auth-switch-panel-content {
+    animation: switchCopyExitToLeft 0.42s ease-in-out forwards;
+}
+
+.auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-copy-sign-up .auth-switch-panel-content {
+    opacity: 0;
+    transform: translateX(-56px);
+    animation: none;
+}
+
+.auth-modal-card.toggle-right.toggle-switch-panel .auth-switch-column {
+    animation: switchColumnRight 0.6s ease-in-out forwards;
+}
+
+.auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-stage {
+    animation: switchPanelStaticLeft 0.6s ease-in-out forwards;
+}
+
+.auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-copy-sign-up .auth-switch-panel-content {
+    animation: switchCopyExitToLeft 0.6s ease-in-out forwards;
+}
+
+.auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-copy-sign-in .auth-switch-panel-content {
+    animation: switchCopyHoldStatic 0.6s ease-in-out forwards;
+}
+
+.auth-switch-column {
+    transition: transform 0.6s ease-in-out;
 }

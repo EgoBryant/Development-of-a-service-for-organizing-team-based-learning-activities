@@ -33,6 +33,26 @@
     transition: transform 0.15s ease, background 0.15s ease;
 }
 
+.team-rescue-close::before,
+.team-rescue-close::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.team-rescue-close::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.team-rescue-close::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
 .team-rescue-close:hover {
     transform: scale(1.06);
     background: rgba(170, 170, 170, 1);
