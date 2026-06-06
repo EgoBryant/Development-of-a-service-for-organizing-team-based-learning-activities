@@ -2739,7 +2739,20 @@ function renderProfileView(): void {
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
-            <aside class="profile-sidebar profile-sidebar--dashboard" aria-label="Разделы">
+            <button
+                type="button"
+                class="profile-menu-toggle"
+                id="profileMobileMenuButton"
+                aria-label="Открыть меню"
+                aria-controls="profileDashboardMenu"
+                aria-expanded="false"
+            >
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </button>
+            <div class="profile-menu-backdrop" data-profile-menu-close aria-hidden="true"></div>
+            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы">
                 <nav class="profile-nav-top">
                     <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
                     <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
@@ -2775,10 +2788,48 @@ function renderProfileView(): void {
     }
 }
 
+function wireMobileProfileMenu(): void {
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    const profileApp = profileMount.querySelector<HTMLElement>(".profile-app");
+    const menuButton = profileMount.querySelector("#profileMobileMenuButton");
+    const backdrop = profileMount.querySelector("[data-profile-menu-close]");
+
+    if (!profileApp || !isHTMLButtonElement(menuButton)) {
+        return;
+    }
+
+    const setMenuOpen = (isOpen: boolean): void => {
+        profileApp.classList.toggle("is-mobile-menu-open", isOpen);
+        menuButton.setAttribute("aria-expanded", String(isOpen));
+        menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
+    };
+
+    menuButton.addEventListener("click", () => {
+        setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
+    });
+
+    if (backdrop instanceof HTMLElement) {
+        backdrop.addEventListener("click", () => {
+            setMenuOpen(false);
+        });
+    }
+
+    profileMount.querySelectorAll<HTMLButtonElement>(".profile-sidebar .profile-nav-button").forEach((button) => {
+        button.addEventListener("click", () => {
+            setMenuOpen(false);
+        });
+    });
+}
+
 function wireProfileViewEvents(): void {
     if (!isHTMLElement(profileMount)) {
         return;
     }
+
+    wireMobileProfileMenu();
 
     const photoEl = profileMount.querySelector(".profile-photo");
     if (photoEl instanceof HTMLElement) {
