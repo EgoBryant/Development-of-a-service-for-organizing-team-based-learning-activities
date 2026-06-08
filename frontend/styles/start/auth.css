@@ -272,7 +272,7 @@
         border-radius: 100px;
         transform: translateY(0);  
         box-shadow: inset 0 2px 4px rgba(164, 185, 230, 0.5);
-        color: #A4B9E6;
+        color: #172D9D;
         font-family: 'Montserrat', sans-serif;
         font-weight: medium;
         font-size: clamp(17px, 1.2vw, 23px);
@@ -286,7 +286,7 @@
     }
 
     .auth-modal-field::placeholder {
-        color: #A4B9E6;
+        color: rgba(23, 45, 157, 0.38);
         font-family: 'Montserrat', sans-serif;
         font-weight: bold;
         font-size: clamp(17px, 1.2vw, 23px);
@@ -294,7 +294,6 @@
     }
 
     .auth-modal-field:focus {
-        color: #172D9D;
         background-image: 
             linear-gradient(rgba(230, 236, 255, 1), rgba(230, 236, 255, 1)), 
             linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
@@ -323,7 +322,6 @@
 
     .auth-password-row:focus-within,
     .auth-login-password-row:focus-within {
-        color: #172D9D;
         background-image: 
             linear-gradient(rgba(230, 236, 255, 1), rgba(230, 236, 255, 1)), 
             linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
