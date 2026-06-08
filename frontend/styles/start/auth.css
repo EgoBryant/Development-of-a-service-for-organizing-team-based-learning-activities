@@ -302,39 +302,12 @@
         background-clip: padding-box, border-box;
     }
 
-    .auth-password-row {
-        width: 100%;
-        height: clamp(46px, 3.5vw, 67px);
-        display: flex;
-        border: 2px solid transparent;
-        border-radius: 100px;
-        color: #A4B9E6;
-        font-family: 'Montserrat', sans-serif;
-        font-size: clamp(17px, 1.2vw, 23px);
-        background-image: linear-gradient(rgba(230, 236, 255, 1), rgba(230, 236, 255, 1));
-        background-origin: padding-box;
-        background-clip: padding-box;
-        outline: none;
-        transform: translateY(0);  
-        box-shadow: inset 0 2px 4px rgba(164, 185, 230, 0.5);
-        overflow: hidden;
-        box-sizing: border-box;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-    }
-
-    .auth-password-row:focus-within {
-        color: #172D9D;
-        background-image: 
-            linear-gradient(rgba(230, 236, 255, 1), rgba(230, 236, 255, 1)), 
-            linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
-        background-origin: padding-box, border-box;
-        background-clip: padding-box, border-box;
-    }
-
+    .auth-password-row,
     .auth-login-password-row {
         width: 100%;
         height: clamp(46px, 3.5vw, 67px);
         display: flex;
+        align-items: center;
         border: 2px solid transparent;
         border-radius: 100px;
         background-image: linear-gradient(rgba(230, 236, 255, 1), rgba(230, 236, 255, 1));
@@ -348,6 +321,7 @@
         transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
     }
 
+    .auth-password-row:focus-within,
     .auth-login-password-row:focus-within {
         color: #172D9D;
         background-image: 
@@ -358,9 +332,10 @@
     }
 
     .auth-modal-field-password {
+        flex: 1 1 auto;
+        min-width: 0;
         height: 100%;
         margin: 0;
-        padding-right: 14px;
         border: none;
         border-radius: 0;
         background: transparent;
@@ -371,6 +346,19 @@
         border: none;
         box-shadow: none;
         background: transparent;
+    }
+
+    .auth-modal-card.mode-sign-up .auth-form-modal .auth-modal-field {
+        margin: clamp(12px, 1.2vw, 22px) 0;
+    }
+
+    .auth-modal-card.mode-sign-up .auth-form-modal .auth-password-row {
+        margin: clamp(12px, 1.2vw, 22px) 0;
+    }
+
+    .auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-form-modal > .auth-modal-field,
+    .auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-form-modal > .auth-login-password-row {
+        margin: clamp(12px, 1.2vw, 22px) 0;
     }
     
 
@@ -423,32 +411,29 @@
     filter: saturate(1.05);
 }
 
-.auth-inline-pill-compact {
-    width: calc(100% - 8px);
-    padding: 0 16px;
-    font-size: 15px;
-}
-
 .auth-password-peek-button {
-    width: 54px;
-    height: 54px;
+    position: relative;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    padding: 0;
     align-self: center;
     justify-self: center;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    margin-right: 6px;
     border: none;
     border-radius: 999px;
-    background: rgba(36, 116, 255, 0.1);
-    color: #315ad4;
+    background: transparent;
     cursor: pointer;
-    transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+    line-height: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .auth-password-peek-button:hover:not(:disabled),
 .auth-password-peek-button.is-active {
     transform: scale(1.04);
-    background: rgba(36, 116, 255, 0.16);
 }
 
 .auth-password-peek-button:disabled {
@@ -458,23 +443,82 @@
 
 .auth-password-peek-icon {
     position: relative;
-    width: 22px;
+    width: 28px;
     height: 14px;
-    border: 2px solid currentColor;
-    border-radius: 14px / 10px;
+    border-bottom: 3px solid #315ad4;
+    border-radius: 0 0 999px 999px;
     box-sizing: border-box;
+    transition: border-color 0.15s ease, border-width 0.15s ease, transform 0.15s ease;
+}
+
+.auth-password-peek-icon::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -9px;
+    width: 3px;
+    height: 10px;
+    border-radius: 999px;
+    background: #315ad4;
+    transform: translateX(-50%);
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.auth-password-peek-button::before,
+.auth-password-peek-button::after {
+    content: "";
+    position: absolute;
+    bottom: 10px;
+    width: 3px;
+    height: 10px;
+    border-radius: 999px;
+    background: #315ad4;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.auth-password-peek-button::before {
+    left: 11px;
+    transform: rotate(30deg);
+}
+
+.auth-password-peek-button::after {
+    right: 11px;
+    transform: rotate(-30deg);
 }
 
 .auth-password-peek-icon::after {
     content: "";
     position: absolute;
-    top: 50%;
     left: 50%;
-    width: 6px;
-    height: 6px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    background: currentColor;
+    background: radial-gradient(circle at 62% 36%, #f0f5ff 0 2px, #315ad4 2.2px 100%);
     transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.auth-password-peek-button.is-active::before,
+.auth-password-peek-button.is-active::after {
+    opacity: 0;
+}
+
+.auth-password-peek-button.is-active .auth-password-peek-icon {
+    width: 30px;
+    height: 18px;
+    border: 2px solid #315ad4;
+    border-radius: 999px / 68%;
+    transform: translateY(0);
+}
+
+.auth-password-peek-button.is-active .auth-password-peek-icon::before {
+    opacity: 0;
+}
+
+.auth-password-peek-button.is-active .auth-password-peek-icon::after {
+    opacity: 1;
 }
 
 .auth-code-row {
@@ -532,6 +576,26 @@
 
 .auth-form-modal .status-error::before {
     content: "(!) ";
+}
+
+.auth-recovery-link {
+    align-self: center;
+    margin: 6px 0 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #8f7379;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    cursor: pointer;
+    transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.auth-recovery-link:hover {
+    color: #c24f6f;
 }
 
 .status-message {

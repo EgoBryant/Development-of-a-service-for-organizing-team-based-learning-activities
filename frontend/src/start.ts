@@ -158,6 +158,7 @@ const authLayout = document.getElementById("authLayout");
 const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
+const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 
 void bootstrap();
 
@@ -239,6 +240,12 @@ function transitionAuthView(nextView: View): void {
 
 function setView(nextView: View): void {
     transitionAuthView(nextView);
+}
+
+function resetSignUpDraft(): void {
+    appState.signUp.email = "";
+    appState.signUp.password = "";
+    appState.signUp.passwordConfirm = "";
 }
 
 function setStatus(message: string, tone: "default" | "error" = "default"): void {
@@ -639,12 +646,11 @@ function renderAuthView(): void {
                 <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required>
                 <div class="auth-login-password-row">
                     <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-inline-pill auth-inline-pill-compact" type="button" id="signInRestoreButton">ЗАБЫЛИ?</button>
                     <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
                         <span class="auth-password-peek-icon" aria-hidden="true"></span>
                     </button>
                 </div>
-                ${renderStatusBlock()}
+                ${renderSignInFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
                     ${appState.isSubmitting ? "ПОДКЛЮЧЕНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
@@ -658,14 +664,6 @@ function renderAuthView(): void {
                 signInSubmitButton.disabled = appState.isSubmitting || !isSignInReady();
             }
         };
-
-        const restoreButton = signInForm.querySelector("#signInRestoreButton");
-        if (isHTMLButtonElement(restoreButton)) {
-            restoreButton.addEventListener("click", () => {
-                clearStatus();
-                setView("password-recovery");
-            });
-        }
 
         const passwordInput = signInForm.elements.namedItem("password");
         const passwordPeekButton = signInForm.querySelector("[data-signin-password-peek]");
@@ -779,6 +777,10 @@ function renderAuthView(): void {
             const nextView = button.dataset.view as View | undefined;
             if (!nextView) {
                 return;
+            }
+
+            if (nextView === "sign-up" && appState.view !== "sign-up") {
+                resetSignUpDraft();
             }
 
             clearStatus();
@@ -902,7 +904,20 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
 
     const syncVisibleFields = (): void => {
         const hasEmail = Boolean(appState.signUp.email.trim());
+
+        if (!hasEmail) {
+            appState.signUp.password = "";
+            appState.signUp.passwordConfirm = "";
+            passwordInput.value = "";
+            passwordConfirmInput.value = "";
+        }
+
         const hasPassword = Boolean(appState.signUp.password);
+
+        if (!hasPassword) {
+            appState.signUp.passwordConfirm = "";
+            passwordConfirmInput.value = "";
+        }
 
         passwordShell.classList.toggle("hidden", !hasEmail);
         passwordInput.disabled = !hasEmail;
@@ -3406,6 +3421,22 @@ function renderStatusBlock(): string {
     const toneClass = appState.statusTone === "error" ? "status-error" : "";
     const hiddenClass = appState.statusMessage ? "" : "hidden";
     return `<p class="status-message ${toneClass} ${hiddenClass}">${escapeHtml(appState.statusMessage)}</p>`;
+}
+
+function isInvalidCredentialsError(): boolean {
+    return appState.statusTone === "error" && appState.statusMessage === INVALID_CREDENTIALS_MESSAGE;
+}
+
+function renderSignInFeedbackBlock(): string {
+    if (isInvalidCredentialsError()) {
+        return `
+            <button type="button" class="auth-recovery-link" data-view="password-recovery">
+                Забыли пароль? Нажмите для восстановления
+            </button>
+        `;
+    }
+
+    return renderStatusBlock();
 }
 
 async function submitPersonalProfileSave(): Promise<void> {
