@@ -191,6 +191,9 @@ function transitionAuthView(nextView: View): void {
         // Wait for animation to complete (0.6s)
         setTimeout(() => {
             appState.view = nextView;
+            if (isHTMLElement(authSwitchColumn) && (nextView === "sign-in" || nextView === "sign-up")) {
+                authSwitchColumn.classList.add("transition-switch-copy-enter");
+            }
             
             // Remove direction classes but keep toggle-switch-panel for enter animation
             authModalCard.classList.remove("toggle-left", "toggle-right", "toggle-switch-panel");
@@ -223,6 +226,7 @@ function transitionAuthView(nextView: View): void {
                 }
                 if (isHTMLElement(authSwitchColumn)) {
                     authSwitchColumn.classList.remove("transition-recovery-enter");
+                    authSwitchColumn.classList.remove("transition-switch-copy-enter");
                 }
             }, 600);
         }, 600);
@@ -789,7 +793,7 @@ function renderAuthSwitchStage(): string {
             ${renderAuthSwitchCopy(
                 "auth-switch-copy auth-switch-copy-sign-up",
                 "Уже с нами?",
-                "Войди в профиль и продолжи работу с командой.",
+                "Войди в свой аккаунт, чтобы проверить свежий рейтинг команд!",
                 "ВХОД",
                 "sign-in"
             )}

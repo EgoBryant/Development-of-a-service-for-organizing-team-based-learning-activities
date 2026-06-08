@@ -665,7 +665,21 @@
 @keyframes switchCopyEnterFromLeft {
     0% {
         opacity: 0;
-        transform: translateX(-72px);
+        transform: translateX(-48px);
+        clip-path: inset(0 100% 0 0);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes switchCopyItemReveal {
+    0% {
+        opacity: 0;
+        transform: translateX(-36px);
     }
 
     100% {
@@ -710,6 +724,43 @@
 
 .auth-switch-column.transition-recovery-enter .auth-switch-panel-content {
     animation: recoveryPanelReveal 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-switch-panel-content,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-switch-panel-content,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-switch-panel-content {
+    animation: switchCopyEnterFromLeft 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-panel-title,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-title,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-title,
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-panel-copy,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-copy,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-copy,
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-switch-pill,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-switch-pill,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-switch-pill {
+    opacity: 0;
+    animation: switchCopyItemReveal 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-panel-title,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-title,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-title {
+    animation-delay: 0.08s;
+}
+
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-panel-copy,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-copy,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-panel-copy {
+    animation-delay: 0.16s;
+}
+
+.auth-modal-card:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-in .auth-switch-pill,
+.auth-modal-card.mode-sign-up .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-switch-pill,
+.auth-modal-card.mode-recovery .auth-switch-column.transition-switch-copy-enter .auth-switch-copy-sign-up .auth-switch-pill {
+    animation-delay: 0.24s;
 }
 
 .auth-form-modal.transition-recovery-enter > * {
@@ -769,7 +820,10 @@
 }
 
 .auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-copy-sign-in .auth-switch-panel-content {
-    animation: switchCopyHoldStatic 0.6s ease-in-out forwards;
+    opacity: 0;
+    transform: translateX(-48px);
+    clip-path: inset(0 100% 0 0);
+    animation: none;
 }
 
 .auth-switch-column {
