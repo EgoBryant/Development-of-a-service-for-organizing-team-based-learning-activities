@@ -1,9 +1,10 @@
 @import "./start/base.css";
+@import "./start/global.css";
 @import "./start/auth.css";
-@import "./start/profile.css";
-@import "./start/team.css";
-@import "./start/rating.css";
-@import "./start/events.css";
-@import "./start/overlays.css";
-@import "./start/responsive.css";
-@import "./start/theme.css";
+/* @import "./start/profile.css"; */
+/* @import "./start/team.css"; */
+/* @import "./start/rating.css"; */
+/* @import "./start/events.css"; */
+/* @import "./start/overlays.css"; */
+/* @import "./start/responsive.css"; */
+/* @import "./start/theme.css"; */
