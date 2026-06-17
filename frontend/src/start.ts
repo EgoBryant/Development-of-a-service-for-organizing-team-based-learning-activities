@@ -687,15 +687,25 @@ function renderAuthView(): void {
         const passwordInput = signInForm.elements.namedItem("password");
         const passwordPeekButton = signInForm.querySelector("[data-signin-password-peek]");
         if (isHTMLInputElement(passwordInput)) {
+            const passwordRow = passwordInput.closest(".auth-login-password-row");
             if (isHTMLButtonElement(passwordPeekButton)) {
                 bindPressToRevealPassword(passwordPeekButton, passwordInput);
-                syncPasswordPeekButtonState(passwordPeekButton, passwordInput);
+                syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+
+                passwordRow?.addEventListener("focusin", () => {
+                    syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+                });
+                passwordRow?.addEventListener("focusout", () => {
+                    window.setTimeout(() => {
+                        syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+                    }, 0);
+                });
             }
 
             passwordInput.addEventListener("input", () => {
                 appState.signIn.password = passwordInput.value;
                 if (isHTMLButtonElement(passwordPeekButton)) {
-                    syncPasswordPeekButtonState(passwordPeekButton, passwordInput);
+                    syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
                 }
                 syncSignInSubmitState();
             });
@@ -859,7 +869,7 @@ function isSignUpReady(): boolean {
     return (
         appState.signUp.email.trim().length > 0 &&
         appState.signUp.password.length > 0 &&
-        appState.signUp.passwordConfirm.length > 0
+        appState.signUp.password === appState.signUp.passwordConfirm
     );
 }
 
@@ -901,8 +911,12 @@ function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTM
     };
 }
 
-function syncPasswordPeekButtonState(button: HTMLButtonElement, passwordInput: HTMLInputElement): void {
-    button.disabled = passwordInput.disabled || passwordInput.value.length === 0;
+function syncPasswordPeekButtonState(
+    button: HTMLButtonElement,
+    passwordInput: HTMLInputElement,
+    passwordRow: Element | null = passwordInput.closest(".auth-login-password-row, .auth-password-row")
+): void {
+    button.disabled = passwordInput.disabled || !passwordRow?.matches(":focus-within");
 
     if (button.disabled) {
         passwordInput.type = "password";
@@ -917,6 +931,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const passwordShell = signUpForm.querySelector<HTMLElement>("[data-signup-password-shell]");
     const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
     const passwordPeekButton = signUpForm.querySelector("[data-signup-password-peek]");
+    const passwordRow = signUpForm.querySelector(".auth-password-row");
     const submitButton = signUpForm.querySelector(".auth-submit-pill");
 
     if (
@@ -933,6 +948,17 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         ? bindPressToRevealPassword(passwordPeekButton, passwordInput)
         : () => {};
 
+    if (isHTMLButtonElement(passwordPeekButton)) {
+        passwordRow?.addEventListener("focusin", () => {
+            syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+        });
+        passwordRow?.addEventListener("focusout", () => {
+            window.setTimeout(() => {
+                syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+            }, 0);
+        });
+    }
+
     const syncVisibleFields = (): void => {
         appState.signUp.email = emailInput.value;
         appState.signUp.password = passwordInput.value;
@@ -948,6 +974,8 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         }
 
         const hasPassword = Boolean(passwordInput.value);
+        const passwordsMatch = hasPassword && passwordInput.value === passwordConfirmInput.value;
+        const shouldShowConfirm = hasPassword && !passwordsMatch;
 
         if (!hasPassword) {
             appState.signUp.passwordConfirm = "";
@@ -957,13 +985,13 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         passwordShell.classList.toggle("hidden", !hasEmail);
         passwordShell.hidden = !hasEmail;
         passwordInput.disabled = !hasEmail;
-        confirmShell.classList.toggle("hidden", !hasPassword);
-        confirmShell.hidden = !hasPassword;
-        passwordConfirmInput.disabled = !hasPassword;
+        confirmShell.classList.toggle("hidden", !shouldShowConfirm);
+        confirmShell.hidden = !shouldShowConfirm;
+        passwordConfirmInput.disabled = !shouldShowConfirm;
         resetPasswordVisibility();
 
         if (isHTMLButtonElement(passwordPeekButton)) {
-            syncPasswordPeekButtonState(passwordPeekButton, passwordInput);
+            syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
         }
 
         if (isHTMLButtonElement(submitButton)) {
