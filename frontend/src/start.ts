@@ -689,10 +689,14 @@ function renderAuthView(): void {
         if (isHTMLInputElement(passwordInput)) {
             if (isHTMLButtonElement(passwordPeekButton)) {
                 bindPressToRevealPassword(passwordPeekButton, passwordInput);
+                syncPasswordPeekButtonState(passwordPeekButton, passwordInput);
             }
 
             passwordInput.addEventListener("input", () => {
                 appState.signIn.password = passwordInput.value;
+                if (isHTMLButtonElement(passwordPeekButton)) {
+                    syncPasswordPeekButtonState(passwordPeekButton, passwordInput);
+                }
                 syncSignInSubmitState();
             });
         }
@@ -725,14 +729,14 @@ function renderAuthView(): void {
         formContent.innerHTML = `
             <form id="signUpForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Новый игрок?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" value="${escapeHtml(appState.signIn.email)}" required readonly onfocus="this.removeAttribute('readonly');">
-                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
+                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
                     <div class="auth-password-row">
                         <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
                         <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}></button>
                     </div>
                 </div>
-                <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell>
+                <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
                     <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
                 ${renderStatusBlock()}
@@ -861,8 +865,9 @@ function isSignUpReady(): boolean {
 
 function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTMLInputElement): () => void {
     const setPasswordVisible = (isVisible: boolean): void => {
-        passwordInput.type = isVisible ? "text" : "password";
-        button.classList.toggle("is-active", isVisible);
+        const canReveal = !button.disabled && !passwordInput.disabled;
+        passwordInput.type = isVisible && canReveal ? "text" : "password";
+        button.classList.toggle("is-active", isVisible && canReveal);
     };
 
     button.addEventListener("pointerdown", (event: PointerEvent) => {
@@ -896,6 +901,15 @@ function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTM
     };
 }
 
+function syncPasswordPeekButtonState(button: HTMLButtonElement, passwordInput: HTMLInputElement): void {
+    button.disabled = passwordInput.disabled || passwordInput.value.length === 0;
+
+    if (button.disabled) {
+        passwordInput.type = "password";
+        button.classList.remove("is-active");
+    }
+}
+
 function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const emailInput = signUpForm.elements.namedItem("email");
     const passwordInput = signUpForm.elements.namedItem("password");
@@ -920,7 +934,11 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         : () => {};
 
     const syncVisibleFields = (): void => {
-        const hasEmail = Boolean(appState.signUp.email.trim());
+        appState.signUp.email = emailInput.value;
+        appState.signUp.password = passwordInput.value;
+        appState.signUp.passwordConfirm = passwordConfirmInput.value;
+
+        const hasEmail = Boolean(emailInput.value.trim());
 
         if (!hasEmail) {
             appState.signUp.password = "";
@@ -929,7 +947,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
             passwordConfirmInput.value = "";
         }
 
-        const hasPassword = Boolean(appState.signUp.password);
+        const hasPassword = Boolean(passwordInput.value);
 
         if (!hasPassword) {
             appState.signUp.passwordConfirm = "";
@@ -937,13 +955,15 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         }
 
         passwordShell.classList.toggle("hidden", !hasEmail);
+        passwordShell.hidden = !hasEmail;
         passwordInput.disabled = !hasEmail;
         confirmShell.classList.toggle("hidden", !hasPassword);
+        confirmShell.hidden = !hasPassword;
         passwordConfirmInput.disabled = !hasPassword;
         resetPasswordVisibility();
 
         if (isHTMLButtonElement(passwordPeekButton)) {
-            passwordPeekButton.disabled = !hasEmail;
+            syncPasswordPeekButtonState(passwordPeekButton, passwordInput);
         }
 
         if (isHTMLButtonElement(submitButton)) {
@@ -967,6 +987,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     });
 
     syncVisibleFields();
+    window.setTimeout(syncVisibleFields, 100);
 
     signUpForm.addEventListener("submit", (event: SubmitEvent) => {
         event.preventDefault();
