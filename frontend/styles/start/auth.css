@@ -302,6 +302,7 @@
             linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
         background-origin: padding-box, border-box;
         background-clip: padding-box, border-box;
+        box-shadow: none;
     }
 
     .auth-modal-field:autofill,
@@ -344,6 +345,7 @@
             linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
         background-origin: padding-box, border-box;
         background-clip: padding-box, border-box;
+        box-shadow: none;
     }
 
     .auth-modal-field-password {
