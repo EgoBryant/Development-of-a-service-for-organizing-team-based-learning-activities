@@ -1838,40 +1838,40 @@ async function refreshTeamWorkspace(): Promise<void> {
     }
 
     try {
-        appState.currentTeam = await fetchMyTeam(token);
-        appState.localCreatedTeam = null;
-        if (appState.profile) {
-            appState.profile = {
-                ...appState.profile,
-                teamId: appState.currentTeam.id,
-                teamName: appState.currentTeam.name,
-                teamInviteCode: appState.currentTeam.inviteCode,
-                isCaptain: appState.currentTeam.captainId === appState.profile.id,
-                teamScore: appState.currentTeam.score
-            };
+        const teamData = await fetchMyTeam(token);
+        
+        if (teamData) {
+            // Если команда успешно вернулась
+            appState.currentTeam = teamData;
+            appState.localCreatedTeam = null;
+            if (appState.profile) {
+                appState.profile = {
+                    ...appState.profile,
+                    teamId: teamData.id,
+                    teamName: teamData.name,
+                    teamInviteCode: teamData.inviteCode,
+                    isCaptain: teamData.captainId === appState.profile.id,
+                    teamScore: teamData.score
+                };
+            }
+        } else {
+            // Если команды нет — сбрасываем в безопасные дефолтные значения (без null)
+            appState.currentTeam = null;
+            appState.localCreatedTeam = null;
+            if (appState.profile) {
+                appState.profile = {
+                    ...appState.profile,
+                    teamId: 0,
+                    teamName: "",
+                    teamInviteCode: "",
+                    isCaptain: false,
+                    teamScore: 0
+                };
+            }
         }
-    } catch {
+    } catch (err) {
         appState.currentTeam = null;
     }
-
-    if (!appState.currentTeam) {
-        appState.teamCheckIns = [];
-        appState.teamHelpRequests = [];
-        appState.teamMyVotes = [];
-        await refreshRatingWorkspace(token);
-        return;
-    }
-
-    const [checkIns, helpRequests, myVotes] = await Promise.all([
-        fetchCheckIns(token).catch(() => [] as CheckInResponse[]),
-        fetchHelpRequests(token).catch(() => [] as HelpRequestResponse[]),
-        fetchMyVotes(token).catch(() => [] as MyVoteResponse[])
-    ]);
-
-    appState.teamCheckIns = checkIns;
-    appState.teamHelpRequests = helpRequests;
-    appState.teamMyVotes = myVotes;
-    await refreshRatingWorkspace(token);
 }
 
 function isTeamCaptain(): boolean {

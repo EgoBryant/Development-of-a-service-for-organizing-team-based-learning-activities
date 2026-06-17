@@ -34,7 +34,11 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
             message = response.statusText || message;
         }
 
-        throw new Error(translateApiErrorMessage(message));
+        // Создаем ошибку и явно добавляем ей статус ответа (например, 404)
+        const apiError = new Error(translateApiErrorMessage(message)) as Error & { status?: number };
+        apiError.status = response.status;
+        
+        throw apiError;
     }
 
     return await response.json() as T;
