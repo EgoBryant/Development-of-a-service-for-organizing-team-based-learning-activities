@@ -555,6 +555,27 @@ async function bootstrap(): Promise<void> {
         openRescueModal();
     });
 
+    if (isHTMLElement(appScreen) && isHTMLElement(authModalCard)) {
+        appScreen.addEventListener("click", (event: MouseEvent) => {
+            if (appState.view === "home" || appState.view === "account") {
+                return;
+            }
+
+            const target = event.target;
+            if (!(target instanceof Node)) {
+                return;
+            }
+
+            if (authModalCard.contains(target)) {
+                return;
+            }
+
+            clearStatus();
+            appState.view = "home";
+            render();
+        });
+    }
+
     const session = loadSession();
     render();
 
@@ -641,14 +662,12 @@ function renderAuthView(): void {
         authSwitchColumn.innerHTML = renderAuthSwitchStage();
 
         formContent.innerHTML = `
-            <form id="signInForm" class="auth-form auth-form-modal">
+            <form id="signInForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Уже с нами?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-login-password-row">
                     <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
-                        <span class="auth-password-peek-icon" aria-hidden="true"></span>
-                    </button>
+                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek></button>
                 </div>
                 ${renderSignInFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
@@ -704,15 +723,13 @@ function renderAuthView(): void {
         authSwitchColumn.innerHTML = renderAuthSwitchStage();
 
         formContent.innerHTML = `
-            <form id="signUpForm" class="auth-form auth-form-modal">
+            <form id="signUpForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Новый игрок?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" value="${escapeHtml(appState.signIn.email)}" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell>
                     <div class="auth-password-row">
                         <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
-                        <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
-                            <span class="auth-password-peek-icon" aria-hidden="true"></span>
-                        </button>
+                        <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}></button>
                     </div>
                 </div>
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell>
