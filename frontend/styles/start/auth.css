@@ -295,31 +295,26 @@
         opacity: 1;
     }
 
-    .auth-modal-field:-webkit-autofill,
-    .auth-modal-field:-webkit-autofill:hover,
-    .auth-modal-field:-webkit-autofill:focus,
-    .auth-modal-field:-webkit-autofill:active {
-        border-color: transparent;
-        caret-color: #172D9D;
-        -webkit-text-fill-color: #172D9D;
-        -webkit-box-shadow: 0 0 0 1000px rgba(230, 236, 255, 1) inset;
-        transition: background-color 9999s ease-out, color 9999s ease-out;
-    }
-
-    .auth-modal-field:autofill {
-        border-color: transparent;
-        box-shadow: inset 0 2px 4px rgba(164, 185, 230, 0.5), 0 0 0 1000px rgba(230, 236, 255, 1) inset;
-        caret-color: #172D9D;
-        color: #172D9D;
-    }
-
     .auth-modal-field:focus {
         color: #172D9D;
         background-image: 
-            linear-gradient(rgba(230, 236, 255, 1), rgba(230, 236, 255, 1)), 
+            linear-gradient(#E6ECFF, #E6ECFF), 
             linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
         background-origin: padding-box, border-box;
         background-clip: padding-box, border-box;
+    }
+
+    .auth-modal-field:autofill,
+    .auth-modal-field:-webkit-autofill,
+    .auth-modal-field:autofill:hover,
+    .auth-modal-field:-webkit-autofill:hover,
+    .auth-modal-field:autofill:focus,
+    .auth-modal-field:-webkit-autofill:focus {
+        -webkit-box-shadow: 
+            inset 0 2px 4px rgba(164, 185, 230, 0.5), 
+             0 0 0px 1000px #E6ECFF inset !important;
+        -webkit-text-fill-color: #A4B9E6 !important;
+        caret-color: #A4B9E6;
     }
 
     .auth-password-row,
@@ -368,17 +363,30 @@
         background: transparent;
     }
 
+    .auth-modal-field-password:autofill,
     .auth-modal-field-password:-webkit-autofill,
+    .auth-modal-field-password:autofill:hover,
+    .auth-modal-field-password:autofill:focus,
+    .auth-modal-field-password:autofill:active,
     .auth-modal-field-password:-webkit-autofill:hover,
     .auth-modal-field-password:-webkit-autofill:focus,
     .auth-modal-field-password:-webkit-autofill:active {
-        border: none;
-        -webkit-box-shadow: 0 0 0 1000px rgba(230, 236, 255, 1) inset;
+        border: none !important;
+        background: transparent !important;
+        -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+        box-shadow: 0 0 0px 1000px transparent inset !important; 
+        -webkit-text-fill-color: #A4B9E6 !important;
+        transition: background-color 9999s ease-out;
+    }
+
+    .auth-modal-field-password:autofill:focus,
+    .auth-modal-field-password:-webkit-autofill:focus {
+        -webkit-text-fill-color: #172D9D !important;
     }
 
     .auth-modal-field-password:autofill {
         border: none;
-        box-shadow: 0 0 0 1000px rgba(230, 236, 255, 1) inset;
+        box-shadow: inset 0 2px 4px rgba(164, 185, 230, 0.5);
     }
     
     .auth-submit-pill {
