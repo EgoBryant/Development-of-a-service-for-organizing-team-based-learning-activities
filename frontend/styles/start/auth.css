@@ -883,7 +883,11 @@
 
     .auth-modal-card {
         --auth-mobile-card-height: min(76vh, 620px);
-        --auth-mobile-switch-height: clamp(178px, 31vh, 238px);
+        --auth-mobile-switch-height: clamp(190px, 34vh, 260px);
+        --auth-mobile-drag-offset: 0px;
+        --auth-mobile-drag-progress: 0;
+        --auth-mobile-active-opacity: 1;
+        --auth-mobile-copy-offset: 0px;
 
         width: min(100%, 336px);
         height: var(--auth-mobile-card-height);
@@ -921,13 +925,15 @@
         border-radius: 38px 38px 0 0;
         cursor: pointer;
         background: none;
-        will-change: transform;
+        touch-action: none;
+        user-select: none;
+        will-change: transform, height, border-radius;
     }
 
     .auth-modal-card.mode-sign-up .auth-switch-column,
     .auth-modal-card.mode-recovery .auth-switch-column {
         inset: 0 0 auto;
-        border-radius: 38px 38px 28px 28px;
+        border-radius: 0 0 38px 38px;
     }
 
     .auth-switch-column::before {
@@ -951,6 +957,41 @@
         background: rgba(240, 245, 255, 0.96);
         transform: translateX(-50%);
         box-shadow: 0 1px 8px rgba(240, 245, 255, 0.22);
+    }
+
+    .auth-modal-card.mode-sign-up .auth-switch-column::after,
+    .auth-modal-card.mode-recovery .auth-switch-column::after {
+        top: auto;
+        bottom: 14px;
+    }
+
+    .auth-modal-card.is-mobile-dragging .auth-switch-column,
+    .auth-modal-card.is-mobile-dragging .auth-switch-stage,
+    .auth-modal-card.is-mobile-dragging .auth-switch-panel-content {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .auth-modal-card.is-mobile-dragging .auth-switch-column {
+        height: calc(var(--auth-mobile-switch-height) + var(--auth-mobile-drag-offset));
+    }
+
+    .auth-modal-card.is-mobile-dragging:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column {
+        inset: auto 0 0;
+        border-radius: 30px 30px 0 0;
+    }
+
+    .auth-modal-card.is-mobile-dragging.mode-sign-up .auth-switch-column,
+    .auth-modal-card.is-mobile-dragging.mode-recovery .auth-switch-column {
+        inset: 0 0 auto;
+        border-radius: 0 0 30px 30px;
+    }
+
+    .auth-modal-card.is-mobile-dragging:not(.mode-sign-up):not(.mode-recovery) .auth-switch-copy-sign-in .auth-switch-panel-content,
+    .auth-modal-card.is-mobile-dragging.mode-sign-up .auth-switch-copy-sign-up .auth-switch-panel-content,
+    .auth-modal-card.is-mobile-dragging.mode-recovery .auth-switch-copy-sign-up .auth-switch-panel-content {
+        opacity: var(--auth-mobile-active-opacity);
+        transform: translateY(var(--auth-mobile-copy-offset));
     }
 
     .auth-switch-stage {

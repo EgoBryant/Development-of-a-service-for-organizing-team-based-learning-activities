@@ -158,6 +158,7 @@ const authLayout = document.getElementById("authLayout");
 const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
+const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 
 void bootstrap();
@@ -576,29 +577,8 @@ async function bootstrap(): Promise<void> {
         });
     }
 
-    if (isHTMLElement(authSwitchColumn)) {
-        authSwitchColumn.addEventListener("click", (event: MouseEvent) => {
-            if (!window.matchMedia("(max-width: 1023px)").matches || appState.isSubmitting) {
-                return;
-            }
-
-            const target = event.target;
-            if (target instanceof Element && target.closest("[data-view]")) {
-                return;
-            }
-
-            if (appState.view === "sign-in") {
-                resetSignUpDraft();
-                clearStatus();
-                setView("sign-up");
-                return;
-            }
-
-            if (appState.view === "sign-up" || appState.view === "password-recovery") {
-                clearStatus();
-                setView("sign-in");
-            }
-        });
+    if (isHTMLElement(authSwitchColumn) && isHTMLElement(authModalCard)) {
+        bindMobileAuthCurtain(authSwitchColumn, authModalCard);
     }
 
     const session = loadSession();
@@ -628,6 +608,147 @@ async function bootstrap(): Promise<void> {
         appState.isSubmitting = false;
         render();
     }
+}
+
+function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement): void {
+    let startY = 0;
+    let activePointerId: number | null = null;
+    let isDragging = false;
+    const clearDragState = (): void => {
+        modalCard.classList.remove("is-mobile-dragging");
+        modalCard.style.removeProperty("--auth-mobile-drag-offset");
+        modalCard.style.removeProperty("--auth-mobile-drag-progress");
+        modalCard.style.removeProperty("--auth-mobile-active-opacity");
+        modalCard.style.removeProperty("--auth-mobile-copy-offset");
+        switchColumn.style.removeProperty("touch-action");
+        isDragging = false;
+        activePointerId = null;
+    };
+
+    const getTargetView = (): View | null => {
+        if (appState.view === "sign-in") {
+            return "sign-up";
+        }
+
+        if (appState.view === "sign-up" || appState.view === "password-recovery") {
+            return "sign-in";
+        }
+
+        return null;
+    };
+
+    const switchToTargetView = (): void => {
+        const nextView = getTargetView();
+        if (!nextView) {
+            return;
+        }
+
+        if (nextView === "sign-up") {
+            resetSignUpDraft();
+        }
+
+        clearStatus();
+        setView(nextView);
+    };
+
+    const getDragDistance = (currentY: number): number => {
+        if (appState.view === "sign-in") {
+            return startY - currentY;
+        }
+
+        return currentY - startY;
+    };
+
+    const getMaxDistance = (): number => {
+        const cardHeight = modalCard.getBoundingClientRect().height;
+        const switchHeight = switchColumn.getBoundingClientRect().height;
+        return Math.max(cardHeight - switchHeight, 1);
+    };
+
+    switchColumn.addEventListener("pointerdown", (event: PointerEvent) => {
+        if (
+            !window.matchMedia(MOBILE_AUTH_QUERY).matches ||
+            appState.isSubmitting ||
+            !getTargetView() ||
+            event.button !== 0
+        ) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof Element && target.closest("[data-view]")) {
+            return;
+        }
+
+        startY = event.clientY;
+        activePointerId = event.pointerId;
+        modalCard.style.setProperty("--auth-mobile-drag-offset", "0px");
+        modalCard.style.setProperty("--auth-mobile-drag-progress", "0");
+        switchColumn.style.touchAction = "none";
+        switchColumn.setPointerCapture(event.pointerId);
+    });
+
+    switchColumn.addEventListener("pointermove", (event: PointerEvent) => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        const rawDistance = getDragDistance(event.clientY);
+        const distance = Math.max(rawDistance, 0);
+        const maxDistance = getMaxDistance();
+        const progress = Math.min(distance / maxDistance, 1);
+        const activeOpacity = Math.max(1 - progress * 2.4, 0);
+
+        if (distance > 4) {
+            isDragging = true;
+            modalCard.classList.add("is-mobile-dragging");
+            event.preventDefault();
+        }
+
+        modalCard.style.setProperty("--auth-mobile-drag-offset", `${Math.min(distance, maxDistance)}px`);
+        modalCard.style.setProperty("--auth-mobile-drag-progress", progress.toFixed(3));
+        modalCard.style.setProperty("--auth-mobile-active-opacity", activeOpacity.toFixed(3));
+        modalCard.style.setProperty("--auth-mobile-copy-offset", `${Math.round(progress * -18)}px`);
+    });
+
+    const endDrag = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        const distance = Math.max(getDragDistance(event.clientY), 0);
+        const shouldSwitch = isDragging && (distance > 72 || distance / getMaxDistance() > 0.28);
+
+        if (switchColumn.hasPointerCapture(event.pointerId)) {
+            switchColumn.releasePointerCapture(event.pointerId);
+        }
+
+        clearDragState();
+
+        if (shouldSwitch) {
+            switchToTargetView();
+        }
+    };
+
+    switchColumn.addEventListener("pointerup", endDrag);
+    switchColumn.addEventListener("pointercancel", (event: PointerEvent) => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        if (switchColumn.hasPointerCapture(event.pointerId)) {
+            switchColumn.releasePointerCapture(event.pointerId);
+        }
+
+        clearDragState();
+    });
+
+    switchColumn.addEventListener("click", (event: MouseEvent) => {
+        if (window.matchMedia(MOBILE_AUTH_QUERY).matches) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    });
 }
 
 function render(): void {
