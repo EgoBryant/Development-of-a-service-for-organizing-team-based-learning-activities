@@ -1,0 +1,56 @@
+<svg viewBox="0 0 75 77.5" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="75.000000" height="77.500000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_0" x1="3.55859375" x2="31.645647" y1="64.4228058" y2="64.4228058" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_1" x1="0" x2="7.85078192" y1="39.659668" y2="47.310173" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_2" x1="8.80078125" x2="17.4366417" y1="31.4135742" y2="39.8291321" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_3" x1="21.0458984" x2="29.6817589" y1="32.984375" y2="41.3999329" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_4" x1="29.081543" x2="36.9323235" y1="42.8007812" y2="50.4512863" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_5" x1="41.8237305" x2="69.9107819" y1="33.0092316" y2="33.0092316" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_6" x1="38.265625" x2="46.1164055" y1="8.24609375" y2="15.8966007" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_7" x1="47.0664062" x2="55.7022667" y1="0" y2="8.41555691" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_8" x1="59.3115234" x2="67.9473801" y1="1.57080078" y2="9.98635769" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_9" x1="67.3466797" x2="75.197464" y1="11.3876953" y2="19.0382023" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<g id="Группа 1">
+		<path id="Вектор 1" d="M3.82661 60.8638C5.35722 53.0104 13.7756 51.4397 17.6021 57.7224C21.4286 51.4397 29.847 53.0104 31.3776 60.8638C32.9082 68.7172 27.5511 74.9999 23.7246 74.9999L11.4797 74.9999C7.65314 74.9999 2.296 68.7172 3.82661 60.8638Z" fill-rule="nonzero" stroke="url(#paint_linear_0)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<ellipse id="Эллипс 1" rx="3.826531" ry="3.926702" cx="3.82653093" cy="43.5863686" fill="url(#paint_linear_1)" />
+		<ellipse id="Эллипс 2" rx="4.209184" ry="4.319372" cx="13.0099649" cy="35.7329445" fill="url(#paint_linear_2)" />
+		<ellipse id="Эллипс 3" rx="4.209184" ry="4.319372" cx="25.2550812" cy="37.3037453" fill="url(#paint_linear_3)" />
+		<ellipse id="Эллипс 4" rx="3.826531" ry="3.926702" cx="32.9080734" cy="46.7274818" fill="url(#paint_linear_4)" />
+		<path id="Вектор 2" d="M42.0917 29.4502C43.6224 21.5968 52.0407 20.0261 55.8673 26.3089C59.6938 20.0261 68.1122 21.5968 69.6428 29.4502C71.1734 37.3036 65.8162 43.5863 61.9897 43.5863L49.7448 43.5863C45.9183 43.5863 40.5611 37.3036 42.0917 29.4502Z" fill-rule="nonzero" stroke="url(#paint_linear_5)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<ellipse id="Эллипс 5" rx="3.826531" ry="3.926702" cx="42.0921555" cy="12.1727953" fill="url(#paint_linear_6)" />
+		<ellipse id="Эллипс 6" rx="4.209184" ry="4.319372" cx="51.275589" cy="4.3193717" fill="url(#paint_linear_7)" />
+		<ellipse id="Эллипс 7" rx="4.209184" ry="4.319372" cx="63.5207062" cy="5.89017248" fill="url(#paint_linear_8)" />
+		<ellipse id="Эллипс 8" rx="3.826531" ry="3.926702" cx="71.1732101" cy="15.3143969" fill="url(#paint_linear_9)" />
+	</g>
+</svg>

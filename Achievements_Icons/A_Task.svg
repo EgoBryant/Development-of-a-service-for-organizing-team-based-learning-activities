@@ -1,0 +1,34 @@
+<svg viewBox="0 0 75.0005 75" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="75.000488" height="75.000000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_20" x1="11.1704102" x2="63.8300285" y1="21.3125" y2="21.3125" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_21" x1="26.9682617" x2="48.0321121" y1="54.125" y2="54.125" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_22" x1="15.559082" x2="59.4421005" y1="73" y2="73" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_23" x1="2.50048828" x2="11.1706753" y1="19.125" y2="19.125" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_24" x1="63.8305664" x2="72.5007553" y1="19.125" y2="19.125" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<g id="Группа 4">
+		<path id="Вектор 9" d="M63.83 2.5C63.83 28.75 55.0534 40.125 37.5002 40.125C19.947 40.125 11.1704 28.75 11.1704 2.5L63.83 2.5Z" fill-rule="nonzero" stroke="url(#paint_linear_20)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<path id="Вектор 10" d="M26.9683 68.125L48.0321 68.125C48.0321 62 37.5002 55 37.5002 40.125C37.5002 55 26.9683 62 26.9683 68.125Z" fill-rule="nonzero" stroke="url(#paint_linear_21)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<path id="Вектор 11" d="M15.5591 72.5L59.4421 72.5" stroke="url(#paint_linear_22)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<path id="Вектор 12" d="M11.1707 9.5C-0.23891 9.5 -0.238909 24.375 10.293 28.75" stroke="url(#paint_linear_23)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<path id="Вектор 13" d="M63.8306 9.5C75.2402 9.5 75.2402 24.375 64.7082 28.75" stroke="url(#paint_linear_24)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+	</g>
+</svg>
+
+
+
