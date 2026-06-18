@@ -36,9 +36,16 @@ export function fetchTeamByInviteCode(token: string, inviteCode: string): Promis
     });
 }
 
-export function fetchMyTeam(token: string): Promise<TeamResponse> {
+export function fetchMyTeam(token: string): Promise<TeamResponse | null> {
     return request<TeamResponse>("/api/teams/me", {
         headers: authHeaders(token)
+    }).catch((error) => {
+        // Если бэкенд вернул 404 (команда не найдена), просто возвращаем null
+        if (error?.status === 404 || error?.message?.includes("404")) {
+            return null;
+        }
+        // Если какая-то другая жесткая ошибка — пробрасываем её дальше
+        throw error;
     });
 }
 
