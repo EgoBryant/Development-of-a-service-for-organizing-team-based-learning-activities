@@ -1,5 +1,5 @@
 :root {
-    --exam-bg-image: url("../../src/assets/team-exam-background.png");
+    --exam-bg-image: url("../../src/assets/images/Background.svg");
     --exam-surface: rgba(247, 250, 255, 0.96);
     --exam-surface-strong: #ffffff;
     --exam-surface-soft: #edf3ff;
@@ -14,7 +14,7 @@
     --exam-soft-shadow: 0 14px 28px rgba(34, 79, 155, 0.14);
     --exam-gradient: linear-gradient(95deg, var(--exam-cyan) 0%, var(--exam-blue) 52%, var(--exam-violet) 100%);
     --exam-gradient-vertical: linear-gradient(180deg, #6d6fff 0%, #11d0dc 100%);
-    --exam-dashboard-bg-size: clamp(920px, 92vw, 1260px) auto;
+    --exam-dashboard-bg-size: min(1920px, 100vw) auto;
 }
 
 .profile-app:not(.profile-app--dashboard-profile) {
@@ -93,6 +93,14 @@
     box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, 0.4),
         0 14px 26px rgba(33, 78, 154, 0.22);
+}
+
+.profile-app--dashboard-profile .profile-nav-button--disabled:hover,
+.profile-app--dashboard-profile .profile-nav-button:disabled:hover,
+.profile-sidebar.profile-sidebar--dashboard .profile-nav-button--disabled:hover,
+.profile-sidebar.profile-sidebar--dashboard .profile-nav-button:disabled:hover {
+    box-shadow: inset 0 0 0 1px rgba(190, 204, 229, 0.72);
+    transform: none;
 }
 
 .profile-app--dashboard-profile .profile-nav-button.is-active,
@@ -637,39 +645,21 @@
     }
 }
 
-/* Team page uses the account-level page scroll, not a nested content scroll. */
-.profile-app:has(.team-dashboard-main) {
-    height: auto;
-    min-height: 100dvh;
-    max-height: none;
-    overflow: visible;
+.profile-app--dashboard-profile:has(.team-dashboard-main) .profile-sidebar {
+    align-self: stretch;
+    min-height: 0;
 }
 
-.profile-app:has(.team-dashboard-main) .profile-sidebar {
-    align-self: flex-start;
-    min-height: calc(100dvh - clamp(18px, 2vh, 28px) * 2);
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-dashboard-main {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.profile-app:has(.team-dashboard-main) .team-dashboard-main {
-    max-height: none;
-    overflow: visible;
-    overflow-y: visible;
-}
-
-.team-active-wrap,
-.team-active-blocks {
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-wrap,
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-blocks {
     flex: 0 0 auto;
     min-height: auto;
     overflow: visible;
-}
-
-.team-rescue-bar {
-    flex: 0 0 auto;
-}
-
-@media (max-width: 900px) {
-    .profile-app:has(.team-dashboard-main) .profile-sidebar {
-        align-self: stretch;
-        min-height: 0;
-    }
 }

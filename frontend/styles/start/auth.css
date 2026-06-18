@@ -34,6 +34,18 @@
         pointer-events: auto;
     }
 
+    .auth-screen.is-account {
+        padding: 0;
+        background:
+            #2d68d2 url("../../src/assets/images/Background.svg") center center / cover no-repeat;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .auth-screen.is-account .profile-shell {
+        padding-inline: 0;
+    }
+
     .auth-layout {
         width: auto;
         height: auto;
@@ -871,6 +883,18 @@
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
+    }
+
+    .auth-screen.is-account {
+        padding: 0;
+        background:
+            #2d68d2 url("../../src/assets/images/Background.svg") center center / cover no-repeat;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .auth-screen.is-account .profile-shell {
+        padding-inline: 0;
     }
 
     .auth-layout {

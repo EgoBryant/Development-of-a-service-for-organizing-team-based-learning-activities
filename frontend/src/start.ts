@@ -102,6 +102,7 @@ export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
 const LOCAL_TEAM_STORAGE_PREFIX = "team-exam-local-team:";
 const LOCAL_PROFILE_STORAGE_PREFIX = "team-exam-profile:";
+const FORCE_DEMO_PROFILE_ACHIEVEMENTS = true;
 
 let profileAchievementScrollResizeObserver: ResizeObserver | undefined;
 
@@ -1175,6 +1176,26 @@ function getGroupDisplay(): string {
 
 function getAvatarDisplay(): string {
     return appState.profileEdits?.avatarDataUrl ?? appState.profile?.avatarUrl ?? "";
+}
+
+function hasProfileAchievements(profile: UserProfileResponse | null): boolean {
+    if (FORCE_DEMO_PROFILE_ACHIEVEMENTS) {
+        return true;
+    }
+
+    if (!profile) {
+        return false;
+    }
+
+    const normalizedLeague = profile.personalLeague.trim().toLowerCase();
+
+    return (
+        profile.userPoints > 0 ||
+        profile.personalRating > 0 ||
+        profile.personalContribution > 0 ||
+        profile.teamScore > 0 ||
+        (Boolean(normalizedLeague) && normalizedLeague !== "новичок" && normalizedLeague !== "старт")
+    );
 }
 
 function resetProfileUi(): void {
@@ -2868,6 +2889,106 @@ function syncAchievementScrollFadeClasses(scroller: HTMLElement): void {
     }
 }
 
+function syncAchievementCustomScrollbar(scroller: HTMLElement): void {
+    const wrap = scroller.parentElement;
+    if (!wrap?.classList.contains("profile-achievements-scroll-wrap")) {
+        return;
+    }
+
+    const bar = wrap.querySelector<HTMLElement>(".profile-achievements-bar");
+    const thumb = wrap.querySelector<HTMLElement>(".profile-achievements-thumb");
+    if (!(bar instanceof HTMLElement) || !(thumb instanceof HTMLElement)) {
+        return;
+    }
+
+    const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    const trackWidth = Math.max(0, bar.clientWidth);
+    if (trackWidth === 0) {
+        return;
+    }
+
+    if (maxScroll <= 0) {
+        thumb.style.width = `${trackWidth}px`;
+        thumb.style.transform = "translateX(0px)";
+        bar.classList.add("is-disabled");
+        return;
+    }
+
+    bar.classList.remove("is-disabled");
+    const thumbWidth = Math.max(64, Math.round(trackWidth * (scroller.clientWidth / scroller.scrollWidth)));
+    const available = Math.max(0, trackWidth - thumbWidth);
+    const left = available > 0 ? Math.round((scroller.scrollLeft / maxScroll) * available) : 0;
+
+    thumb.style.width = `${thumbWidth}px`;
+    thumb.style.transform = `translateX(${left}px)`;
+}
+
+function bindAchievementCustomScrollbar(scroller: HTMLElement): void {
+    const wrap = scroller.parentElement;
+    if (!wrap?.classList.contains("profile-achievements-scroll-wrap")) {
+        return;
+    }
+
+    const bar = wrap.querySelector<HTMLElement>(".profile-achievements-bar");
+    const thumb = wrap.querySelector<HTMLElement>(".profile-achievements-thumb");
+    if (!(bar instanceof HTMLElement) || !(thumb instanceof HTMLElement)) {
+        return;
+    }
+
+    const scrollToClientX = (clientX: number): void => {
+        const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+        if (maxScroll <= 0) {
+            scroller.scrollLeft = 0;
+            return;
+        }
+
+        const rect = bar.getBoundingClientRect();
+        const thumbWidth = thumb.getBoundingClientRect().width;
+        const available = Math.max(1, rect.width - thumbWidth);
+        const offset = Math.min(Math.max(clientX - rect.left - thumbWidth / 2, 0), available);
+        scroller.scrollLeft = (offset / available) * maxScroll;
+    };
+
+    bar.addEventListener("pointerdown", (event) => {
+        if (event.target === thumb) {
+            return;
+        }
+
+        event.preventDefault();
+        scrollToClientX(event.clientX);
+    });
+
+    thumb.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const startClientX = event.clientX;
+        const startScrollLeft = scroller.scrollLeft;
+
+        const onPointerMove = (moveEvent: PointerEvent): void => {
+            const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+            const trackWidth = bar.getBoundingClientRect().width;
+            const thumbWidth = thumb.getBoundingClientRect().width;
+            const available = Math.max(1, trackWidth - thumbWidth);
+            if (maxScroll <= 0) {
+                scroller.scrollLeft = 0;
+                return;
+            }
+
+            const delta = moveEvent.clientX - startClientX;
+            scroller.scrollLeft = startScrollLeft + (delta / available) * maxScroll;
+        };
+
+        const onPointerUp = (): void => {
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerUp);
+        };
+
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+    });
+}
+
 function renderProfileView(): void {
     if (!isHTMLElement(profileMount)) {
         return;
@@ -2878,27 +2999,43 @@ function renderProfileView(): void {
     const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
     const pointsValue = String(actualPoints);
     const ratingLabel = "РЕЙТИНГ";
-    const ratingValue = profile?.personalRating ? String(profile.personalRating) : "—";
-    const leagueValue = profile?.personalLeague || "Старт";
+    const ratingValue = profile?.personalRating && profile.personalRating > 0 ? `${profile.personalRating} место` : "- место";
+    const leagueValue = profile?.personalLeague?.trim() || "Новичок";
     const fullName = getFullNameDisplay();
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
     const teamPillText = teamName || "КОМАНДА";
+    const avatarSrc = getAvatarDisplay();
+    const photoContent = avatarSrc
+        ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
+        : `<span class="profile-photo-placeholder">Фото</span>`;
+    const achievementsContent = hasProfileAchievements(profile)
+        ? `
+                    <div class="profile-achievements-scroll-wrap">
+                        <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
+                        <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
+                        <div class="profile-achievements-scroll" id="profileAchievementsScroll">
+                            ${renderProfileAchievementStrip()}
+                        </div>
+                        <div class="profile-achievements-bar" id="profileAchievementsBar" aria-hidden="true">
+                            <div class="profile-achievements-thumb" id="profileAchievementsThumb"></div>
+                        </div>
+                    </div>`
+        : `
+                    <div class="profile-achievements-empty" aria-live="polite">
+                        <p class="profile-achievements-empty-text">Каждое достижение - это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку</p>
+                        <button type="button" class="profile-achievements-empty-button" disabled aria-disabled="true">к челленджам</button>
+                    </div>`;
     const statusHtml = "";
 
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
-    const profileAppModeClass = appState.dashboardSection === "profile" ? " profile-app--dashboard-profile" : "";
-    const extraNavHtml =
-        appState.dashboardSection === "profile"
-            ? `
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="tasks">ЗАДАНИЯ</button>
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>`
-            : `
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="news">НОВОСТИ</button>`;
+    const profileAppModeClass = " profile-app--dashboard-profile";
+    const extraNavHtml = `
+                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true">ЗАДАНИЯ</button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>`;
 
     const mainColumn =
         appState.dashboardSection === "team"
@@ -2912,7 +3049,7 @@ function renderProfileView(): void {
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
-                            <div class="profile-photo"></div>
+                            <div class="profile-photo">${photoContent}</div>
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
@@ -2937,31 +3074,27 @@ function renderProfileView(): void {
                 </div>
                 <div class="profile-achievements">
                     <h3 class="profile-achievements-title">ДОСТИЖЕНИЯ</h3>
-                    <div class="profile-achievements-scroll-wrap">
-                        <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
-                        <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
-                        <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderProfileAchievementStrip()}
-                        </div>
-                    </div>
+                    ${achievementsContent}
                 </div>
         </section>`;
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
-            <aside class="profile-sidebar profile-sidebar--dashboard" aria-label="Разделы">
-                <nav class="profile-nav-top">
-                    <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
-                    <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
-                    <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating">РЕЙТИНГ</button>
-                    ${extraNavHtml}
-                </nav>
-                <nav class="profile-nav-bottom">
-                    <button type="button" class="profile-nav-button" id="profileSettingsButton">НАСТРОЙКИ</button>
-                    <button type="button" class="profile-nav-button" id="profileLogoutButton">ПОКИНУТЬ</button>
-                </nav>
-            </aside>
-            ${mainColumn}
+            <div class="profile-dashboard-shell">
+                <aside class="profile-sidebar profile-sidebar--dashboard" aria-label="Разделы">
+                    <nav class="profile-nav-top">
+                        <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
+                        <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
+                        <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating">РЕЙТИНГ</button>
+                        ${extraNavHtml}
+                    </nav>
+                    <nav class="profile-nav-bottom">
+                        <button type="button" class="profile-nav-button" id="profileSettingsButton">НАСТРОЙКИ</button>
+                        <button type="button" class="profile-nav-button" id="profileLogoutButton">ПОКИНУТЬ</button>
+                    </nav>
+                </aside>
+                ${mainColumn}
+            </div>
         </div>
         ${renderProfileModal()}
         ${renderTeamModal()}
@@ -2990,30 +3123,20 @@ function wireProfileViewEvents(): void {
         return;
     }
 
-    const photoEl = profileMount.querySelector(".profile-photo");
-    if (photoEl instanceof HTMLElement) {
-        const src = getAvatarDisplay();
-        if (src) {
-            photoEl.classList.add("has-image");
-            photoEl.style.backgroundImage = `url(${JSON.stringify(src)})`;
-        } else {
-            photoEl.classList.remove("has-image");
-            photoEl.style.removeProperty("background-image");
-        }
-    }
-
     profileAchievementScrollResizeObserver?.disconnect();
     profileAchievementScrollResizeObserver = undefined;
 
     const achievementsScroll = profileMount.querySelector("#profileAchievementsScroll");
     if (achievementsScroll instanceof HTMLElement) {
-        const syncFades = (): void => {
+        const syncAchievements = (): void => {
             syncAchievementScrollFadeClasses(achievementsScroll);
+            syncAchievementCustomScrollbar(achievementsScroll);
         };
 
-        achievementsScroll.addEventListener("scroll", syncFades, { passive: true });
-        requestAnimationFrame(syncFades);
-        profileAchievementScrollResizeObserver = new ResizeObserver(() => syncFades());
+        bindAchievementCustomScrollbar(achievementsScroll);
+        achievementsScroll.addEventListener("scroll", syncAchievements, { passive: true });
+        requestAnimationFrame(syncAchievements);
+        profileAchievementScrollResizeObserver = new ResizeObserver(() => syncAchievements());
         profileAchievementScrollResizeObserver.observe(achievementsScroll);
     }
 
