@@ -160,8 +160,6 @@ const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
-const AUTH_EMAIL_EXAMPLE = "plu8ha@yandex.ru";
-const AUTH_PASSWORD_EXAMPLE = "•••••••••••••";
 
 void bootstrap();
 
@@ -558,27 +556,6 @@ async function bootstrap(): Promise<void> {
         openRescueModal();
     });
 
-    if (isHTMLElement(appScreen) && isHTMLElement(authModalCard)) {
-        appScreen.addEventListener("click", (event: MouseEvent) => {
-            if (appState.view === "home" || appState.view === "account") {
-                return;
-            }
-
-            const target = event.target;
-            if (!(target instanceof Node)) {
-                return;
-            }
-
-            if (authModalCard.contains(target)) {
-                return;
-            }
-
-            clearStatus();
-            appState.view = "home";
-            render();
-        });
-    }
-
     const session = loadSession();
     render();
 
@@ -808,19 +785,12 @@ function renderAuthView(): void {
         formContent.innerHTML = `
             <form id="signInForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Уже с нами?</h1>
-<<<<<<< HEAD
-                <input class="auth-modal-field" name="email" type="email" placeholder="${AUTH_EMAIL_EXAMPLE}" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required>
-                <div class="auth-login-password-row">
-                    <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="${AUTH_PASSWORD_EXAMPLE}" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
-                        <span class="auth-password-peek-icon" aria-hidden="true"></span>
-                    </button>
-=======
                 <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-login-password-row">
                     <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek></button>
->>>>>>> 0b2a75952c73166f7d5153ba381dd4cd886bfe92
+                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
+                        <span class="auth-password-peek-icon" aria-hidden="true"></span>
+                    </button>
                 </div>
                 ${renderSignInFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
@@ -892,29 +862,17 @@ function renderAuthView(): void {
         formContent.innerHTML = `
             <form id="signUpForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Новый игрок?</h1>
-<<<<<<< HEAD
-                <input class="auth-modal-field" name="email" type="email" placeholder="${AUTH_EMAIL_EXAMPLE}" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required>
-                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
+                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
                     <div class="auth-password-row">
-                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="${AUTH_PASSWORD_EXAMPLE}" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
                         <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
                             <span class="auth-password-peek-icon" aria-hidden="true"></span>
                         </button>
                     </div>
                 </div>
-                <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell>
-                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="${AUTH_PASSWORD_EXAMPLE}" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
-=======
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
-                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
-                    <div class="auth-password-row">
-                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
-                        <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}></button>
-                    </div>
-                </div>
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
                     <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
->>>>>>> 0b2a75952c73166f7d5153ba381dd4cd886bfe92
                 </div>
                 ${renderStatusBlock()}
                 <button class="auth-submit-pill" type="submit" ${signUpSubmitDisabled ? "disabled" : ""}>
@@ -939,7 +897,7 @@ function renderAuthView(): void {
         formContent.innerHTML = `
             <form id="recoveryForm" class="auth-form auth-form-modal">
                 <h1 class="auth-modal-heading">Новый игрок?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="${AUTH_EMAIL_EXAMPLE}" value="${escapeHtml(appState.signIn.email)}" autocomplete="email">
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email">
                 <div class="auth-login-password-row auth-code-row">
                     <input class="auth-modal-field auth-modal-field-password" name="code" type="text" placeholder="КОД" inputmode="numeric">
                     <button class="auth-inline-pill" type="button" id="repeatRecoveryCode">ПОВТОРИТЬ</button>
