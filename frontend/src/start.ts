@@ -576,6 +576,31 @@ async function bootstrap(): Promise<void> {
         });
     }
 
+    if (isHTMLElement(authSwitchColumn)) {
+        authSwitchColumn.addEventListener("click", (event: MouseEvent) => {
+            if (!window.matchMedia("(max-width: 1023px)").matches || appState.isSubmitting) {
+                return;
+            }
+
+            const target = event.target;
+            if (target instanceof Element && target.closest("[data-view]")) {
+                return;
+            }
+
+            if (appState.view === "sign-in") {
+                resetSignUpDraft();
+                clearStatus();
+                setView("sign-up");
+                return;
+            }
+
+            if (appState.view === "sign-up" || appState.view === "password-recovery") {
+                clearStatus();
+                setView("sign-in");
+            }
+        });
+    }
+
     const session = loadSession();
     render();
 
