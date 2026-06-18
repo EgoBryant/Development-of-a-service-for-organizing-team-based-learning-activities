@@ -2,6 +2,10 @@
     display: none;
 }
 
+.hidden {
+    display: none !important;
+}
+
 @media (min-width: 1024px) {
     .auth-screen {
         display: none;
@@ -835,8 +839,4 @@
 .status-error {
     color: #d7367f;
 }
-
-.hidden {
-    display: none !important;
-} */
-
+*/
