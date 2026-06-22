@@ -1,15 +1,7 @@
 @font-face {
     font-family: 'Montserrat';
     src: url('../../src/assets/fonts/Montserrat-VariableFont_wght.woff2') format('woff2');
-    font-weight: medium;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Montserrat';
-    src: url('../../src/assets/Montserrat-VariableFont_wght.woff2') format('woff2');
-    font-weight: bold;
+    font-weight: 100 900;
     font-style: normal;
     font-display: swap;
 }
