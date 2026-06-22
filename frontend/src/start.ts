@@ -102,8 +102,7 @@ export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
 const LOCAL_TEAM_STORAGE_PREFIX = "team-exam-local-team:";
 const LOCAL_PROFILE_STORAGE_PREFIX = "team-exam-profile:";
-const FORCE_DEMO_PROFILE_ACHIEVEMENTS = true;
-
+const FORCE_DEMO_PROFILE_ACHIEVEMENTS = import.meta.env.DEV;
 let profileAchievementScrollResizeObserver: ResizeObserver | undefined;
 
 const appState: AppState = {
