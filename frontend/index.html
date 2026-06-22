@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/Logo.svg">
     <title>Командный зачёт</title>
 </head>
 <body>
     <main class="single-page-app">
-        <section id="homeScreen" class="screen screen-active menu-screen">
+        <section id="homeScreen">
             <div class="menu-card">
-                <div class="logo-box" aria-hidden="true"></div>
-                <h1 class="home-title">КОМАНДНЫЙ ЗАЧЁТ</h1>
-                <button class="start-pill-button" type="button" data-view="sign-in">СТАРТ</button>
+                <img src="/Logo.svg" alt="Логотип Командный зачёт" class="main-logo">
+                <h1 class="home-title">Командный зачёт</h1>
+                <button class="start-pill-button" type="button" data-view="sign-in">Старт</button>
             </div>
         </section>
 
-        <section id="appScreen" class="screen auth-screen" aria-live="polite" aria-hidden="true">
+        <section id="appScreen" class="auth-screen" aria-live="polite" aria-hidden="true">
             <div id="profileShell" class="profile-shell hidden" aria-hidden="true">
                 <div id="profileMount" class="profile-mount"></div>
             </div>

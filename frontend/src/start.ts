@@ -102,7 +102,7 @@ export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
 const LOCAL_TEAM_STORAGE_PREFIX = "team-exam-local-team:";
 const LOCAL_PROFILE_STORAGE_PREFIX = "team-exam-profile:";
-
+const FORCE_DEMO_PROFILE_ACHIEVEMENTS = import.meta.env.DEV;
 let profileAchievementScrollResizeObserver: ResizeObserver | undefined;
 
 const appState: AppState = {
@@ -158,6 +158,8 @@ const authLayout = document.getElementById("authLayout");
 const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
+const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
+const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 
 void bootstrap();
 
@@ -191,6 +193,9 @@ function transitionAuthView(nextView: View): void {
         // Wait for animation to complete (0.6s)
         setTimeout(() => {
             appState.view = nextView;
+            if (isHTMLElement(authSwitchColumn) && (nextView === "sign-in" || nextView === "sign-up")) {
+                authSwitchColumn.classList.add("transition-switch-copy-enter");
+            }
             
             // Remove direction classes but keep toggle-switch-panel for enter animation
             authModalCard.classList.remove("toggle-left", "toggle-right", "toggle-switch-panel");
@@ -223,6 +228,7 @@ function transitionAuthView(nextView: View): void {
                 }
                 if (isHTMLElement(authSwitchColumn)) {
                     authSwitchColumn.classList.remove("transition-recovery-enter");
+                    authSwitchColumn.classList.remove("transition-switch-copy-enter");
                 }
             }, 600);
         }, 600);
@@ -235,6 +241,12 @@ function transitionAuthView(nextView: View): void {
 
 function setView(nextView: View): void {
     transitionAuthView(nextView);
+}
+
+function resetSignUpDraft(): void {
+    appState.signUp.email = "";
+    appState.signUp.password = "";
+    appState.signUp.passwordConfirm = "";
 }
 
 function setStatus(message: string, tone: "default" | "error" = "default"): void {
@@ -573,6 +585,147 @@ async function bootstrap(): Promise<void> {
     }
 }
 
+function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement): void {
+    let startY = 0;
+    let activePointerId: number | null = null;
+    let isDragging = false;
+    const clearDragState = (): void => {
+        modalCard.classList.remove("is-mobile-dragging");
+        modalCard.style.removeProperty("--auth-mobile-drag-offset");
+        modalCard.style.removeProperty("--auth-mobile-drag-progress");
+        modalCard.style.removeProperty("--auth-mobile-active-opacity");
+        modalCard.style.removeProperty("--auth-mobile-copy-offset");
+        switchColumn.style.removeProperty("touch-action");
+        isDragging = false;
+        activePointerId = null;
+    };
+
+    const getTargetView = (): View | null => {
+        if (appState.view === "sign-in") {
+            return "sign-up";
+        }
+
+        if (appState.view === "sign-up" || appState.view === "password-recovery") {
+            return "sign-in";
+        }
+
+        return null;
+    };
+
+    const switchToTargetView = (): void => {
+        const nextView = getTargetView();
+        if (!nextView) {
+            return;
+        }
+
+        if (nextView === "sign-up") {
+            resetSignUpDraft();
+        }
+
+        clearStatus();
+        setView(nextView);
+    };
+
+    const getDragDistance = (currentY: number): number => {
+        if (appState.view === "sign-in") {
+            return startY - currentY;
+        }
+
+        return currentY - startY;
+    };
+
+    const getMaxDistance = (): number => {
+        const cardHeight = modalCard.getBoundingClientRect().height;
+        const switchHeight = switchColumn.getBoundingClientRect().height;
+        return Math.max(cardHeight - switchHeight, 1);
+    };
+
+    switchColumn.addEventListener("pointerdown", (event: PointerEvent) => {
+        if (
+            !window.matchMedia(MOBILE_AUTH_QUERY).matches ||
+            appState.isSubmitting ||
+            !getTargetView() ||
+            event.button !== 0
+        ) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof Element && target.closest("[data-view]")) {
+            return;
+        }
+
+        startY = event.clientY;
+        activePointerId = event.pointerId;
+        modalCard.style.setProperty("--auth-mobile-drag-offset", "0px");
+        modalCard.style.setProperty("--auth-mobile-drag-progress", "0");
+        switchColumn.style.touchAction = "none";
+        switchColumn.setPointerCapture(event.pointerId);
+    });
+
+    switchColumn.addEventListener("pointermove", (event: PointerEvent) => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        const rawDistance = getDragDistance(event.clientY);
+        const distance = Math.max(rawDistance, 0);
+        const maxDistance = getMaxDistance();
+        const progress = Math.min(distance / maxDistance, 1);
+        const activeOpacity = Math.max(1 - progress * 2.4, 0);
+
+        if (distance > 4) {
+            isDragging = true;
+            modalCard.classList.add("is-mobile-dragging");
+            event.preventDefault();
+        }
+
+        modalCard.style.setProperty("--auth-mobile-drag-offset", `${Math.min(distance, maxDistance)}px`);
+        modalCard.style.setProperty("--auth-mobile-drag-progress", progress.toFixed(3));
+        modalCard.style.setProperty("--auth-mobile-active-opacity", activeOpacity.toFixed(3));
+        modalCard.style.setProperty("--auth-mobile-copy-offset", `${Math.round(progress * -18)}px`);
+    });
+
+    const endDrag = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        const distance = Math.max(getDragDistance(event.clientY), 0);
+        const shouldSwitch = isDragging && (distance > 72 || distance / getMaxDistance() > 0.28);
+
+        if (switchColumn.hasPointerCapture(event.pointerId)) {
+            switchColumn.releasePointerCapture(event.pointerId);
+        }
+
+        clearDragState();
+
+        if (shouldSwitch) {
+            switchToTargetView();
+        }
+    };
+
+    switchColumn.addEventListener("pointerup", endDrag);
+    switchColumn.addEventListener("pointercancel", (event: PointerEvent) => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        if (switchColumn.hasPointerCapture(event.pointerId)) {
+            switchColumn.releasePointerCapture(event.pointerId);
+        }
+
+        clearDragState();
+    });
+
+    switchColumn.addEventListener("click", (event: MouseEvent) => {
+        if (window.matchMedia(MOBILE_AUTH_QUERY).matches) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    });
+}
+
 function render(): void {
     if (
         !isHTMLElement(homeScreen) ||
@@ -630,17 +783,16 @@ function renderAuthView(): void {
         authSwitchColumn.innerHTML = renderAuthSwitchStage();
 
         formContent.innerHTML = `
-            <form id="signInForm" class="auth-form auth-form-modal">
+            <form id="signInForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Уже с нами?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-login-password-row">
                     <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-inline-pill auth-inline-pill-compact" type="button" id="signInRestoreButton">ЗАБЫЛИ?</button>
                     <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
                         <span class="auth-password-peek-icon" aria-hidden="true"></span>
                     </button>
                 </div>
-                ${renderStatusBlock()}
+                ${renderSignInFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
                     ${appState.isSubmitting ? "ПОДКЛЮЧЕНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
@@ -655,23 +807,29 @@ function renderAuthView(): void {
             }
         };
 
-        const restoreButton = signInForm.querySelector("#signInRestoreButton");
-        if (isHTMLButtonElement(restoreButton)) {
-            restoreButton.addEventListener("click", () => {
-                clearStatus();
-                setView("password-recovery");
-            });
-        }
-
         const passwordInput = signInForm.elements.namedItem("password");
         const passwordPeekButton = signInForm.querySelector("[data-signin-password-peek]");
         if (isHTMLInputElement(passwordInput)) {
+            const passwordRow = passwordInput.closest(".auth-login-password-row");
             if (isHTMLButtonElement(passwordPeekButton)) {
                 bindPressToRevealPassword(passwordPeekButton, passwordInput);
+                syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+
+                passwordRow?.addEventListener("focusin", () => {
+                    syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+                });
+                passwordRow?.addEventListener("focusout", () => {
+                    window.setTimeout(() => {
+                        syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+                    }, 0);
+                });
             }
 
             passwordInput.addEventListener("input", () => {
                 appState.signIn.password = passwordInput.value;
+                if (isHTMLButtonElement(passwordPeekButton)) {
+                    syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+                }
                 syncSignInSubmitState();
             });
         }
@@ -702,10 +860,10 @@ function renderAuthView(): void {
         authSwitchColumn.innerHTML = renderAuthSwitchStage();
 
         formContent.innerHTML = `
-            <form id="signUpForm" class="auth-form auth-form-modal">
+            <form id="signUpForm" class="auth-form auth-form-modal" novalidate>
                 <h1 class="auth-modal-heading">Новый игрок?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required>
-                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell>
+                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
+                <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
                     <div class="auth-password-row">
                         <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
                         <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
@@ -713,7 +871,7 @@ function renderAuthView(): void {
                         </button>
                     </div>
                 </div>
-                <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell>
+                <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
                     <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
                 ${renderStatusBlock()}
@@ -777,6 +935,10 @@ function renderAuthView(): void {
                 return;
             }
 
+            if (nextView === "sign-up" && appState.view !== "sign-up") {
+                resetSignUpDraft();
+            }
+
             clearStatus();
             setView(nextView);
         });
@@ -789,7 +951,7 @@ function renderAuthSwitchStage(): string {
             ${renderAuthSwitchCopy(
                 "auth-switch-copy auth-switch-copy-sign-up",
                 "Уже с нами?",
-                "Войди в профиль и продолжи работу с командой.",
+                "Войди в свой аккаунт, чтобы проверить свежий рейтинг команд!",
                 "ВХОД",
                 "sign-in"
             )}
@@ -832,14 +994,15 @@ function isSignUpReady(): boolean {
     return (
         appState.signUp.email.trim().length > 0 &&
         appState.signUp.password.length > 0 &&
-        appState.signUp.passwordConfirm.length > 0
+        appState.signUp.password === appState.signUp.passwordConfirm
     );
 }
 
 function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTMLInputElement): () => void {
     const setPasswordVisible = (isVisible: boolean): void => {
-        passwordInput.type = isVisible ? "text" : "password";
-        button.classList.toggle("is-active", isVisible);
+        const canReveal = !button.disabled && !passwordInput.disabled;
+        passwordInput.type = isVisible && canReveal ? "text" : "password";
+        button.classList.toggle("is-active", isVisible && canReveal);
     };
 
     button.addEventListener("pointerdown", (event: PointerEvent) => {
@@ -873,6 +1036,19 @@ function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTM
     };
 }
 
+function syncPasswordPeekButtonState(
+    button: HTMLButtonElement,
+    passwordInput: HTMLInputElement,
+    passwordRow: Element | null = passwordInput.closest(".auth-login-password-row, .auth-password-row")
+): void {
+    button.disabled = passwordInput.disabled || !passwordRow?.matches(":focus-within");
+
+    if (button.disabled) {
+        passwordInput.type = "password";
+        button.classList.remove("is-active");
+    }
+}
+
 function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const emailInput = signUpForm.elements.namedItem("email");
     const passwordInput = signUpForm.elements.namedItem("password");
@@ -880,6 +1056,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const passwordShell = signUpForm.querySelector<HTMLElement>("[data-signup-password-shell]");
     const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
     const passwordPeekButton = signUpForm.querySelector("[data-signup-password-peek]");
+    const passwordRow = signUpForm.querySelector(".auth-password-row");
     const submitButton = signUpForm.querySelector(".auth-submit-pill");
 
     if (
@@ -896,18 +1073,50 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         ? bindPressToRevealPassword(passwordPeekButton, passwordInput)
         : () => {};
 
+    if (isHTMLButtonElement(passwordPeekButton)) {
+        passwordRow?.addEventListener("focusin", () => {
+            syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+        });
+        passwordRow?.addEventListener("focusout", () => {
+            window.setTimeout(() => {
+                syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
+            }, 0);
+        });
+    }
+
     const syncVisibleFields = (): void => {
-        const hasEmail = Boolean(appState.signUp.email.trim());
-        const hasPassword = Boolean(appState.signUp.password);
+        appState.signUp.email = emailInput.value;
+        appState.signUp.password = passwordInput.value;
+        appState.signUp.passwordConfirm = passwordConfirmInput.value;
+
+        const hasEmail = Boolean(emailInput.value.trim());
+
+        if (!hasEmail) {
+            appState.signUp.password = "";
+            appState.signUp.passwordConfirm = "";
+            passwordInput.value = "";
+            passwordConfirmInput.value = "";
+        }
+
+        const hasPassword = Boolean(passwordInput.value);
+        const passwordsMatch = hasPassword && passwordInput.value === passwordConfirmInput.value;
+        const shouldShowConfirm = hasPassword && !passwordsMatch;
+
+        if (!hasPassword) {
+            appState.signUp.passwordConfirm = "";
+            passwordConfirmInput.value = "";
+        }
 
         passwordShell.classList.toggle("hidden", !hasEmail);
+        passwordShell.hidden = !hasEmail;
         passwordInput.disabled = !hasEmail;
-        confirmShell.classList.toggle("hidden", !hasPassword);
-        passwordConfirmInput.disabled = !hasPassword;
+        confirmShell.classList.toggle("hidden", !shouldShowConfirm);
+        confirmShell.hidden = !shouldShowConfirm;
+        passwordConfirmInput.disabled = !shouldShowConfirm;
         resetPasswordVisibility();
 
         if (isHTMLButtonElement(passwordPeekButton)) {
-            passwordPeekButton.disabled = !hasEmail;
+            syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
         }
 
         if (isHTMLButtonElement(submitButton)) {
@@ -931,6 +1140,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     });
 
     syncVisibleFields();
+    window.setTimeout(syncVisibleFields, 100);
 
     signUpForm.addEventListener("submit", (event: SubmitEvent) => {
         event.preventDefault();
@@ -965,6 +1175,26 @@ function getGroupDisplay(): string {
 
 function getAvatarDisplay(): string {
     return appState.profileEdits?.avatarDataUrl ?? appState.profile?.avatarUrl ?? "";
+}
+
+function hasProfileAchievements(profile: UserProfileResponse | null): boolean {
+    if (FORCE_DEMO_PROFILE_ACHIEVEMENTS) {
+        return true;
+    }
+
+    if (!profile) {
+        return false;
+    }
+
+    const normalizedLeague = profile.personalLeague.trim().toLowerCase();
+
+    return (
+        profile.userPoints > 0 ||
+        profile.personalRating > 0 ||
+        profile.personalContribution > 0 ||
+        profile.teamScore > 0 ||
+        (Boolean(normalizedLeague) && normalizedLeague !== "новичок" && normalizedLeague !== "старт")
+    );
 }
 
 function resetProfileUi(): void {
@@ -1781,40 +2011,40 @@ async function refreshTeamWorkspace(): Promise<void> {
     }
 
     try {
-        appState.currentTeam = await fetchMyTeam(token);
-        appState.localCreatedTeam = null;
-        if (appState.profile) {
-            appState.profile = {
-                ...appState.profile,
-                teamId: appState.currentTeam.id,
-                teamName: appState.currentTeam.name,
-                teamInviteCode: appState.currentTeam.inviteCode,
-                isCaptain: appState.currentTeam.captainId === appState.profile.id,
-                teamScore: appState.currentTeam.score
-            };
+        const teamData = await fetchMyTeam(token);
+        
+        if (teamData) {
+            // Если команда успешно вернулась
+            appState.currentTeam = teamData;
+            appState.localCreatedTeam = null;
+            if (appState.profile) {
+                appState.profile = {
+                    ...appState.profile,
+                    teamId: teamData.id,
+                    teamName: teamData.name,
+                    teamInviteCode: teamData.inviteCode,
+                    isCaptain: teamData.captainId === appState.profile.id,
+                    teamScore: teamData.score
+                };
+            }
+        } else {
+            // Если команды нет — сбрасываем в безопасные дефолтные значения (без null)
+            appState.currentTeam = null;
+            appState.localCreatedTeam = null;
+            if (appState.profile) {
+                appState.profile = {
+                    ...appState.profile,
+                    teamId: null,
+                    teamName: "",
+                    teamInviteCode: "",
+                    isCaptain: false,
+                    teamScore: 0
+                };
+            }
         }
-    } catch {
+    } catch (err) {
         appState.currentTeam = null;
     }
-
-    if (!appState.currentTeam) {
-        appState.teamCheckIns = [];
-        appState.teamHelpRequests = [];
-        appState.teamMyVotes = [];
-        await refreshRatingWorkspace(token);
-        return;
-    }
-
-    const [checkIns, helpRequests, myVotes] = await Promise.all([
-        fetchCheckIns(token).catch(() => [] as CheckInResponse[]),
-        fetchHelpRequests(token).catch(() => [] as HelpRequestResponse[]),
-        fetchMyVotes(token).catch(() => [] as MyVoteResponse[])
-    ]);
-
-    appState.teamCheckIns = checkIns;
-    appState.teamHelpRequests = helpRequests;
-    appState.teamMyVotes = myVotes;
-    await refreshRatingWorkspace(token);
 }
 
 function isTeamCaptain(): boolean {
@@ -2658,6 +2888,106 @@ function syncAchievementScrollFadeClasses(scroller: HTMLElement): void {
     }
 }
 
+function syncAchievementCustomScrollbar(scroller: HTMLElement): void {
+    const wrap = scroller.parentElement;
+    if (!wrap?.classList.contains("profile-achievements-scroll-wrap")) {
+        return;
+    }
+
+    const bar = wrap.querySelector<HTMLElement>(".profile-achievements-bar");
+    const thumb = wrap.querySelector<HTMLElement>(".profile-achievements-thumb");
+    if (!(bar instanceof HTMLElement) || !(thumb instanceof HTMLElement)) {
+        return;
+    }
+
+    const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+    const trackWidth = Math.max(0, bar.clientWidth);
+    if (trackWidth === 0) {
+        return;
+    }
+
+    if (maxScroll <= 0) {
+        thumb.style.width = `${trackWidth}px`;
+        thumb.style.transform = "translateX(0px)";
+        bar.classList.add("is-disabled");
+        return;
+    }
+
+    bar.classList.remove("is-disabled");
+    const thumbWidth = Math.max(64, Math.round(trackWidth * (scroller.clientWidth / scroller.scrollWidth)));
+    const available = Math.max(0, trackWidth - thumbWidth);
+    const left = available > 0 ? Math.round((scroller.scrollLeft / maxScroll) * available) : 0;
+
+    thumb.style.width = `${thumbWidth}px`;
+    thumb.style.transform = `translateX(${left}px)`;
+}
+
+function bindAchievementCustomScrollbar(scroller: HTMLElement): void {
+    const wrap = scroller.parentElement;
+    if (!wrap?.classList.contains("profile-achievements-scroll-wrap")) {
+        return;
+    }
+
+    const bar = wrap.querySelector<HTMLElement>(".profile-achievements-bar");
+    const thumb = wrap.querySelector<HTMLElement>(".profile-achievements-thumb");
+    if (!(bar instanceof HTMLElement) || !(thumb instanceof HTMLElement)) {
+        return;
+    }
+
+    const scrollToClientX = (clientX: number): void => {
+        const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+        if (maxScroll <= 0) {
+            scroller.scrollLeft = 0;
+            return;
+        }
+
+        const rect = bar.getBoundingClientRect();
+        const thumbWidth = thumb.getBoundingClientRect().width;
+        const available = Math.max(1, rect.width - thumbWidth);
+        const offset = Math.min(Math.max(clientX - rect.left - thumbWidth / 2, 0), available);
+        scroller.scrollLeft = (offset / available) * maxScroll;
+    };
+
+    bar.addEventListener("pointerdown", (event) => {
+        if (event.target === thumb) {
+            return;
+        }
+
+        event.preventDefault();
+        scrollToClientX(event.clientX);
+    });
+
+    thumb.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const startClientX = event.clientX;
+        const startScrollLeft = scroller.scrollLeft;
+
+        const onPointerMove = (moveEvent: PointerEvent): void => {
+            const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+            const trackWidth = bar.getBoundingClientRect().width;
+            const thumbWidth = thumb.getBoundingClientRect().width;
+            const available = Math.max(1, trackWidth - thumbWidth);
+            if (maxScroll <= 0) {
+                scroller.scrollLeft = 0;
+                return;
+            }
+
+            const delta = moveEvent.clientX - startClientX;
+            scroller.scrollLeft = startScrollLeft + (delta / available) * maxScroll;
+        };
+
+        const onPointerUp = (): void => {
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerUp);
+        };
+
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+    });
+}
+
 function renderProfileView(): void {
     if (!isHTMLElement(profileMount)) {
         return;
@@ -2668,27 +2998,43 @@ function renderProfileView(): void {
     const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
     const pointsValue = String(actualPoints);
     const ratingLabel = "РЕЙТИНГ";
-    const ratingValue = profile?.personalRating ? String(profile.personalRating) : "—";
-    const leagueValue = profile?.personalLeague || "Старт";
+    const ratingValue = profile?.personalRating && profile.personalRating > 0 ? `${profile.personalRating} место` : "- место";
+    const leagueValue = profile?.personalLeague?.trim() || "Новичок";
     const fullName = getFullNameDisplay();
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
     const teamPillText = teamName || "КОМАНДА";
+    const avatarSrc = getAvatarDisplay();
+    const photoContent = avatarSrc
+        ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
+        : `<span class="profile-photo-placeholder">Фото</span>`;
+    const achievementsContent = hasProfileAchievements(profile)
+        ? `
+                    <div class="profile-achievements-scroll-wrap">
+                        <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
+                        <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
+                        <div class="profile-achievements-scroll" id="profileAchievementsScroll">
+                            ${renderProfileAchievementStrip()}
+                        </div>
+                        <div class="profile-achievements-bar" id="profileAchievementsBar" aria-hidden="true">
+                            <div class="profile-achievements-thumb" id="profileAchievementsThumb"></div>
+                        </div>
+                    </div>`
+        : `
+                    <div class="profile-achievements-empty" aria-live="polite">
+                        <p class="profile-achievements-empty-text">Каждое достижение - это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку</p>
+                        <button type="button" class="profile-achievements-empty-button" disabled aria-disabled="true">к челленджам</button>
+                    </div>`;
     const statusHtml = "";
 
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
-    const profileAppModeClass = appState.dashboardSection === "profile" ? " profile-app--dashboard-profile" : "";
-    const extraNavHtml =
-        appState.dashboardSection === "profile"
-            ? `
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="tasks">ЗАДАНИЯ</button>
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>`
-            : `
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>
-                    <button type="button" class="profile-nav-button" data-dashboard-placeholder="news">НОВОСТИ</button>`;
+    const profileAppModeClass = " profile-app--dashboard-profile";
+    const extraNavHtml = `
+                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true">ЗАДАНИЯ</button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>`;
 
     const mainColumn =
         appState.dashboardSection === "team"
@@ -2702,7 +3048,7 @@ function renderProfileView(): void {
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
-                            <div class="profile-photo"></div>
+                            <div class="profile-photo">${photoContent}</div>
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
@@ -2727,13 +3073,7 @@ function renderProfileView(): void {
                 </div>
                 <div class="profile-achievements">
                     <h3 class="profile-achievements-title">ДОСТИЖЕНИЯ</h3>
-                    <div class="profile-achievements-scroll-wrap">
-                        <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
-                        <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
-                        <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderProfileAchievementStrip()}
-                        </div>
-                    </div>
+                    ${achievementsContent}
                 </div>
         </section>`;
 
@@ -2842,19 +3182,20 @@ function wireProfileViewEvents(): void {
             photoEl.style.removeProperty("background-image");
         }
     }
-
     profileAchievementScrollResizeObserver?.disconnect();
     profileAchievementScrollResizeObserver = undefined;
 
     const achievementsScroll = profileMount.querySelector("#profileAchievementsScroll");
     if (achievementsScroll instanceof HTMLElement) {
-        const syncFades = (): void => {
+        const syncAchievements = (): void => {
             syncAchievementScrollFadeClasses(achievementsScroll);
+            syncAchievementCustomScrollbar(achievementsScroll);
         };
 
-        achievementsScroll.addEventListener("scroll", syncFades, { passive: true });
-        requestAnimationFrame(syncFades);
-        profileAchievementScrollResizeObserver = new ResizeObserver(() => syncFades());
+        bindAchievementCustomScrollbar(achievementsScroll);
+        achievementsScroll.addEventListener("scroll", syncAchievements, { passive: true });
+        requestAnimationFrame(syncAchievements);
+        profileAchievementScrollResizeObserver = new ResizeObserver(() => syncAchievements());
         profileAchievementScrollResizeObserver.observe(achievementsScroll);
     }
 
@@ -3453,6 +3794,22 @@ function renderStatusBlock(): string {
     const toneClass = appState.statusTone === "error" ? "status-error" : "";
     const hiddenClass = appState.statusMessage ? "" : "hidden";
     return `<p class="status-message ${toneClass} ${hiddenClass}">${escapeHtml(appState.statusMessage)}</p>`;
+}
+
+function isInvalidCredentialsError(): boolean {
+    return appState.statusTone === "error" && appState.statusMessage === INVALID_CREDENTIALS_MESSAGE;
+}
+
+function renderSignInFeedbackBlock(): string {
+    if (isInvalidCredentialsError()) {
+        return `
+            <button type="button" class="auth-recovery-link" data-view="password-recovery">
+                Забыли пароль? Нажмите для восстановления
+            </button>
+        `;
+    }
+
+    return renderStatusBlock();
 }
 
 async function submitPersonalProfileSave(): Promise<void> {

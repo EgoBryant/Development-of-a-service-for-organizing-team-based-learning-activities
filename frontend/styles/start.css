@@ -1,4 +1,5 @@
 @import "./start/base.css";
+@import "./start/global.css";
 @import "./start/auth.css";
 @import "./start/profile.css";
 @import "./start/team.css";

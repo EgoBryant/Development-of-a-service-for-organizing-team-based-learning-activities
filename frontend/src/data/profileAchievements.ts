@@ -72,6 +72,54 @@ export const PROFILE_ACHIEVEMENTS: readonly ProfileAchievement[] = [
         progressLabel: "4.3 из 4.5",
         status: "progress",
         tone: "slate"
+    },
+    {
+        id: "mentor-call",
+        title: "Созвон с наставником",
+        shortTitle: "Наставник",
+        iconLabel: "CALL",
+        description: "Команда провела полезный созвон с наставником и зафиксировала план действий.",
+        criterion: "Подготовить вопросы, провести встречу и сохранить итоги в карточке команды.",
+        points: 8,
+        progressLabel: "Получено",
+        status: "earned",
+        tone: "blue"
+    },
+    {
+        id: "deadline-keeper",
+        title: "Хранитель дедлайнов",
+        shortTitle: "Дедлайны",
+        iconLabel: "DDL",
+        description: "Участник без просрочек закрывает личные задачи и помогает команде держать темп.",
+        criterion: "Сдать 5 задач подряд без нарушения дедлайна.",
+        points: 14,
+        progressLabel: "4 из 5",
+        status: "progress",
+        tone: "amber"
+    },
+    {
+        id: "idea-generator",
+        title: "Генератор идей",
+        shortTitle: "Идеи",
+        iconLabel: "IDEA",
+        description: "Студент предложил несколько решений, которые команда реально использовала в работе.",
+        criterion: "Получить 3 подтвержденные идеи от сокомандников.",
+        points: 11,
+        progressLabel: "Получено",
+        status: "earned",
+        tone: "rose"
+    },
+    {
+        id: "steady-progress",
+        title: "Стабильный прогресс",
+        shortTitle: "Прогресс",
+        iconLabel: "UP",
+        description: "Команда несколько недель подряд показывает устойчивый рост по задачам и активности.",
+        criterion: "Закрыть недельный план 4 раза подряд.",
+        points: 16,
+        progressLabel: "2 из 4",
+        status: "progress",
+        tone: "green"
     }
 ];
 

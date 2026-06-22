@@ -29,6 +29,14 @@
     box-sizing: border-box;
 }
 
+.profile-dashboard-shell {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
 .profile-sidebar {
     width: 230px;
     flex-shrink: 0;
@@ -110,7 +118,6 @@
 .profile-top {
     display: flex;
     align-items: stretch;
-    gap: 22px 26px;
 }
 
 .profile-photo-col {
@@ -126,15 +133,33 @@
     aspect-ratio: 3 / 4;
     border-radius: 32px;
     background: rgb(255, 255, 255);
-    background-size: cover;
-    background-position: center;
     box-sizing: border-box;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .profile-photo.has-image {
     background-color: rgb(255, 255, 255);
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.profile-photo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+.profile-photo-placeholder {
+    color: rgb(168, 181, 204);
+    font-size: clamp(24px, 2vw, 32px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .profile-stats-col {
@@ -360,8 +385,9 @@
 
 .profile-achievements-scroll {
     display: flex;
-    gap: 18px;
+    gap: 22px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 12px 24px 18px;
     scroll-snap-type: x proximity;
     position: relative;
@@ -385,6 +411,53 @@
     border-radius: 999px;
 }
 
+.profile-achievements-empty {
+    min-height: 176px;
+    padding: 10px 24px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    text-align: center;
+}
+
+.profile-achievements-empty-text {
+    margin: 0;
+    max-width: 720px;
+    color: rgb(128, 145, 175);
+    font-size: clamp(16px, 1.35vw, 20px);
+    line-height: 1.45;
+}
+
+.profile-achievements-empty-button {
+    border: none;
+    border-radius: 999px;
+    padding: 14px 24px;
+    background: linear-gradient(180deg, rgb(109, 111, 255) 0%, rgb(17, 208, 220) 100%);
+    color: rgb(255, 255, 255);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 14px 28px rgba(34, 79, 155, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.profile-achievements-empty-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 34px rgba(34, 79, 155, 0.22);
+}
+
+.profile-achievements-empty-button:disabled {
+    background: linear-gradient(180deg, rgb(188, 199, 225) 0%, rgb(161, 176, 206) 100%);
+    color: rgba(255, 255, 255, 0.92);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .profile-achievement-item {
     border: none;
     background: transparent;
@@ -392,16 +465,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    min-width: 142px;
+    gap: 12px;
+    min-width: 170px;
     scroll-snap-align: center;
     padding: 0 6px;
     flex-shrink: 0;
 }
 
 .profile-achievement-circle {
-    width: 82px;
-    height: 82px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     background: rgb(255, 128, 179);
     box-shadow: 0 12px 28px rgba(60, 60, 60, 0.18);
@@ -443,14 +516,14 @@
 }
 
 .profile-achievement-icon {
-    font-size: 18px;
+    font-size: 30px;
     font-weight: 900;
     letter-spacing: 0.02em;
     line-height: 1;
 }
 
 .profile-achievement-caption {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -461,7 +534,7 @@
 }
 
 .profile-achievement-progress {
-    min-height: 24px;
+    min-height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -469,7 +542,7 @@
     border-radius: 999px;
     background: rgb(247, 247, 247);
     color: rgb(118, 118, 118);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -816,25 +889,32 @@
     padding: clamp(18px, 2vh, 28px) clamp(36px, 4.2vw, 80px);
     border-radius: 0;
     overflow: hidden;
-    background:
-        linear-gradient(rgba(45, 104, 210, 0.08), rgba(45, 104, 210, 0.08)),
-        url("../../src/assets/team-exam-background.png") center top / clamp(920px, 92vw, 1260px) auto no-repeat,
-        #2d68d2;
+    background: transparent;
     box-shadow: none;
+}
+
+.profile-app--dashboard-profile .profile-dashboard-shell {
+    border-radius: 40px;
+    background: rgba(118, 158, 224, 0.88);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+        0 24px 54px rgba(12, 53, 139, 0.16);
+    overflow: hidden;
+    gap: 50px;
 }
 
 .profile-app--dashboard-profile .profile-sidebar {
     flex: 0 0 clamp(250px, 18.5vw, 340px);
     width: clamp(250px, 18.5vw, 340px);
     padding: clamp(24px, 3vh, 42px) clamp(24px, 2.2vw, 38px);
-    border-radius: 40px;
+    border-radius: 32px;
     background: rgba(241, 246, 255, 0.96);
-    box-shadow: 0 24px 44px rgba(20, 67, 143, 0.22);
+    box-shadow: inset -1px 0 0 rgba(180, 202, 236, 0.55);
 }
 
 .profile-app--dashboard-profile .profile-nav-top,
 .profile-app--dashboard-profile .profile-nav-bottom {
-    gap: clamp(16px, 2.6vh, 28px);
+    gap: 36px;
 }
 
 .profile-app--dashboard-profile .profile-nav-button {
@@ -854,6 +934,15 @@
         inset 0 4px 0 rgba(30, 39, 180, 0.18);
 }
 
+.profile-app--dashboard-profile .profile-nav-button--disabled,
+.profile-app--dashboard-profile .profile-nav-button:disabled {
+    background: rgba(224, 232, 246, 0.96);
+    color: rgb(139, 160, 198);
+    box-shadow: inset 0 0 0 1px rgba(190, 204, 229, 0.72);
+    cursor: not-allowed;
+    transform: none;
+}
+
 .profile-app--dashboard-profile #profileLogoutButton {
     background: linear-gradient(180deg, rgb(222, 38, 138) 0%, rgb(108, 123, 255) 100%);
 }
@@ -861,20 +950,16 @@
 .profile-app--dashboard-profile .profile-main {
     position: relative;
     margin: 0;
-    padding: clamp(26px, 3.2vh, 36px) clamp(34px, 3vw, 58px) clamp(22px, 2.8vh, 32px);
-    border-radius: 40px;
-    background: rgba(118, 158, 224, 0.88);
-    box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.24),
-        0 24px 54px rgba(12, 53, 139, 0.16);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    padding: clamp(26px, 3.2vh, 36px) 0 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     gap: clamp(14px, 1.8vh, 20px);
     overflow: hidden;
 }
 
 .profile-app--dashboard-profile .profile-hero-card {
-    padding: 0;
+    padding: 0 0 clamp(14px, 1.8vh, 20px) 20px;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
@@ -883,8 +968,7 @@
 
 .profile-app--dashboard-profile .profile-top {
     display: grid;
-    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
-    gap: clamp(28px, 3.2vw, 58px);
+    grid-template-columns: minmax(220px, 290px) minmax(0, 1fr);
     align-items: start;
 }
 
@@ -897,7 +981,7 @@
 }
 
 .profile-app--dashboard-profile .profile-photo-col {
-    width: 100%;
+    width: 90%;
     max-width: none;
     flex: none;
 }
@@ -912,7 +996,8 @@
 
 .profile-app--dashboard-profile .profile-stats-col {
     justify-content: space-around;
-    gap: clamp(16px, 7vh, 100px)
+    gap: clamp(16px, 4vh, 100px);
+    padding: 15px clamp(34px, 3vw, 58px) 0 0;
 }
 
 .profile-app--dashboard-profile .profile-stat-track {
@@ -928,7 +1013,7 @@
 }
 
 .profile-app--dashboard-profile .profile-stat-orb {
-    width: 100%;
+    width: 110%;
     height: clamp(46px, 6vh, 56px);
     min-width: 0;
     min-height: 0;
@@ -964,6 +1049,7 @@
 .profile-app--dashboard-profile .profile-pills-row {
     grid-template-columns: 1fr 1fr 1fr;
     gap: clamp(18px, 2.4vw, 32px);
+    padding-right: clamp(34px, 3vw, 58px)
 }
 
 .profile-app--dashboard-profile .profile-info-pill {
@@ -986,7 +1072,10 @@
 
 .profile-app--dashboard-profile .profile-achievements {
     min-height: clamp(250px, 36vh, 300px);
-    padding: clamp(14px, 1.6vh, 18px) 28px 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: clamp(14px, 1.6vh, 18px) 28px 10px;
     border-radius: 40px;
     background: rgba(244, 248, 255, 0.96);
     box-shadow: 0 18px 34px rgba(34, 79, 155, 0.12);
@@ -1000,66 +1089,90 @@
     text-transform: none;
 }
 
+.profile-app--dashboard-profile .profile-achievements-scroll-wrap {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 8px 0;
+}
+
 .profile-app--dashboard-profile .profile-achievements-scroll {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: repeat(2, auto);
-    justify-content: stretch;
-    align-items: start;
-    justify-items: center;
-    gap: clamp(12px, 1.6vh, 18px) clamp(12px, 2.4vw, 42px);
-    overflow: visible;
-    padding: 0 clamp(18px, 3vw, 48px) 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 0 0;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
+    scrollbar-color: transparent transparent;
 }
 
 .profile-app--dashboard-profile .profile-achievement-item {
-    min-width: 0;
-    width: min(100%, 142px);
-    justify-self: center;
-}
-
-.profile-app--dashboard-profile .profile-achievement-item:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-.profile-app--dashboard-profile .profile-achievement-item:nth-child(2) {
-    grid-column: 3;
-    grid-row: 1;
-}
-
-.profile-app--dashboard-profile .profile-achievement-item:nth-child(3) {
-    grid-column: 5;
-    grid-row: 1;
-}
-
-.profile-app--dashboard-profile .profile-achievement-item:nth-child(4) {
-    grid-column: 2;
-    grid-row: 2;
-}
-
-.profile-app--dashboard-profile .profile-achievement-item:nth-child(5) {
-    grid-column: 4;
-    grid-row: 2;
-}
-
-.profile-app--dashboard-profile .profile-achievement-item:nth-child(6) {
-    grid-column: 6;
-    grid-row: 2;
+    min-width: 170px;
+    width: 170px;
+    justify-self: auto;
 }
 
 .profile-app--dashboard-profile .profile-achievements-scroll::-webkit-scrollbar {
     display: none;
 }
 
+.profile-app--dashboard-profile .profile-achievements-bar {
+    position: relative;
+    width: 100%;
+    height: 9px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(208, 223, 245, 0.96);
+    box-shadow: inset 0 0 0 1px rgba(162, 193, 236, 0.55);
+}
+
+.profile-app--dashboard-profile .profile-achievements-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    min-width: 64px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgb(109, 111, 255) 0%, rgb(17, 208, 220) 100%);
+    box-shadow: 0 6px 16px rgba(41, 126, 220, 0.26);
+    cursor: grab;
+    transition: box-shadow 0.2s ease, transform 0.08s linear;
+}
+
+.profile-app--dashboard-profile .profile-achievements-thumb:active {
+    cursor: grabbing;
+    box-shadow: 0 8px 18px rgba(41, 126, 220, 0.34);
+}
+
+.profile-app--dashboard-profile .profile-achievements-bar.is-disabled {
+    opacity: 0.55;
+}
+
+.profile-app--dashboard-profile .profile-achievements-bar.is-disabled .profile-achievements-thumb {
+    cursor: default;
+    box-shadow: none;
+}
+
 .profile-app--dashboard-profile .profile-achievements-fade {
     display: none;
 }
 
+.profile-app--dashboard-profile .profile-achievements-empty {
+    min-height: clamp(176px, 24vh, 230px);
+    padding: 10px clamp(14px, 2vw, 30px) 6px;
+}
+
+.profile-app--dashboard-profile .profile-achievements-empty-text {
+    color: rgb(153, 178, 226);
+    font-size: clamp(17px, 1.25vw, 22px);
+}
+
 .profile-app--dashboard-profile .profile-achievement-circle {
-    width: clamp(58px, 7.2vh, 74px);
-    height: clamp(58px, 7.2vh, 74px);
+    width: 130px;
+    height: 130px;
     background: rgba(246, 249, 255, 0.98);
     color: rgb(38, 179, 208);
     box-shadow: 0 16px 30px rgba(34, 79, 155, 0.14);
@@ -1070,6 +1183,7 @@
     font-size: 15px;
     letter-spacing: 0.02em;
     text-transform: none;
+    max-width: 170px;
 }
 
 .profile-app--dashboard-profile .profile-achievement-progress {
