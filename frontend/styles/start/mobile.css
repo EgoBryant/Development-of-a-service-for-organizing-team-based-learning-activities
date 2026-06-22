@@ -1,0 +1,1079 @@
+.profile-menu-toggle,
+.profile-menu-backdrop {
+    display: none;
+}
+
+@media (max-width: 760px) {
+    html,
+    body {
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    body.modal-open {
+        overflow: hidden;
+    }
+
+    .single-page-app,
+    .screen-active,
+    .auth-screen.is-account {
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    .auth-screen.is-account,
+    .auth-screen.is-account:has(.profile-app--dashboard-profile) {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .profile-shell {
+        width: 100%;
+        min-height: 100dvh;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .profile-mount {
+        min-height: 100dvh;
+    }
+
+    .profile-app,
+    .profile-app:not(.profile-app--dashboard-profile),
+    .profile-app--dashboard-profile {
+        width: 100%;
+        min-width: 0;
+        min-height: 100dvh;
+        height: auto;
+        max-height: none;
+        flex-direction: column;
+        gap: 12px;
+        padding: 64px 12px 12px;
+        border-radius: 0;
+        overflow: visible;
+        box-sizing: border-box;
+        background-size: max(760px, 180vw) auto, max(760px, 180vw) auto, auto;
+    }
+
+    .profile-app:has(.team-dashboard-main) .profile-sidebar,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
+    .profile-app--dashboard-profile .profile-sidebar,
+    .profile-sidebar,
+    .profile-sidebar.profile-sidebar--dashboard {
+        width: 100%;
+        flex: 0 0 auto;
+        align-self: stretch;
+        min-height: 0;
+        padding: 14px;
+        border-radius: 24px;
+        gap: 10px;
+        box-sizing: border-box;
+    }
+
+    .profile-nav-top,
+    .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-nav-top,
+    .profile-app--dashboard-profile .profile-nav-bottom {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .profile-nav-button,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-button,
+    .profile-app--dashboard-profile .profile-nav-button,
+    .profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 9px 8px;
+        font-size: 11px;
+        line-height: 1.15;
+        letter-spacing: 0.02em;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        box-shadow: 0 8px 16px rgba(33, 78, 154, 0.16);
+    }
+
+    .profile-app:not(.profile-app--dashboard-profile) .profile-main,
+    .profile-app--dashboard-profile .profile-main,
+    .profile-main,
+    .team-dashboard-main,
+    .rating-dashboard-main,
+    .events-dashboard-main {
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+        padding: 16px 12px;
+        border-radius: 24px;
+        overflow: visible;
+        box-sizing: border-box;
+    }
+
+    .rating-panels-stack,
+    .team-active-wrap,
+    .team-active-blocks,
+    .events-panels-stack {
+        min-height: 0;
+        overflow: visible;
+        padding-right: 0;
+    }
+
+    .profile-inline-status,
+    .profile-app--dashboard-profile .profile-inline-status {
+        position: static;
+        max-width: none;
+        margin: 0 0 10px;
+        font-size: 11px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .profile-hero-card,
+    .profile-app--dashboard-profile .profile-hero-card {
+        gap: 14px;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .profile-top,
+    .profile-app--dashboard-profile .profile-top {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .profile-photo-col,
+    .profile-app--dashboard-profile .profile-photo-col {
+        width: 100%;
+        max-width: 260px;
+        margin-inline: auto;
+    }
+
+    .profile-photo,
+    .profile-app--dashboard-profile .profile-photo {
+        width: 100%;
+        max-height: none;
+        aspect-ratio: 0.92;
+        border-radius: 22px;
+    }
+
+    .profile-stats-col,
+    .profile-app--dashboard-profile .profile-stats-col {
+        width: 100%;
+        gap: 10px;
+        justify-content: flex-start;
+    }
+
+    .profile-stat-track,
+    .profile-app--dashboard-profile .profile-stat-track {
+        min-height: 56px;
+        display: grid;
+        grid-template-columns: minmax(96px, 0.45fr) minmax(0, 1fr);
+        padding: 4px;
+        border-radius: 999px;
+    }
+
+    .profile-stat-orb,
+    .profile-app--dashboard-profile .profile-stat-orb {
+        width: 100%;
+        height: 48px;
+        min-width: 0;
+        min-height: 48px;
+        margin: 0;
+        border-radius: 999px;
+        font-size: 12px;
+        line-height: 1.1;
+        letter-spacing: 0.02em;
+        text-align: center;
+    }
+
+    .profile-stat-value,
+    .profile-app--dashboard-profile .profile-stat-value,
+    .profile-stat-value--num,
+    .profile-app--dashboard-profile .profile-stat-value--num {
+        min-width: 0;
+        padding: 0 10px;
+        font-size: 15px;
+        line-height: 1.15;
+        letter-spacing: 0.02em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .profile-pills-row,
+    .profile-app--dashboard-profile .profile-pills-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .profile-info-pill,
+    .profile-app--dashboard-profile .profile-info-pill {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.2;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .profile-achievements,
+    .profile-app--dashboard-profile .profile-achievements {
+        min-height: 0;
+        padding: 16px 12px;
+        border-radius: 24px;
+        overflow: hidden;
+    }
+
+    .profile-achievements-title,
+    .profile-app--dashboard-profile .profile-achievements-title {
+        margin-bottom: 12px;
+        font-size: clamp(24px, 9vw, 34px);
+        line-height: 1;
+    }
+
+    .profile-achievements-scroll,
+    .profile-app--dashboard-profile .profile-achievements-scroll {
+        display: flex;
+        justify-content: flex-start;
+        align-items: stretch;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0 2px 8px;
+        scroll-snap-type: x proximity;
+    }
+
+    .profile-achievement-item,
+    .profile-app--dashboard-profile .profile-achievement-item,
+    .profile-app--dashboard-profile .profile-achievement-item:nth-child(n) {
+        flex: 0 0 86px;
+        width: 86px;
+        grid-column: auto;
+        grid-row: auto;
+        scroll-snap-align: start;
+    }
+
+    .profile-achievement-circle,
+    .profile-app--dashboard-profile .profile-achievement-circle {
+        width: 64px;
+        height: 64px;
+    }
+
+    .profile-achievement-caption,
+    .profile-app--dashboard-profile .profile-achievement-caption {
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    .team-dashboard-main,
+    .team-active-wrap {
+        gap: 12px;
+    }
+
+    .team-top-bar {
+        align-items: stretch;
+        gap: 10px;
+        padding: 14px;
+        border-radius: 24px;
+    }
+
+    .team-top-headings {
+        flex: 1 1 100%;
+    }
+
+    .team-top-title,
+    .team-top-subtitle {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .team-top-dot {
+        display: none;
+    }
+
+    .team-top-pill,
+    .team-check-in-pill {
+        flex: 1 1 calc(50% - 5px);
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 10px;
+        line-height: 1.15;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .team-top-pill-plus {
+        flex: 0 0 44px;
+        width: 44px;
+    }
+
+    .team-panel,
+    .team-no-team-block,
+    .team-rescue-bar {
+        padding: 16px 14px;
+        border-radius: 22px;
+    }
+
+    .team-members-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .team-member-avatar {
+        border-radius: 18px;
+        min-height: 0;
+    }
+
+    .team-member-name,
+    .team-member-role,
+    .team-member-action {
+        font-size: 10px;
+        line-height: 1.2;
+        letter-spacing: 0.04em;
+    }
+
+    .team-info-row {
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 0;
+        line-height: 1.25;
+    }
+
+    .team-history-row {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        border-radius: 18px;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .team-history-kind,
+    .team-history-points-pill {
+        width: fit-content;
+        min-width: 0;
+    }
+
+    .team-history-text small {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .team-search-card,
+    .team-request-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .team-request-actions {
+        justify-content: stretch;
+    }
+
+    .team-request-actions .team-no-team-btn,
+    .team-search-card .team-no-team-btn {
+        width: 100%;
+    }
+
+    .team-fab-create,
+    .rating-team-rescue-pill {
+        right: 14px;
+        bottom: 14px;
+    }
+
+    .rating-dashboard-main {
+        gap: 12px;
+    }
+
+    .rating-panel,
+    .rating-page .rating-profile-card,
+    .rating-team-block {
+        padding: 16px 14px;
+        border-radius: 22px;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .rating-toolbar {
+        grid-template-columns: 1fr;
+        border-radius: 22px;
+        overflow: visible;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .rating-search-input {
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: #ffffff;
+        font-size: 11px;
+    }
+
+    .rating-filter-wrap {
+        width: 100%;
+    }
+
+    .rating-filter-btn {
+        width: 100%;
+        min-height: 42px;
+        margin: 0;
+        padding: 10px 12px;
+        font-size: 10px;
+    }
+
+    .rating-filter-menu {
+        left: 0;
+        right: 0;
+        min-width: 0;
+    }
+
+    .rating-podium {
+        justify-content: flex-start;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 0 2px 8px;
+        scroll-snap-type: x proximity;
+    }
+
+    .rating-podium-slot {
+        flex: 0 0 94px;
+        width: 94px;
+        scroll-snap-align: start;
+    }
+
+    .rating-podium-card {
+        min-height: 126px;
+        gap: 16px;
+        padding: 16px 8px 26px;
+        border-radius: 24px 24px 14px 14px;
+    }
+
+    .rating-podium-rank {
+        font-size: 24px;
+    }
+
+    .rating-list-row {
+        grid-template-columns: 36px minmax(0, 1fr);
+        border-radius: 20px;
+    }
+
+    .rating-list-main {
+        min-width: 0;
+        justify-content: flex-start;
+    }
+
+    .rating-list-label {
+        min-width: 0;
+        padding: 0 10px;
+        font-size: 11px;
+    }
+
+    .rating-list-points {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        min-height: 34px;
+        padding: 8px 12px;
+        border-radius: 0 0 20px 20px;
+        font-size: 10px;
+    }
+
+    .rating-profile-name {
+        font-size: 18px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .rating-profile-tabs {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .rating-profile-tab,
+    .rating-profile-action,
+    .rating-back-btn {
+        width: 100%;
+        min-height: 42px;
+        text-align: center;
+    }
+
+    .rating-profile-stat-row,
+    .rating-team-meta-row,
+    .rating-team-member-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        border-radius: 18px;
+        overflow-wrap: anywhere;
+    }
+
+    .rating-team-photo {
+        max-width: none;
+        min-height: 160px;
+    }
+
+    .rating-team-rescue-pill {
+        max-width: calc(100vw - 28px);
+        padding: 12px 16px;
+        font-size: 10px;
+    }
+
+    .events-dashboard-main {
+        gap: 12px;
+    }
+
+    .events-panels-stack {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        height: auto;
+    }
+
+    .events-calendar-block,
+    .events-feed-block {
+        flex: 0 0 auto;
+        min-height: 0;
+        max-height: none;
+        padding: 14px;
+        border-radius: 22px;
+        overflow: visible;
+    }
+
+    .events-calendar-toolbar,
+    .events-calendar-toolbar-end {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .events-calendar-month-group,
+    .events-calendar-week-nav {
+        justify-content: space-between;
+    }
+
+    .events-calendar-month-pill,
+    .events-calendar-scope,
+    .events-calendar-create-btn,
+    .events-news-add-btn,
+    .team-rescue-pill {
+        width: 100%;
+    }
+
+    .events-calendar-week-nav-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .events-calendar-grid {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 8px;
+        scroll-snap-type: x proximity;
+    }
+
+    .events-calendar-col {
+        flex: 0 0 min(76vw, 260px);
+        scroll-snap-align: start;
+    }
+
+    .events-calendar-col-body {
+        min-height: 220px;
+        max-height: 380px;
+    }
+
+    .events-feed-panels,
+    .events-feed-panel {
+        flex: 0 0 auto;
+        min-height: 0;
+        height: auto;
+        overflow: visible;
+    }
+
+    .events-activity-list,
+    .events-news-list {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .events-feed-tab {
+        min-height: 44px;
+        padding: 10px 8px;
+        font-size: 10px;
+        line-height: 1.15;
+    }
+
+    .events-activity-card {
+        flex-direction: column;
+        gap: 10px;
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .events-activity-card-badge {
+        align-self: flex-start;
+        white-space: normal;
+    }
+
+    .events-news-toolbar {
+        justify-content: stretch;
+    }
+
+    .events-news-title,
+    .events-news-body,
+    .events-activity-card-title,
+    .events-activity-card-text {
+        overflow-wrap: anywhere;
+    }
+
+    .profile-modal {
+        padding: 12px;
+        align-items: flex-start;
+        overflow-y: auto;
+    }
+
+    .profile-modal-card,
+    .team-rescue-card,
+    .event-create-modal .team-rescue-card,
+    .event-success-card,
+    .team-requests-card {
+        width: 100%;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 24px);
+        padding: 22px 16px 18px;
+        border-radius: 24px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .team-rescue-title,
+    .profile-modal-title {
+        padding-right: 26px;
+        font-size: 13px;
+        line-height: 1.25;
+    }
+
+    .team-rescue-topic-row,
+    .team-rescue-duo-row,
+    .team-rescue-photo-row,
+    .event-create-modal .team-rescue-topic-row,
+    .event-create-modal .team-rescue-duo-row {
+        grid-template-columns: 1fr;
+        border-radius: 22px;
+        overflow: visible;
+    }
+
+    .team-rescue-field,
+    .team-rescue-textarea,
+    .event-create-modal .team-rescue-field--tag,
+    .event-create-modal .team-rescue-field--duo,
+    .event-create-modal .team-rescue-select.team-rescue-field--tag,
+    .event-create-modal .team-rescue-select.team-rescue-field--duo,
+    .event-create-modal .team-rescue-field--datetime {
+        min-height: 48px;
+        padding: 13px 14px;
+        font-size: 13px;
+        letter-spacing: 0.05em;
+    }
+
+    .team-rescue-textarea,
+    .event-create-modal .team-rescue-textarea {
+        min-height: 116px;
+        border-radius: 22px;
+    }
+
+    .team-rescue-photo-label,
+    .team-rescue-photo-btn {
+        min-height: 44px;
+        justify-content: center;
+        border-radius: 999px;
+    }
+
+    .team-rescue-submit,
+    .event-success-done {
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
+        padding: 13px 18px;
+    }
+
+    .event-success-link-row,
+    .profile-link-row,
+    .team-requests-link-row {
+        grid-template-columns: 1fr;
+        border-radius: 22px;
+        overflow: hidden;
+    }
+
+    .event-success-link-field,
+    .profile-link-field {
+        min-height: 44px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .event-success-link-copy {
+        min-height: 44px;
+    }
+
+    .event-success-qr-wrap {
+        min-height: 0;
+        padding: 12px;
+        border-radius: 20px;
+    }
+
+    .event-success-qr {
+        width: min(180px, 70vw);
+    }
+
+    .team-vote-score-row {
+        gap: 6px;
+    }
+
+    .team-vote-score {
+        min-height: 42px;
+    }
+
+    .team-request-list {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .team-requests-carousel {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 8px;
+    }
+
+    .team-request-slide {
+        flex: 0 0 116px;
+    }
+
+    .profile-menu-toggle {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 60;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 12px;
+        padding: 0;
+        background: rgba(244, 248, 255, 0.96);
+        box-shadow: 0 12px 26px rgba(12, 53, 139, 0.22);
+        cursor: pointer;
+        transition: left 0.22s ease, transform 0.18s ease;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-menu-toggle {
+        left: calc(clamp(188px, 58vw, 238px) + 10px);
+    }
+
+    .profile-menu-toggle span {
+        width: 18px;
+        height: 2px;
+        border-radius: 999px;
+        background: #2474ff;
+        transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-menu-toggle span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+
+    .profile-app.is-mobile-menu-open .profile-menu-toggle span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-menu-toggle span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+
+    .profile-menu-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 45;
+        display: block;
+        background: rgba(6, 27, 67, 0.38);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-menu-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .profile-app:has(.team-dashboard-main) .profile-sidebar,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
+    .profile-app--dashboard-profile .profile-sidebar,
+    .profile-sidebar,
+    .profile-sidebar.profile-sidebar--dashboard {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        width: clamp(188px, 58vw, 238px);
+        max-width: calc(100vw - 44px);
+        max-height: 100dvh;
+        min-height: 100dvh;
+        align-self: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: stretch;
+        gap: 0;
+        padding: 0;
+        border-radius: 0 22px 22px 0;
+        overflow-y: auto;
+        transform: translateX(calc(-100% - 18px));
+        transition: transform 0.22s ease;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-sidebar {
+        transform: translateX(0);
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        min-height: 0;
+        gap: 0;
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top {
+        flex: 5 1 0;
+    }
+
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        flex: 2 1 0;
+    }
+
+    .profile-sidebar .profile-nav-button,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-button,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-button,
+    .profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
+        flex: 1 1 0;
+        align-self: stretch;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 0 10px;
+        border-radius: 0;
+        font-size: 12px;
+        line-height: 1;
+        letter-spacing: 0.04em;
+        text-align: center;
+        box-shadow: none;
+        border-bottom: 1px solid rgba(36, 116, 255, 0.12);
+    }
+
+    .profile-sidebar .profile-nav-top .profile-nav-button:first-child,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top .profile-nav-button:first-child,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top .profile-nav-button:first-child {
+        border-top-right-radius: 22px;
+    }
+
+    .profile-sidebar .profile-nav-bottom .profile-nav-button:last-child,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom .profile-nav-button:last-child,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom .profile-nav-button:last-child {
+        border-bottom-right-radius: 22px;
+        border-bottom: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .auth-screen {
+        padding: 10px;
+    }
+
+    .auth-layout,
+    .auth-modal-card,
+    .auth-modal-card.mode-sign-up,
+    .auth-modal-card.mode-recovery {
+        width: 100%;
+        max-width: none;
+    }
+
+    .auth-modal-card,
+    .auth-modal-card.mode-sign-up,
+    .auth-modal-card.mode-recovery {
+        border-radius: 24px;
+    }
+
+    .auth-form-column,
+    .auth-switch-column {
+        padding: 28px 14px;
+    }
+
+    .auth-panel-title,
+    .auth-modal-heading {
+        font-size: 34px;
+        line-height: 0.95;
+    }
+
+    .auth-panel-copy {
+        font-size: 14px;
+    }
+
+    .auth-switch-pill,
+    .auth-submit-pill,
+    .auth-modal-field,
+    .auth-modal-field-password,
+    .auth-inline-pill,
+    .auth-password-peek-button {
+        min-height: 54px;
+        height: 54px;
+        font-size: 15px;
+    }
+
+    .profile-app,
+    .profile-app:not(.profile-app--dashboard-profile),
+    .profile-app--dashboard-profile {
+        padding: 62px 10px 10px;
+    }
+
+    .profile-sidebar,
+    .profile-sidebar.profile-sidebar--dashboard,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
+    .profile-app--dashboard-profile .profile-sidebar {
+        width: clamp(178px, 62vw, 224px);
+        padding: 0;
+        border-radius: 0 20px 20px 0;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-menu-toggle {
+        left: calc(clamp(178px, 62vw, 224px) + 8px);
+    }
+
+    .profile-nav-top,
+    .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-nav-top,
+    .profile-app--dashboard-profile .profile-nav-bottom {
+        gap: 7px;
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        gap: 0;
+    }
+
+    .profile-nav-button,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-nav-button,
+    .profile-app--dashboard-profile .profile-nav-button {
+        min-height: 42px;
+        padding: 8px 6px;
+        font-size: 10px;
+    }
+
+    .profile-sidebar .profile-nav-button,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-button,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-button,
+    .profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        padding: 0 8px;
+        font-size: 11px;
+    }
+
+    .profile-main,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-main,
+    .profile-app--dashboard-profile .profile-main,
+    .team-dashboard-main,
+    .rating-dashboard-main,
+    .events-dashboard-main {
+        padding: 14px 10px;
+        border-radius: 22px;
+    }
+
+    .profile-stat-track,
+    .profile-app--dashboard-profile .profile-stat-track {
+        grid-template-columns: minmax(82px, 0.42fr) minmax(0, 1fr);
+    }
+
+    .profile-stat-orb,
+    .profile-app--dashboard-profile .profile-stat-orb {
+        height: 44px;
+        min-height: 44px;
+        font-size: 10px;
+    }
+
+    .profile-stat-value,
+    .profile-app--dashboard-profile .profile-stat-value,
+    .profile-stat-value--num,
+    .profile-app--dashboard-profile .profile-stat-value--num {
+        font-size: 13px;
+    }
+
+    .team-members-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .team-top-pill,
+    .team-check-in-pill,
+    .team-top-pill-plus {
+        flex-basis: 100%;
+        width: 100%;
+    }
+
+    .rating-list-row {
+        grid-template-columns: 32px minmax(0, 1fr);
+    }
+
+    .rating-podium-slot {
+        flex-basis: 88px;
+        width: 88px;
+    }
+
+    .events-calendar-col {
+        flex-basis: min(82vw, 250px);
+    }
+
+    .events-calendar-scope-btn {
+        padding: 12px 10px;
+        font-size: 10px;
+    }
+}
