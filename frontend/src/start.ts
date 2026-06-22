@@ -2035,7 +2035,7 @@ async function refreshTeamWorkspace(): Promise<void> {
             if (appState.profile) {
                 appState.profile = {
                     ...appState.profile,
-                    teamId: 0,
+                    teamId: null,
                     teamName: "",
                     teamInviteCode: "",
                     isCaptain: false,
