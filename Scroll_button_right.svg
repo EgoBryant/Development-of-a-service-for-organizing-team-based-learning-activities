@@ -1,0 +1,20 @@
+<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40.000000" height="40.000000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_1" x1="20" x2="20" y1="0" y2="40" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<clipPath id="clipPath_0">
+			<rect width="30.000000" height="30.000000" x="0.000000" y="5.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="Фрейм 1" width="40.000000" height="40.000000" x="0.000000" y="0.000000" />
+	<circle id="Эллипс 1" cx="20" cy="20" r="20" fill="url(#paint_linear_1)" />
+	<g id="svg 1" clip-path="url(#clipPath_0)" customFrame="url(#clipPath_0)">
+		<rect id="svg 1" width="30.000000" height="30.000000" x="0.000000" y="5.000000" />
+		<path id="Вектор 2" d="M20 26.25L26.25 20L20 13.75" fill-rule="nonzero" stroke="rgb(240,245,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.500000" />
+		<line id="Линия 1" x1="0" x2="15" y1="0" y2="0" stroke="rgb(240,245,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.500000" transform="matrix(-1,0,0,-1,26.25,20)" />
+	</g>
+</svg>
+
+
