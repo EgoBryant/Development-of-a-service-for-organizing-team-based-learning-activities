@@ -432,8 +432,8 @@
         box-shadow: 0 12px 24px rgba(120, 124, 254, 0.6);
     }
 
-    .start-pill-button:active:not(:disabled) {
-        transform: translateY(0);  
+    .auth-submit-pill:active:not(:disabled) {
+        transform: translateY(0);
         box-shadow: inset 0 4px 4px rgba(62, 65, 179, 0.4);
     }
 
