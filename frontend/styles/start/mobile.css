@@ -3,7 +3,7 @@
     display: none;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767px) {
     html,
     body {
         min-width: 0;
@@ -19,6 +19,15 @@
     .auth-screen.is-account {
         align-items: stretch;
         justify-content: flex-start;
+    }
+
+    .auth-screen.screen-active:not(.is-account) {
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-screen.screen-active:not(.is-account) .auth-layout {
+        margin-inline: auto;
     }
 
     .auth-screen.is-account,
@@ -919,6 +928,619 @@
         border-bottom-right-radius: 22px;
         border-bottom: none;
     }
+
+    .auth-screen.is-account {
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .profile-shell,
+    .profile-mount {
+        min-height: 100dvh;
+        display: flex;
+        justify-content: center;
+    }
+
+    .profile-app,
+    .profile-app:not(.profile-app--dashboard-profile),
+    .profile-app--dashboard-profile {
+        position: relative;
+        isolation: isolate;
+        width: min(100%, 390px);
+        min-height: 100dvh;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin-inline: auto;
+        padding: 18px 14px 126px;
+        gap: 0;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 18% 28%, rgba(0, 226, 224, 0.48) 0 2px, transparent 72px),
+            linear-gradient(rgba(20, 52, 112, 0.18), rgba(20, 52, 112, 0.18)),
+            radial-gradient(circle at 52% 50%, rgba(240, 245, 255, 0.12) 0%, transparent 34%),
+            url("../../src/assets/images/Background.svg") center / cover no-repeat,
+            #2458b8;
+    }
+
+    .profile-app--dashboard-profile::before,
+    .profile-app::before {
+        content: "";
+        position: absolute;
+        inset: 18px 14px 126px;
+        z-index: 0;
+        display: block;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 22px;
+        background:
+            radial-gradient(circle at 26% 14%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 34%),
+            radial-gradient(circle at 74% 76%, rgba(0, 226, 224, 0.22) 0%, rgba(0, 226, 224, 0) 38%),
+            linear-gradient(135deg, rgba(240, 245, 255, 0.28), rgba(240, 245, 255, 0.08));
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.42),
+            0 22px 46px rgba(12, 53, 139, 0.2);
+        backdrop-filter: blur(10px) saturate(135%);
+        -webkit-backdrop-filter: blur(10px) saturate(135%);
+        pointer-events: none;
+    }
+
+    .profile-app > .profile-main,
+    .profile-app > .profile-sidebar,
+    .profile-menu-toggle,
+    .profile-menu-backdrop {
+        position: relative;
+        z-index: 1;
+    }
+
+    .profile-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+    }
+
+    .profile-menu-toggle {
+        display: none;
+    }
+
+    .profile-menu-backdrop,
+    .profile-app.is-mobile-menu-open .profile-menu-backdrop {
+        display: none;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .profile-app:not(.profile-app--dashboard-profile) .profile-main,
+    .profile-app--dashboard-profile .profile-main,
+    .profile-main,
+    .team-dashboard-main,
+    .rating-dashboard-main,
+    .events-dashboard-main {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+        max-height: none;
+        padding: 0;
+        border-radius: 0;
+        overflow: hidden;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .profile-hero-card,
+    .profile-app--dashboard-profile .profile-hero-card {
+        height: 100%;
+        padding: 18px 16px 0;
+        gap: 18px;
+        overflow: visible;
+        justify-content: flex-start;
+    }
+
+    .profile-top,
+    .profile-app--dashboard-profile .profile-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(126px, 0.95fr);
+        align-items: center;
+        gap: 12px;
+    }
+
+    .profile-photo-col,
+    .profile-app--dashboard-profile .profile-photo-col {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+
+    .profile-photo,
+    .profile-app--dashboard-profile .profile-photo {
+        width: 100%;
+        aspect-ratio: 0.86;
+        max-height: 145px;
+        min-height: 0;
+        border-radius: 18px;
+        background: rgba(240, 245, 255, 0.78);
+        box-shadow: 0 18px 34px rgba(24, 76, 163, 0.18);
+    }
+
+    .profile-photo-placeholder {
+        color: rgba(119, 154, 218, 0.72);
+        font-size: 11px;
+    }
+
+    .profile-stats-col,
+    .profile-app--dashboard-profile .profile-stats-col {
+        width: 100%;
+        gap: 12px;
+        padding: 0;
+    }
+
+    .profile-stat-track,
+    .profile-app--dashboard-profile .profile-stat-track {
+        min-height: 34px;
+        grid-template-columns: 30px minmax(0, 1fr);
+        align-items: center;
+        padding: 2px 10px 2px 2px;
+        border-radius: 999px;
+        background: rgba(240, 245, 255, 0.9);
+        box-shadow: 0 10px 20px rgba(34, 79, 155, 0.14);
+    }
+
+    .profile-stat-orb,
+    .profile-app--dashboard-profile .profile-stat-orb {
+        width: 28px;
+        height: 28px;
+        min-height: 28px;
+        border-radius: 50%;
+        font-size: 0;
+        background: rgba(240, 245, 255, 0.88);
+        box-shadow:
+            0 9px 14px rgba(18, 42, 86, 0.34),
+            0 2px 5px rgba(18, 42, 86, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    }
+
+    .profile-stat-orb::before {
+        content: none;
+    }
+
+    .profile-stat-label,
+    .profile-app--dashboard-profile .profile-stat-label {
+        display: none;
+    }
+
+    .profile-stat-icon,
+    .profile-app--dashboard-profile .profile-stat-icon {
+        display: block;
+        width: 15px;
+        height: 15px;
+        object-fit: contain;
+    }
+
+    .profile-stat-orb--accent,
+    .profile-app--dashboard-profile .profile-stat-orb--accent {
+        background: linear-gradient(180deg, #787cfe 0%, #00e2e0 100%);
+    }
+
+    .profile-stat-value,
+    .profile-app--dashboard-profile .profile-stat-value,
+    .profile-stat-value--num,
+    .profile-app--dashboard-profile .profile-stat-value--num {
+        padding: 0 4px;
+        font-size: 12px;
+        font-weight: 800;
+        text-align: center;
+        color: #172d9d;
+    }
+
+    .profile-pills-row,
+    .profile-app--dashboard-profile .profile-pills-row {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 0 28px;
+    }
+
+    .profile-info-pill,
+    .profile-app--dashboard-profile .profile-info-pill {
+        min-height: 28px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: rgba(240, 245, 255, 0.95);
+        color: #2fa8ef;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        box-shadow: 0 10px 20px rgba(34, 79, 155, 0.12);
+    }
+
+    .profile-info-pill-accent,
+    .profile-app--dashboard-profile .profile-info-pill-accent {
+        background: linear-gradient(180deg, #787cfe 0%, #00e2e0 100%);
+        color: #f0f5ff;
+    }
+
+    .profile-achievements,
+    .profile-app--dashboard-profile .profile-achievements {
+        flex: 1 1 auto;
+        min-height: 142px;
+        max-height: 184px;
+        margin: 8px -16px 0;
+        padding: 18px 12px 14px;
+        border-radius: 20px 20px 22px 22px;
+        background: rgba(240, 245, 255, 0.94);
+        box-shadow: 0 18px 34px rgba(34, 79, 155, 0.16);
+    }
+
+    .profile-achievements-title,
+    .profile-app--dashboard-profile .profile-achievements-title {
+        margin-bottom: 14px;
+        font-size: 22px;
+        line-height: 1;
+    }
+
+    .profile-achievements-empty {
+        min-height: 0;
+        padding: 0 12px;
+        gap: 14px;
+    }
+
+    .profile-achievements-empty-text,
+    .profile-app--dashboard-profile .profile-achievements-empty-text {
+        max-width: 236px;
+        font-size: 10px;
+        line-height: 1.55;
+    }
+
+    .profile-achievements-empty-button {
+        min-height: 26px;
+        padding: 7px 18px;
+        font-size: 10px;
+        box-shadow: 0 8px 18px rgba(41, 126, 220, 0.26);
+    }
+
+    .profile-achievements-scroll-wrap {
+        gap: 0;
+        padding: 0;
+    }
+
+    .profile-achievements-scroll,
+    .profile-app--dashboard-profile .profile-achievements-scroll {
+        justify-content: flex-start;
+        gap: 20px;
+        padding: 0 0 6px;
+        scrollbar-width: none;
+    }
+
+    .profile-achievements-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .profile-achievement-item,
+    .profile-app--dashboard-profile .profile-achievement-item,
+    .profile-app--dashboard-profile .profile-achievement-item:nth-child(n) {
+        flex: 0 0 78px;
+        width: 78px;
+    }
+
+    .profile-achievement-circle,
+    .profile-app--dashboard-profile .profile-achievement-circle {
+        width: 58px;
+        height: 58px;
+        box-shadow: 0 12px 24px rgba(34, 79, 155, 0.12);
+    }
+
+    .profile-achievement-caption,
+    .profile-app--dashboard-profile .profile-achievement-caption {
+        max-width: 78px;
+        color: #172d9d;
+        font-size: 10px;
+        line-height: 1.15;
+    }
+
+    .profile-achievements-bar {
+        display: none;
+    }
+
+    .profile-app:has(.team-dashboard-main) .profile-sidebar,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
+    .profile-app--dashboard-profile .profile-sidebar,
+    .profile-sidebar,
+    .profile-sidebar.profile-sidebar--dashboard {
+        position: fixed;
+        top: auto;
+        right: max(14px, calc((100vw - 390px) / 2 + 14px));
+        bottom: 14px;
+        left: max(14px, calc((100vw - 390px) / 2 + 14px));
+        z-index: 50;
+        width: auto;
+        max-width: none;
+        min-height: 68px;
+        max-height: 112px;
+        padding: 18px 16px 12px;
+        display: grid;
+        grid-template-rows: auto auto;
+        gap: 12px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(240, 245, 255, 0.96);
+        box-shadow: 0 16px 32px rgba(12, 53, 139, 0.26);
+        transform: translateY(44px);
+        transition: transform 0.22s ease;
+        touch-action: pan-y;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-sidebar {
+        transform: translateY(0);
+    }
+
+    .profile-sidebar::before {
+        content: "";
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        width: 54px;
+        height: 2px;
+        border-radius: 999px;
+        background: rgba(120, 124, 254, 0.38);
+        transform: translateX(-50%);
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        align-items: center;
+        gap: 10px;
+        flex: none;
+    }
+
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        grid-template-columns: repeat(2, 42px);
+    }
+
+    .profile-sidebar .profile-nav-button,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-button,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-button,
+    .profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
+        width: 42px;
+        height: 42px;
+        min-height: 42px;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #787cfe 0%, #00e2e0 100%);
+        box-shadow: 0 8px 16px rgba(34, 79, 155, 0.24);
+    }
+
+    .profile-sidebar .profile-nav-button:first-child,
+    .profile-sidebar .profile-nav-button:last-child,
+    .profile-sidebar .profile-nav-top .profile-nav-button:first-child,
+    .profile-sidebar .profile-nav-bottom .profile-nav-button:last-child,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top .profile-nav-button:first-child,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom .profile-nav-button:last-child,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top .profile-nav-button:first-child,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom .profile-nav-button:last-child {
+        border-radius: 999px;
+    }
+
+    .profile-sidebar .profile-nav-button.is-active {
+        box-shadow:
+            0 8px 16px rgba(34, 79, 155, 0.24),
+            inset 0 0 0 2px rgba(240, 245, 255, 0.7);
+    }
+
+    .profile-sidebar .profile-nav-icon {
+        width: 20px;
+        height: 20px;
+        filter: brightness(0) invert(1);
+    }
+
+    .profile-sidebar .profile-nav-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .profile-sidebar #profileLogoutButton {
+        background: linear-gradient(180deg, #df2e80 0%, #787cfe 100%);
+    }
+
+    .profile-app:not(:has(.profile-main:not(.team-dashboard-main):not(.rating-dashboard-main):not(.events-dashboard-main))) .profile-main,
+    .team-dashboard-main,
+    .rating-dashboard-main,
+    .events-dashboard-main {
+        border-radius: 22px;
+        background: rgba(240, 245, 255, 0.18);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .profile-modal--achievement {
+        position: absolute;
+        top: 0;
+        right: auto;
+        bottom: 0;
+        left: 50%;
+        width: min(100%, 390px);
+        z-index: 70;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px 28px 126px;
+        box-sizing: border-box;
+        transform: translateX(-50%);
+    }
+
+    .profile-modal--achievement .profile-modal-backdrop {
+        position: absolute;
+        inset: 18px 14px 126px;
+        border-radius: 22px;
+        background: rgba(83, 111, 190, 0.42);
+        backdrop-filter: blur(7px);
+        -webkit-backdrop-filter: blur(7px);
+    }
+
+    .profile-modal-card-achievement,
+    .profile-modal-card.profile-modal-card-achievement {
+        width: min(100%, 264px);
+        min-height: 298px;
+        padding: 34px 18px 16px;
+        border-radius: 18px;
+        background: rgba(240, 245, 255, 0.96);
+    }
+
+    .profile-modal-card-achievement .profile-modal-dot-achievement {
+        top: 14px;
+        right: 14px;
+        width: 18px;
+        height: 18px;
+        background: linear-gradient(180deg, #787cfe 0%, #00e2e0 100%);
+    }
+
+    .profile-modal-card-achievement .profile-achievement-hero {
+        width: 68px;
+        height: 68px;
+        margin: 0 auto 12px;
+    }
+
+    .profile-modal--form {
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        overflow-y: auto;
+    }
+
+    .profile-modal--form .profile-modal-card {
+        width: min(100%, 360px);
+        max-width: min(calc(100vw - 32px), 360px);
+        max-height: min(calc(100dvh - 32px), 620px);
+        padding: 24px 18px 20px;
+        gap: 14px;
+        border-radius: 26px;
+        overflow-y: auto;
+    }
+
+    .profile-modal--form .profile-modal-title {
+        padding-right: 0;
+        font-size: 13px;
+    }
+
+    .profile-modal--form .profile-modal-photo-row {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 52px;
+        padding: 8px 8px 8px 16px;
+        border-radius: 999px;
+    }
+
+    .profile-modal--form .profile-modal-photo-label {
+        min-width: 0;
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .profile-modal--form .profile-modal-file {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .profile-modal--form .profile-pill-button {
+        width: min(100%, 248px);
+        max-width: 100%;
+        min-height: 42px;
+        box-sizing: border-box;
+        margin-inline: auto;
+        padding: 11px 18px;
+        text-align: center;
+    }
+
+    .profile-modal--form .profile-modal-input,
+    .profile-modal--form .profile-pill-wide {
+        min-height: 48px;
+    }
+
+    .profile-modal--form .profile-modal-input {
+        padding: 14px 18px;
+        font-size: 13px;
+    }
+
+    .profile-modal--form .profile-modal-text {
+        align-self: center;
+        padding-top: 2px;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    @media (max-width: 380px) {
+        .profile-modal--form .profile-modal-card {
+            width: calc(100vw - 24px);
+            max-width: calc(100vw - 24px);
+            padding: 22px 14px 18px;
+            border-radius: 24px;
+        }
+
+        .profile-modal--form .profile-modal-photo-row {
+            grid-template-columns: 1fr;
+            justify-items: center;
+            padding: 12px 14px;
+            border-radius: 22px;
+        }
+
+        .profile-modal--form .profile-modal-photo-label {
+            text-align: center;
+        }
+
+        .profile-modal--form .profile-modal-file,
+        .profile-modal--form .profile-pill-button {
+            width: 100%;
+        }
+    }
+
+    .profile-achievement-name {
+        margin-bottom: 18px;
+        font-size: 11px;
+        color: #172d9d;
+    }
+
+    .profile-achievement-body {
+        padding: 18px 14px;
+        border-radius: 18px;
+        background: rgba(240, 245, 255, 0.9);
+        box-shadow: 0 14px 28px rgba(34, 79, 155, 0.12);
+    }
+
+    .profile-achievement-description,
+    .profile-achievement-criterion {
+        font-size: 9px;
+        line-height: 1.55;
+    }
+
+    .profile-achievement-points {
+        min-width: 68px;
+        min-height: 22px;
+        gap: 6px;
+        margin-top: 16px;
+        font-size: 10px;
+    }
+
+    .profile-achievement-points-icon {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 @media (max-width: 520px) {
@@ -1096,5 +1718,321 @@
     .events-calendar-scope-btn {
         padding: 12px 10px;
         font-size: 10px;
+    }
+}
+
+@media (max-width: 767px) {
+    .profile-app--dashboard-profile::before,
+    .profile-app::before {
+        inset: 18px 14px 14px;
+        border-radius: 22px;
+    }
+
+    .profile-hero-card,
+    .profile-app--dashboard-profile .profile-hero-card {
+        min-height: 0;
+        gap: 0;
+        padding: 22px 16px 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-photo,
+    .profile-app--dashboard-profile .profile-photo {
+        height: 178px;
+        max-height: 178px;
+        aspect-ratio: auto;
+        border-radius: 18px;
+    }
+
+    .profile-pills-row,
+    .profile-app--dashboard-profile .profile-pills-row {
+        width: 217px;
+        align-self: center;
+        gap: 14px;
+        padding: 0;
+        margin: auto auto;
+    }
+
+    .profile-info-pill,
+    .profile-app--dashboard-profile .profile-info-pill {
+        width: 217px;
+        min-height: 30px;
+        box-sizing: border-box;
+    }
+
+    .profile-achievements,
+    .profile-app--dashboard-profile .profile-achievements {
+        flex: 0 0 174px;
+        min-height: 174px;
+        max-height: 174px;
+        margin: 0;
+        padding: 20px 0 14px;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow:
+            0 14px 28px rgba(34, 79, 155, 0.16),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+    }
+
+    .profile-achievements-title,
+    .profile-app--dashboard-profile .profile-achievements-title {
+        margin: 0 0 20px;
+        font-size: 23px;
+        text-align: center;
+    }
+
+    .profile-achievements-scroll-wrap {
+        height: 100px;
+        overflow: hidden;
+    }
+
+    .profile-achievements-scroll,
+    .profile-app--dashboard-profile .profile-achievements-scroll {
+        height: 100%;
+        align-items: flex-start;
+        gap: 14px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0 34px 0;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .profile-achievement-item,
+    .profile-app--dashboard-profile .profile-achievement-item,
+    .profile-app--dashboard-profile .profile-achievement-item:nth-child(n) {
+        flex: 0 0 94px;
+        width: 94px;
+        scroll-snap-align: center;
+    }
+
+    .profile-achievement-circle,
+    .profile-app--dashboard-profile .profile-achievement-circle {
+        width: 64px;
+        height: 64px;
+    }
+
+    .profile-achievement-caption,
+    .profile-app--dashboard-profile .profile-achievement-caption {
+        max-width: 94px;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .profile-achievements-empty {
+        height: 102px;
+        padding: 0 22px;
+        justify-content: center;
+    }
+
+    .profile-app:has(.team-dashboard-main) .profile-sidebar,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
+    .profile-app--dashboard-profile .profile-sidebar,
+    .profile-sidebar,
+    .profile-sidebar.profile-sidebar--dashboard {
+        bottom: 14px;
+        height: 76px;
+        min-height: 76px;
+        max-height: 76px;
+        padding: 20px 16px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 22px;
+        grid-template-rows: 42px 0;
+        gap: 0;
+        transform: translateY(18px);
+        transition:
+            height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+            max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+            grid-template-rows 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+            gap 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.34s ease;
+        will-change: height, transform;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .profile-app.is-mobile-menu-open .profile-sidebar {
+        height: 116px;
+        min-height: 116px;
+        max-height: 116px;
+        grid-template-rows: 42px 42px;
+        gap: 12px;
+        transform: translateY(0);
+    }
+
+    .profile-sidebar::before {
+        top: 9px;
+        width: 54px;
+        height: 2px;
+        cursor: pointer;
+    }
+
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        height: 42px;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+        transition:
+            max-height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.24s ease,
+            transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .profile-app.is-mobile-menu-open .profile-sidebar .profile-nav-bottom,
+    .profile-app.is-mobile-menu-open:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app.is-mobile-menu-open.profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        max-height: 42px;
+        overflow: visible;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .profile-sidebar .profile-nav-button {
+        cursor: pointer;
+    }
+
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        justify-self: start;
+        justify-content: start;
+    }
+
+    .profile-app.is-achievement-modal-open .profile-main {
+        filter: blur(7px);
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .profile-app.is-achievement-modal-open .profile-sidebar {
+        filter: none;
+        pointer-events: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .profile-app,
+    .profile-app:not(.profile-app--dashboard-profile),
+    .profile-app--dashboard-profile {
+        width: min(100%, 390px);
+        height: 100dvh;
+        max-height: 100dvh;
+        padding: 18px 14px 135px;
+    }
+
+    .profile-app:not(.profile-app--dashboard-profile) .profile-main,
+    .profile-app--dashboard-profile .profile-main,
+    .profile-main,
+    .team-dashboard-main,
+    .rating-dashboard-main,
+    .events-dashboard-main {
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .profile-top,
+    .profile-app--dashboard-profile .profile-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(126px, 0.95fr);
+        gap: 12px;
+    }
+
+    .profile-stat-track,
+    .profile-app--dashboard-profile .profile-stat-track {
+        grid-template-columns: 30px minmax(0, 1fr);
+    }
+
+    .profile-stat-orb,
+    .profile-app--dashboard-profile .profile-stat-orb {
+        width: 28px;
+        height: 28px;
+        min-height: 28px;
+        border-radius: 50%;
+        font-size: 0;
+        box-shadow:
+            0 9px 14px rgba(18, 42, 86, 0.34),
+            0 2px 5px rgba(18, 42, 86, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    }
+
+    .profile-stat-value,
+    .profile-app--dashboard-profile .profile-stat-value,
+    .profile-stat-value--num,
+    .profile-app--dashboard-profile .profile-stat-value--num {
+        font-size: 12px;
+    }
+
+    .profile-app:has(.team-dashboard-main) .profile-sidebar,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
+    .profile-app--dashboard-profile .profile-sidebar,
+    .profile-sidebar,
+    .profile-sidebar.profile-sidebar--dashboard {
+        top: auto;
+        right: max(14px, calc((100vw - 390px) / 2 + 14px));
+        bottom: 14px;
+        left: max(14px, calc((100vw - 390px) / 2 + 14px));
+        width: auto;
+        max-width: none;
+        height: 76px;
+        min-height: 76px;
+        max-height: 76px;
+        padding: 18px 16px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 22px;
+        grid-template-rows: 42px 0;
+        gap: 0;
+        transform: translateY(18px);
+    }
+
+    .profile-app.is-mobile-menu-open .profile-sidebar {
+        height: 116px;
+        min-height: 116px;
+        max-height: 116px;
+        grid-template-rows: 42px 42px;
+        gap: 12px;
+        transform: translateY(0);
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        display: grid;
+        gap: 8px;
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .profile-sidebar .profile-nav-bottom,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
+        grid-template-columns: repeat(2, 38px);
+        justify-self: start;
+        justify-content: start;
+    }
+
+    .profile-sidebar .profile-nav-button,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-button,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-button,
+    .profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
+        width: 38px;
+        height: 38px;
+        min-height: 38px;
+        padding: 0;
+        border-radius: 999px;
+        font-size: 0;
     }
 }

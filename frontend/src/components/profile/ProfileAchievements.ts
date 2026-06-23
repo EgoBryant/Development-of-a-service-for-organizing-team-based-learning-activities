@@ -1,5 +1,6 @@
 import { PROFILE_ACHIEVEMENTS } from "../../data/profileAchievements";
 import closeAchievementIconUrl from "../../assets/images/Button_Close.svg";
+import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import type { ProfileAchievement } from "../../types/profile";
 import { escapeHtml } from "../../utils/html";
 
@@ -38,7 +39,10 @@ export function renderProfileAchievementModal(achievement: ProfileAchievement): 
                 <div class="profile-achievement-body">
                     <p class="profile-achievement-description">${escapeHtml(achievement.description)}</p>
                 </div>
-                <div class="profile-achievement-points">${escapeHtml(String(achievement.points))} баллов</div>
+                <div class="profile-achievement-points" aria-label="${escapeHtml(`${achievement.points} баллов`)}">
+                    <span>${escapeHtml(String(achievement.points))}</span>
+                    <img class="profile-achievement-points-icon" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+                </div>
             </div>
         </div>
     `;

@@ -7,6 +7,8 @@ import ratingMenuIconUrl from "./assets/icons/Menu_Icons/Rating.svg";
 import settingsMenuIconUrl from "./assets/icons/Menu_Icons/Settings.svg";
 import tasksMenuIconUrl from "./assets/icons/Menu_Icons/Tasks.svg";
 import teamMenuIconUrl from "./assets/icons/Menu_Icons/Team.svg";
+import ligaMobileIconUrl from "./assets/icons/Liga_mobile.svg";
+import scoreMobileIconUrl from "./assets/icons/Score_mobile.svg";
 import { setAppBridge } from "./app/bridge";
 import type { JoinTeamResult } from "./app/bridge";
 import { isDemoInviteCodeValid, normalizeInviteCode } from "./data/demoTeam";
@@ -165,7 +167,8 @@ const authLayout = document.getElementById("authLayout");
 const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
-const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
+const MOBILE_AUTH_QUERY = "(max-width: 767px)";
+const TABLET_AUTH_QUERY = "(min-width: 768px) and (max-width: 1024px)";
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 
 void bootstrap();
@@ -207,6 +210,7 @@ function transitionAuthView(nextView: View): void {
             
             // Remove direction classes but keep toggle-switch-panel for enter animation
             authModalCard.classList.remove("toggle-left", "toggle-right", "toggle-switch-panel");
+            authModalCard.style.removeProperty("--auth-tablet-release-offset");
             
             // Render new content
             render();
@@ -598,20 +602,42 @@ async function bootstrap(): Promise<void> {
 }
 
 function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement): void {
+    type AuthDragMode = "mobile" | "tablet";
+
+    let startX = 0;
     let startY = 0;
     let activePointerId: number | null = null;
+    let dragMode: AuthDragMode | null = null;
     let isDragging = false;
     let dragMaxDistance = 1;
-    const clearDragState = (): void => {
+    const clearDragState = (options: { preserveTabletReleaseOffset?: boolean } = {}): void => {
         modalCard.classList.remove("is-mobile-dragging");
+        modalCard.classList.remove("is-tablet-dragging");
         modalCard.style.removeProperty("--auth-mobile-drag-offset");
         modalCard.style.removeProperty("--auth-mobile-drag-progress");
         modalCard.style.removeProperty("--auth-mobile-active-opacity");
         modalCard.style.removeProperty("--auth-mobile-copy-offset");
+        modalCard.style.removeProperty("--auth-tablet-drag-offset");
+        if (!options.preserveTabletReleaseOffset) {
+            modalCard.style.removeProperty("--auth-tablet-release-offset");
+        }
         switchColumn.style.removeProperty("touch-action");
         isDragging = false;
         activePointerId = null;
+        dragMode = null;
         dragMaxDistance = 1;
+    };
+
+    const getActiveDragMode = (): AuthDragMode | null => {
+        if (window.matchMedia(MOBILE_AUTH_QUERY).matches) {
+            return "mobile";
+        }
+
+        if (window.matchMedia(TABLET_AUTH_QUERY).matches) {
+            return "tablet";
+        }
+
+        return null;
     };
 
     const getTargetView = (): View | null => {
@@ -640,7 +666,15 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
         setView(nextView);
     };
 
-    const getDragDistance = (currentY: number): number => {
+    const getDragDistance = (currentX: number, currentY: number): number => {
+        if (dragMode === "tablet") {
+            if (appState.view === "sign-in") {
+                return startX - currentX;
+            }
+
+            return currentX - startX;
+        }
+
         if (appState.view === "sign-in") {
             return startY - currentY;
         }
@@ -649,14 +683,19 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
     };
 
     const getMaxDistance = (): number => {
+        if (dragMode === "tablet") {
+            return Math.max(switchColumn.getBoundingClientRect().width / 2, 1);
+        }
+
         const cardHeight = modalCard.getBoundingClientRect().height;
         const switchHeight = switchColumn.getBoundingClientRect().height;
         return Math.max(cardHeight / 2 - switchHeight, 1);
     };
 
     switchColumn.addEventListener("pointerdown", (event: PointerEvent) => {
+        const nextDragMode = getActiveDragMode();
         if (
-            !window.matchMedia(MOBILE_AUTH_QUERY).matches ||
+            !nextDragMode ||
             appState.isSubmitting ||
             !getTargetView() ||
             event.button !== 0
@@ -669,11 +708,18 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
             return;
         }
 
+        startX = event.clientX;
         startY = event.clientY;
         activePointerId = event.pointerId;
+        dragMode = nextDragMode;
         dragMaxDistance = getMaxDistance();
-        modalCard.style.setProperty("--auth-mobile-drag-offset", "0px");
-        modalCard.style.setProperty("--auth-mobile-drag-progress", "0");
+        if (dragMode === "mobile") {
+            modalCard.style.setProperty("--auth-mobile-drag-offset", "0px");
+            modalCard.style.setProperty("--auth-mobile-drag-progress", "0");
+        } else {
+            modalCard.style.setProperty("--auth-tablet-drag-offset", "0px");
+            modalCard.style.removeProperty("--auth-tablet-release-offset");
+        }
         switchColumn.style.touchAction = "none";
         switchColumn.setPointerCapture(event.pointerId);
     });
@@ -683,19 +729,24 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
             return;
         }
 
-        const rawDistance = getDragDistance(event.clientY);
+        const rawDistance = getDragDistance(event.clientX, event.clientY);
         const distance = Math.max(rawDistance, 0);
         const maxDistance = dragMaxDistance;
         const progress = Math.min(distance / maxDistance, 1);
 
         if (distance > 4) {
             isDragging = true;
-            modalCard.classList.add("is-mobile-dragging");
+            modalCard.classList.add(dragMode === "tablet" ? "is-tablet-dragging" : "is-mobile-dragging");
             event.preventDefault();
         }
 
-        modalCard.style.setProperty("--auth-mobile-drag-offset", `${Math.min(distance, maxDistance)}px`);
-        modalCard.style.setProperty("--auth-mobile-drag-progress", progress.toFixed(3));
+        if (dragMode === "tablet") {
+            const direction = appState.view === "sign-in" ? -1 : 1;
+            modalCard.style.setProperty("--auth-tablet-drag-offset", `${Math.min(distance, maxDistance) * direction}px`);
+        } else {
+            modalCard.style.setProperty("--auth-mobile-drag-offset", `${Math.min(distance, maxDistance)}px`);
+            modalCard.style.setProperty("--auth-mobile-drag-progress", progress.toFixed(3));
+        }
     });
 
     const endDrag = (event: PointerEvent): void => {
@@ -703,15 +754,22 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
             return;
         }
 
-        const distance = Math.max(getDragDistance(event.clientY), 0);
+        const distance = Math.max(getDragDistance(event.clientX, event.clientY), 0);
         const maxDistance = dragMaxDistance;
         const shouldSwitch = isDragging && (distance > Math.min(32, maxDistance * 0.35) || distance / maxDistance > 0.35);
+        const currentDragMode = dragMode;
+        const tabletDirection = appState.view === "sign-in" ? -1 : 1;
+        const tabletReleaseOffset = Math.min(distance, maxDistance) * tabletDirection;
 
         if (switchColumn.hasPointerCapture(event.pointerId)) {
             switchColumn.releasePointerCapture(event.pointerId);
         }
 
-        clearDragState();
+        if (shouldSwitch && currentDragMode === "tablet") {
+            modalCard.style.setProperty("--auth-tablet-release-offset", `${tabletReleaseOffset}px`);
+        }
+
+        clearDragState({ preserveTabletReleaseOffset: shouldSwitch && currentDragMode === "tablet" });
 
         if (shouldSwitch) {
             switchToTargetView();
@@ -732,7 +790,7 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
     });
 
     switchColumn.addEventListener("click", (event: MouseEvent) => {
-        if (window.matchMedia(MOBILE_AUTH_QUERY).matches) {
+        if (getActiveDragMode()) {
             event.preventDefault();
             event.stopPropagation();
         }
@@ -2775,7 +2833,7 @@ function renderProfileModal(): string {
             }
 
             return `
-                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Личные данные">
+                <div class="profile-modal profile-modal--form" role="dialog" aria-modal="true" aria-label="Личные данные">
                     <div class="profile-modal-backdrop" data-close-modal="1"></div>
                     <div class="profile-modal-card">
                         <h2 class="profile-modal-title">ЛИЧНЫЕ ДАННЫЕ</h2>
@@ -2804,7 +2862,7 @@ function renderProfileModal(): string {
             `;
         case "password":
             return `
-                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Восстановление пароля">
+                <div class="profile-modal profile-modal--form" role="dialog" aria-modal="true" aria-label="Восстановление пароля">
                     <div class="profile-modal-backdrop" data-close-modal="1"></div>
                     <div class="profile-modal-card">
                         <h2 class="profile-modal-title">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</h2>
@@ -3032,7 +3090,7 @@ function renderProfileView(): void {
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
-    const profileAppModeClass = " profile-app--dashboard-profile";
+    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
     const extraNavHtml = `
                     <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
                     <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
@@ -3053,15 +3111,24 @@ function renderProfileView(): void {
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
-                                <span class="profile-stat-orb profile-stat-orb--muted" aria-hidden="true">${leagueLabel}</span>
+                                <span class="profile-stat-orb profile-stat-orb--muted profile-stat-orb--league" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${ligaMobileIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">${leagueLabel}</span>
+                                </span>
                                 <span class="profile-stat-value">${escapeHtml(leagueValue)}</span>
                             </div>
                             <div class="profile-stat-track">
-                                <span class="profile-stat-orb profile-stat-orb--muted" aria-hidden="true">БАЛЛЫ</span>
+                                <span class="profile-stat-orb profile-stat-orb--muted profile-stat-orb--score" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${scoreMobileIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">БАЛЛЫ</span>
+                                </span>
                                 <span class="profile-stat-value profile-stat-value--num">${escapeHtml(pointsValue)}</span>
                             </div>
                             <div class="profile-stat-track profile-stat-track--rating">
-                                <span class="profile-stat-orb profile-stat-orb--accent" aria-hidden="true">${ratingLabel}</span>
+                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">${ratingLabel}</span>
+                                </span>
                                 <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
                             </div>
                         </div>
@@ -3137,6 +3204,7 @@ function wireMobileProfileMenu(): void {
     const profileApp = profileMount.querySelector<HTMLElement>(".profile-app");
     const menuButton = profileMount.querySelector("#profileMobileMenuButton");
     const backdrop = profileMount.querySelector("[data-profile-menu-close]");
+    const sidebar = profileMount.querySelector<HTMLElement>("#profileDashboardMenu");
 
     if (!profileApp || !isHTMLButtonElement(menuButton)) {
         return;
@@ -3148,10 +3216,6 @@ function wireMobileProfileMenu(): void {
         menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
     };
 
-    menuButton.addEventListener("click", () => {
-        setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
-    });
-
     if (backdrop instanceof HTMLElement) {
         backdrop.addEventListener("click", () => {
             setMenuOpen(false);
@@ -3162,6 +3226,44 @@ function wireMobileProfileMenu(): void {
         button.addEventListener("click", () => {
             setMenuOpen(false);
         });
+    });
+
+    if (!sidebar) {
+        return;
+    }
+
+    sidebar.addEventListener("click", (event: MouseEvent) => {
+        if (!window.matchMedia(MOBILE_AUTH_QUERY).matches) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof Element && target.closest(".profile-nav-button")) {
+            return;
+        }
+
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const isHandleClick = event.clientY - sidebarRect.top <= 30;
+        if (!isHandleClick) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
+    });
+
+    profileApp.addEventListener("click", (event: MouseEvent) => {
+        if (!profileApp.classList.contains("is-mobile-menu-open")) {
+            return;
+        }
+
+        const target = event.target;
+        if (target instanceof Node && sidebar.contains(target)) {
+            return;
+        }
+
+        setMenuOpen(false);
     });
 }
 
