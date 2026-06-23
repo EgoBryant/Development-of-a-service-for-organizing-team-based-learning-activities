@@ -1,0 +1,28 @@
+<svg viewBox="0 0 76.9092 47.7129" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="76.909180" height="47.712891" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_16" x1="2.50585938" x2="74.4032593" y1="23.8523178" y2="23.8523178" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_17" x1="15.1210938" x2="25.7877617" y1="21.1668282" y2="21.1668282" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_18" x1="48.4545898" x2="53.7879257" y1="22.5" y2="27.833334" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_19" x1="56.4545898" x2="61.7879257" y1="14.5" y2="19.833334" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<g id="Группа 3">
+		<path id="Вектор 7" d="M58.4546 2.5C71.7879 2.5 78.4546 12.5 71.7879 35.8333C68.4546 45.8333 58.4546 49.1667 51.7879 39.1667L45.1212 32.5L31.7879 32.5L25.1212 39.1667C18.4546 49.1667 8.45456 45.8333 5.12122 35.8333C-1.54544 12.5 5.12122 2.5 18.4546 2.5L58.4546 2.5Z" fill-rule="nonzero" stroke="url(#paint_linear_16)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<path id="Вектор 8" d="M20.4544 15.8335L20.4544 21.1668L20.4544 26.5002M15.1211 21.1668L20.4544 21.1668M20.4544 21.1668L25.7878 21.1668" stroke="url(#paint_linear_17)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.000000" />
+		<circle id="Эллипс 11" cx="51.1212578" cy="25.1666679" r="2.66666794" fill="url(#paint_linear_18)" />
+		<circle id="Эллипс 12" cx="59.1212578" cy="17.1666679" r="2.66666794" fill="url(#paint_linear_19)" />
+	</g>
+</svg>
+
+

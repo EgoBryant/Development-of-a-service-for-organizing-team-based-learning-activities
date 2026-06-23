@@ -19,6 +19,7 @@ export interface ProfileAchievement {
     title: string;
     shortTitle: string;
     iconLabel: string;
+    iconUrl: string;
     description: string;
     criterion: string;
     points: number;

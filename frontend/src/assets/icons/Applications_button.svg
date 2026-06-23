@@ -1,0 +1,18 @@
+<svg viewBox="0 0 25 25" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="25.000000" height="25.000000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_6" x1="12.5" x2="12.5" y1="0" y2="25" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<rect id="Фрейм 1" width="25.000000" height="25.000000" x="0.000000" y="0.000000" />
+	<rect id="Box" width="25.000000" height="25.000000" x="0.000000" y="0.000000" rx="12.500000" fill="url(#paint_linear_6)" />
+	<path id="" d="M17.3574 13.5586L12.9922 13.5586L12.9922 17.8535L10.9766 17.8535L10.9766 13.5586L6.60547 13.5586L6.60547 11.666L10.9766 11.666L10.9766 7.3418L12.9922 7.3418L12.9922 11.666L17.3574 11.666L17.3574 13.5586Z" fill="rgb(240,245,255)" fill-rule="nonzero" />
+</svg>
+
+
+
+
+
+
+

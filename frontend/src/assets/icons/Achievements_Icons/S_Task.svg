@@ -1,0 +1,30 @@
+<svg viewBox="0 0 85.5264 85.5054" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="85.526367" height="85.505371" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_25" x1="19.9306641" x2="72.1607437" y1="25.1870632" y2="25.1870632" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_26" x1="2.75" x2="12.3713303" y1="65.7188339" y2="65.7188339" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_27" x1="12.3710938" x2="82.7497711" y1="68.3360367" y2="68.3360367" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_28" x1="35.050293" x2="57.7291451" y1="70.5610352" y2="70.5610352" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,169,242)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<g id="Группа 5">
+		<path id="Вектор 14" d="M19.9307 19.3969C19.9307 9.98776 26.803 2.75 35.0499 2.75C39.8606 2.75 43.984 5.64511 46.0457 9.98776C48.1074 5.64511 52.2308 2.75 57.0415 2.75C65.2884 2.75 72.1608 9.98776 72.1608 19.3969C72.1608 33.8724 38.4861 47.6241 38.4861 47.6241C38.4861 47.6241 19.9307 33.8724 19.9307 19.3969Z" fill-rule="nonzero" stroke="url(#paint_linear_25)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.500000" />
+		<rect id="Прямоугольник 1" width="9.621330" height="30.398602" x="2.750000" y="50.519531" rx="4.810665" stroke="url(#paint_linear_26)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.500000" />
+		<path id="Вектор 15" d="M12.3711 55.5859C23.3669 54.8621 30.9265 52.6908 38.4861 54.8621C46.0458 57.0334 55.6671 58.481 63.9139 57.0334C72.1608 55.5859 80.4076 53.4145 82.4694 59.2048C84.5311 64.995 74.9097 73.6803 63.9139 78.7467C52.9181 83.8131 30.9265 83.8131 21.3052 80.1943L12.3711 77.2992" fill-rule="nonzero" stroke="url(#paint_linear_27)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.500000" />
+		<path id="Вектор 16" d="M35.0503 70.061L57.7291 70.061" stroke="url(#paint_linear_28)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.500000" />
+	</g>
+</svg>
+
+
+
+

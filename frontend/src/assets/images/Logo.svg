@@ -1,0 +1,40 @@
+<svg viewBox="0 0 367.35 529" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="367.350098" height="529.000000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_6" x1="-7.62939453e-06" x2="59.3968201" y1="71.1767883" y2="206.740356" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(95,111,255)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_7" x1="55.0001373" x2="55.0001373" y1="119.000244" y2="369.004639" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,169,242)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(120,124,254)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_8" x1="-3.81469727e-06" x2="55.5726624" y1="68.4262161" y2="200.362183" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,169,242)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_9" x1="-7.62939453e-06" x2="59.3968201" y1="71.1767883" y2="206.740356" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(95,111,255)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_10" x1="310.998077" x2="310.998077" y1="114.000244" y2="374.004669" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,169,242)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(120,124,254)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_11" x1="7.62939453e-06" x2="55.7088127" y1="68.4961319" y2="200.485504" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,169,242)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<rect id="Логотип" width="367.350006" height="529.000000" x="0.000000" y="0.000000" />
+	<rect id="Фрейм 2" width="367.349518" height="528.999390" x="0.000000" y="0.000366" />
+	<path id="Прямоугольник 4" d="M350.997 511L12.8748 511L67.7776 458.01L95.7625 431L268.11 431L350.997 511Z" fill="rgb(95,111,255)" fill-rule="evenodd" />
+	<rect id="Прямоугольник 5" width="79.999649" height="268.890045" x="0.000000" y="0.000000" rx="39.999825" fill="url(#paint_linear_6)" transform="matrix(0.707104,-0.707109,0.707104,0.707109,0,333.569)" />
+	<rect id="Прямоугольник 8" width="80.000519" height="250.004395" x="14.999878" y="119.000244" rx="40.000259" fill="url(#paint_linear_7)" />
+	<rect id="Прямоугольник 10" width="80.000832" height="258.498993" x="0.000000" y="0.000000" rx="40.000416" fill="url(#paint_linear_8)" transform="matrix(0.707104,-0.707109,0.707104,0.707109,0,156.569)" />
+	<rect id="Прямоугольник 6" width="79.999649" height="268.890045" x="0.000000" y="0.000000" rx="39.999825" fill="url(#paint_linear_9)" transform="matrix(0.707104,0.707109,-0.707104,0.707109,309.132,277)" />
+	<rect id="Прямоугольник 9" width="80.000549" height="260.004425" x="270.997803" y="114.000244" rx="40.000275" fill="url(#paint_linear_10)" />
+	<rect id="Прямоугольник 11" width="79.919167" height="258.763123" x="0.000000" y="0.000000" rx="39.959583" fill="url(#paint_linear_11)" transform="matrix(0.732873,0.680365,-0.680416,0.732826,306.421,97.677)" />
+	<ellipse id="Эллипс 3" rx="49.999592" ry="49.999939" cx="54.9995918" cy="50.0003052" />
+	<ellipse id="Эллипс 3" rx="49.999592" ry="49.999939" cx="54.9995918" cy="50.0003052" fill="rgb(0,169,242)" />
+	<ellipse id="Эллипс 4" rx="49.999588" ry="49.999939" cx="315.997375" cy="50.0003052" fill="rgb(0,169,242)" />
+</svg>

@@ -1,8 +1,8 @@
 :root {
     --exam-bg-image: url("../../src/assets/images/Background.svg");
-    --exam-surface: rgba(247, 250, 255, 0.96);
-    --exam-surface-strong: #ffffff;
-    --exam-surface-soft: #edf3ff;
+    --exam-surface: rgba(240, 245, 255, 1);
+    --exam-surface-strong: rgba(240, 245, 255, 1);
+    --exam-surface-soft: rgba(240, 245, 255, 1);
     --exam-panel: rgba(116, 158, 226, 0.88);
     --exam-text: #17338d;
     --exam-muted: #8f9fcf;
@@ -79,8 +79,8 @@
 
 .profile-app--dashboard-profile .profile-nav-button,
 .profile-sidebar.profile-sidebar--dashboard .profile-nav-button {
-    background: rgba(244, 248, 255, 0.94);
-    color: rgb(58, 132, 235);
+    background: linear-gradient(180deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
+    color: rgb(255, 255, 255);
     opacity: 1;
     visibility: visible;
     box-shadow:
@@ -99,13 +99,15 @@
 .profile-app--dashboard-profile .profile-nav-button:disabled:hover,
 .profile-sidebar.profile-sidebar--dashboard .profile-nav-button--disabled:hover,
 .profile-sidebar.profile-sidebar--dashboard .profile-nav-button:disabled:hover {
-    box-shadow: inset 0 0 0 1px rgba(190, 204, 229, 0.72);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+        0 10px 22px rgba(33, 78, 154, 0.16);
     transform: none;
 }
 
 .profile-app--dashboard-profile .profile-nav-button.is-active,
 .profile-sidebar.profile-sidebar--dashboard .profile-nav-button.is-active {
-    background: linear-gradient(180deg, rgb(109, 111, 255) 0%, rgb(17, 208, 220) 100%);
+    background: linear-gradient(180deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     color: rgb(255, 255, 255);
     box-shadow:
         0 12px 24px rgba(78, 95, 205, 0.28),
@@ -113,12 +115,12 @@
 }
 
 .profile-sidebar.profile-sidebar--dashboard #profileLogoutButton {
-    background: linear-gradient(180deg, var(--exam-danger) 0%, var(--exam-violet) 100%);
+    background: linear-gradient(180deg, rgba(223, 46, 128, 1) 0%, rgba(120, 124, 254, 1) 100%);
     color: #ffffff;
 }
 
 #profileLogoutButton {
-    background: linear-gradient(180deg, var(--exam-danger) 0%, var(--exam-violet) 100%);
+    background: linear-gradient(180deg, rgba(223, 46, 128, 1) 0%, rgba(120, 124, 254, 1) 100%);
 }
 
 .profile-app:not(.profile-app--dashboard-profile) .profile-main,
@@ -407,7 +409,7 @@
 .team-member-role,
 .team-vote-role-pill,
 .events-activity-card-badge {
-    background: #ffffff;
+    background: rgba(240, 245, 255, 1);
     color: var(--exam-muted);
 }
 

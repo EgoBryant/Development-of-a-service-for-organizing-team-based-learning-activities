@@ -1,0 +1,17 @@
+<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="50.000000" height="50.000000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_0" x1="25" x2="25" y1="5" y2="45" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<clipPath id="clipPath_0">
+			<rect width="50.000000" height="50.000000" x="0.000000" y="0.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="Фрейм 1" width="50.000000" height="50.000000" x="0.000000" y="0.000000" />
+	<circle id="Box" cx="25" cy="25" r="20" fill="url(#paint_linear_0)" />
+	<g id="svg 1" clip-path="url(#clipPath_0)" customFrame="url(#clipPath_0)">
+		<rect id="svg 1" width="50.000000" height="50.000000" x="0.000000" y="0.000000" />
+		<path id="Вектор 1" d="M34 16L25 25L16 34M16 16L25 25M25 25L34 34" stroke="rgb(240,245,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.000000" />
+	</g>
+</svg>

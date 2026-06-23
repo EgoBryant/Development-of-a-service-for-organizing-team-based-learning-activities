@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15" fill="none">
+  <defs>
+    <!-- Градиент в точности как на вашем скриншоте (сверху вниз) -->
+    <linearGradient id="crownGradient" x1="7.5" y1="2" x2="7.5" y2="13" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#787CFE" />
+      <stop offset="100%" stop-color="#00A9F2" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Геометрия короны с мягкими стыками линий -->
+  <path 
+    d="M2 13H13L14 7L10.5 9L7.5 4L4.5 9L1 7L2 13Z 
+       M2 11H13" 
+    stroke="url(#crownGradient)" 
+    stroke-width="1.2" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+  />
+</svg>
+

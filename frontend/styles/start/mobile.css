@@ -38,6 +38,10 @@
         min-height: 100dvh;
     }
 
+    .profile-app--dashboard-profile::before {
+        display: none;
+    }
+
     .profile-app,
     .profile-app:not(.profile-app--dashboard-profile),
     .profile-app--dashboard-profile {
@@ -415,7 +419,7 @@
         min-height: 44px;
         padding: 10px 12px;
         border-radius: 999px;
-        background: #ffffff;
+        background: rgba(240, 245, 255, 1);
         font-size: 11px;
     }
 
@@ -775,7 +779,7 @@
         border: none;
         border-radius: 12px;
         padding: 0;
-        background: rgba(244, 248, 255, 0.96);
+        background: rgba(240, 245, 255, 1);
         box-shadow: 0 12px 26px rgba(12, 53, 139, 0.22);
         cursor: pointer;
         transition: left 0.22s ease, transform 0.18s ease;

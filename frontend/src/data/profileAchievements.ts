@@ -1,125 +1,75 @@
+import aTaskAchievementIconUrl from "../assets/icons/Achievements_Icons/A_Task.svg";
+import pTaskAchievementIconUrl from "../assets/icons/Achievements_Icons/P_Task.svg";
+import rTaskAchievementIconUrl from "../assets/icons/Achievements_Icons/R_Task.svg";
+import sTaskAchievementIconUrl from "../assets/icons/Achievements_Icons/S_Task.svg";
+import tTaskAchievementIconUrl from "../assets/icons/Achievements_Icons/T_Task.svg";
 import type { ProfileAchievement } from "../types/profile";
 
 export const PROFILE_ACHIEVEMENTS: readonly ProfileAchievement[] = [
     {
-        id: "first-rescue",
-        title: "Первое спасение",
-        shortTitle: "Спасение",
-        iconLabel: "SOS",
-        description: "Команда помогла другой команде закрыть учебный риск через механику спасения.",
-        criterion: "Принять запрос на помощь и получить подтверждение от команды-получателя.",
+        id: "first-steps",
+        title: "ПЕРВЫЕ ШАГИ",
+        shortTitle: "Первые шаги",
+        iconLabel: "Первые шаги",
+        iconUrl: pTaskAchievementIconUrl,
+        description: "Успешно пройдите авторизацию и заполните данные в своём профиле.",
+        criterion: "Авторизация и заполнение профиля.",
         points: 10,
         progressLabel: "Получено",
         status: "earned",
-        tone: "rose"
+        tone: "blue"
     },
     {
-        id: "knowledge-expert",
-        title: "Эксперт биржи",
-        shortTitle: "Эксперт",
-        iconLabel: "P2P",
-        description: "Студент дал полезный ответ на бирже знаний и помог сокомандникам разобраться с темой.",
-        criterion: "Закрыть 3 запроса на бирже знаний с оценкой пользы не ниже 4 из 5.",
+        id: "own-circle",
+        title: "СВОЙ КРУГ",
+        shortTitle: "Свой круг",
+        iconLabel: "Свой круг",
+        iconUrl: tTaskAchievementIconUrl,
+        description: "Создайте команду или вступите в существующую.",
+        criterion: "Создать команду или вступить в существующую.",
         points: 15,
-        progressLabel: "3 из 3",
-        status: "earned",
+        progressLabel: "В процессе",
+        status: "progress",
         tone: "blue"
     },
     {
-        id: "team-voice",
-        title: "Голос команды",
-        shortTitle: "Голос",
-        iconLabel: "5/5",
-        description: "Участник вовремя прошел анонимное голосование и оценил вклад всех членов команды.",
-        criterion: "Заполнить голосование до конца учебного цикла.",
-        points: 5,
-        progressLabel: "Получено",
-        status: "earned",
-        tone: "green"
-    },
-    {
-        id: "challenge-finish",
-        title: "Челлендж закрыт",
-        shortTitle: "Челлендж",
-        iconLabel: "CH",
-        description: "Команда выполнила челлендж до дедлайна и получила бонус к итоговому КРК.",
-        criterion: "Завершить командный челлендж и пройти проверку преподавателя.",
-        points: 12,
-        progressLabel: "Получено",
-        status: "earned",
-        tone: "amber"
-    },
-    {
-        id: "krk-sprint",
-        title: "Рывок КРК",
-        shortTitle: "Рывок КРК",
-        iconLabel: "КРК",
-        description: "Команда заметно улучшила командный рейтинговый коэффициент за текущий цикл.",
-        criterion: "Поднять КРК минимум на 15 пунктов относительно прошлого цикла.",
-        points: 20,
-        progressLabel: "12 из 15",
+        id: "in-game",
+        title: "В ИГРЕ!",
+        shortTitle: "В игре!",
+        iconLabel: "В игре!",
+        iconUrl: rTaskAchievementIconUrl,
+        description: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
+        criterion: "Получить первые баллы активности.",
+        points: 10,
+        progressLabel: "В процессе",
         status: "progress",
-        tone: "violet"
-    },
-    {
-        id: "cohesion",
-        title: "Сплоченная команда",
-        shortTitle: "Сплоченность",
-        iconLabel: "4.5",
-        description: "Команда держит высокий коэффициент сплоченности по итогам взаимной оценки.",
-        criterion: "Получить среднюю оценку вклада не ниже 4.5 из 5.",
-        points: 18,
-        progressLabel: "4.3 из 4.5",
-        status: "progress",
-        tone: "slate"
-    },
-    {
-        id: "mentor-call",
-        title: "Созвон с наставником",
-        shortTitle: "Наставник",
-        iconLabel: "CALL",
-        description: "Команда провела полезный созвон с наставником и зафиксировала план действий.",
-        criterion: "Подготовить вопросы, провести встречу и сохранить итоги в карточке команды.",
-        points: 8,
-        progressLabel: "Получено",
-        status: "earned",
         tone: "blue"
     },
     {
-        id: "deadline-keeper",
-        title: "Хранитель дедлайнов",
-        shortTitle: "Дедлайны",
-        iconLabel: "DDL",
-        description: "Участник без просрочек закрывает личные задачи и помогает команде держать темп.",
-        criterion: "Сдать 5 задач подряд без нарушения дедлайна.",
-        points: 14,
-        progressLabel: "4 из 5",
+        id: "challenge-accepted",
+        title: "ВЫЗОВ ПРИНЯТ",
+        shortTitle: "Вызов принят",
+        iconLabel: "Вызов принят",
+        iconUrl: aTaskAchievementIconUrl,
+        description: "Выполните челлендж и загрузите отчёт.",
+        criterion: "Выполнить челлендж и загрузить отчёт.",
+        points: 25,
+        progressLabel: "В процессе",
         status: "progress",
-        tone: "amber"
+        tone: "blue"
     },
     {
-        id: "idea-generator",
-        title: "Генератор идей",
-        shortTitle: "Идеи",
-        iconLabel: "IDEA",
-        description: "Студент предложил несколько решений, которые команда реально использовала в работе.",
-        criterion: "Получить 3 подтвержденные идеи от сокомандников.",
-        points: 11,
-        progressLabel: "Получено",
-        status: "earned",
-        tone: "rose"
-    },
-    {
-        id: "steady-progress",
-        title: "Стабильный прогресс",
-        shortTitle: "Прогресс",
-        iconLabel: "UP",
-        description: "Команда несколько недель подряд показывает устойчивый рост по задачам и активности.",
-        criterion: "Закрыть недельный план 4 раза подряд.",
-        points: 16,
-        progressLabel: "2 из 4",
+        id: "helping-hand",
+        title: "РУКА ПОМОЩИ",
+        shortTitle: "Рука помощи",
+        iconLabel: "Рука помощи",
+        iconUrl: sTaskAchievementIconUrl,
+        description: "Откликнитесь на запрос о помощи от другой команды.",
+        criterion: "Откликнуться на запрос помощи.",
+        points: 25,
+        progressLabel: "В процессе",
         status: "progress",
-        tone: "green"
+        tone: "blue"
     }
 ];
 

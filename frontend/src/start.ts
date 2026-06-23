@@ -1,5 +1,12 @@
 import "../styles/start.css";
 import QRCode from "qrcode";
+import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
+import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
+import profileMenuIconUrl from "./assets/icons/Menu_Icons/Profile.svg";
+import ratingMenuIconUrl from "./assets/icons/Menu_Icons/Rating.svg";
+import settingsMenuIconUrl from "./assets/icons/Menu_Icons/Settings.svg";
+import tasksMenuIconUrl from "./assets/icons/Menu_Icons/Tasks.svg";
+import teamMenuIconUrl from "./assets/icons/Menu_Icons/Team.svg";
 import { setAppBridge } from "./app/bridge";
 import type { JoinTeamResult } from "./app/bridge";
 import { isDemoInviteCodeValid, normalizeInviteCode } from "./data/demoTeam";
@@ -102,7 +109,7 @@ export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
 const LOCAL_TEAM_STORAGE_PREFIX = "team-exam-local-team:";
 const LOCAL_PROFILE_STORAGE_PREFIX = "team-exam-profile:";
-const FORCE_DEMO_PROFILE_ACHIEVEMENTS = import.meta.env.DEV;
+const FORCE_DEMO_PROFILE_ACHIEVEMENTS = false;
 let profileAchievementScrollResizeObserver: ResizeObserver | undefined;
 
 const appState: AppState = {
@@ -1158,13 +1165,12 @@ function buildFullNameFromProfile(profile: UserProfileResponse | null): string {
     }
 
     const pair = [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim();
-    return pair || profile.nickname || profile.userName || "";
+    return pair;
 }
 
 function getFullNameDisplay(): string {
-    const fromEdits = appState.profileEdits?.fullName?.trim();
-    if (fromEdits) {
-        return appState.profileEdits!.fullName;
+    if (appState.profileEdits) {
+        return appState.profileEdits.fullName.trim();
     }
     return buildFullNameFromProfile(appState.profile);
 }
@@ -1182,19 +1188,7 @@ function hasProfileAchievements(profile: UserProfileResponse | null): boolean {
         return true;
     }
 
-    if (!profile) {
-        return false;
-    }
-
-    const normalizedLeague = profile.personalLeague.trim().toLowerCase();
-
-    return (
-        profile.userPoints > 0 ||
-        profile.personalRating > 0 ||
-        profile.personalContribution > 0 ||
-        profile.teamScore > 0 ||
-        (Boolean(normalizedLeague) && normalizedLeague !== "новичок" && normalizedLeague !== "старт")
-    );
+    return Boolean(profile);
 }
 
 function resetProfileUi(): void {
@@ -2998,8 +2992,9 @@ function renderProfileView(): void {
     const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
     const pointsValue = String(actualPoints);
     const ratingLabel = "РЕЙТИНГ";
-    const ratingValue = profile?.personalRating && profile.personalRating > 0 ? `${profile.personalRating} место` : "- место";
-    const leagueValue = profile?.personalLeague?.trim() || "Новичок";
+    const ratingValue = profile?.personalRating && profile.personalRating > 0 ? `${profile.personalRating} место` : "—";
+    const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
+    const leagueValue = rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
     const fullName = getFullNameDisplay();
     const group = getGroupDisplay();
     const teamName = getEffectiveTeamName();
@@ -3022,8 +3017,8 @@ function renderProfileView(): void {
                     </div>`
         : `
                     <div class="profile-achievements-empty" aria-live="polite">
-                        <p class="profile-achievements-empty-text">Каждое достижение - это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку</p>
-                        <button type="button" class="profile-achievements-empty-button" disabled aria-disabled="true">к челленджам</button>
+                        <p class="profile-achievements-empty-text">Каждое достижение — это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку!</p>
+                        <button type="button" class="profile-achievements-empty-button">К ЧЕЛЛЕНДЖАМ</button>
                     </div>`;
     const statusHtml = "";
 
@@ -3033,8 +3028,8 @@ function renderProfileView(): void {
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
     const profileAppModeClass = " profile-app--dashboard-profile";
     const extraNavHtml = `
-                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true">ЗАДАНИЯ</button>
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events">СОБЫТИЯ</button>`;
+                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
 
     const mainColumn =
         appState.dashboardSection === "team"
@@ -3067,7 +3062,7 @@ function renderProfileView(): void {
                     </div>
                     <div class="profile-pills-row">
                         <div class="profile-info-pill profile-info-pill--name">${escapeHtml(fullName || "ИМЯ ФАМИЛИЯ")}</div>
-                        <div class="profile-info-pill profile-info-pill--group">${escapeHtml(group || "АКАДЕМ. ГРУППА")}</div>
+                        <div class="profile-info-pill profile-info-pill--group">${escapeHtml(group || "РИ-XXXXXX")}</div>
                         <button type="button" class="profile-info-pill profile-info-pill-accent" id="profileTeamPillButton">${escapeHtml(teamPillText)}</button>
                     </div>
                 </div>
@@ -3094,14 +3089,14 @@ function renderProfileView(): void {
             <div class="profile-menu-backdrop" data-profile-menu-close aria-hidden="true"></div>
             <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы">
                 <nav class="profile-nav-top">
-                    <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile">ПРОФИЛЬ</button>
-                    <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team">КОМАНДА</button>
-                    <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating">РЕЙТИНГ</button>
+                    <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile"><img class="profile-nav-icon" src="${profileMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПРОФИЛЬ</span></button>
+                    <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team"><img class="profile-nav-icon" src="${teamMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">КОМАНДА</span></button>
+                    <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating"><img class="profile-nav-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">РЕЙТИНГ</span></button>
                     ${extraNavHtml}
                 </nav>
                 <nav class="profile-nav-bottom">
-                    <button type="button" class="profile-nav-button" id="profileSettingsButton">НАСТРОЙКИ</button>
-                    <button type="button" class="profile-nav-button" id="profileLogoutButton">ПОКИНУТЬ</button>
+                    <button type="button" class="profile-nav-button" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">НАСТРОЙКИ</span></button>
+                    <button type="button" class="profile-nav-button" id="profileLogoutButton"><img class="profile-nav-icon" src="${logoutMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПОКИНУТЬ</span></button>
                 </nav>
             </aside>
             ${mainColumn}
