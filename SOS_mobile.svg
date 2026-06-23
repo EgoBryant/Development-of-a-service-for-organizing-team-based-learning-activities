@@ -1,0 +1,21 @@
+<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40.000000" height="40.000000" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_2" x1="20" x2="20" y1="0" y2="40" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(120,124,254)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(223,46,128)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<rect id="Exit button" width="40.000000" height="40.000000" x="0.000000" y="0.000000" />
+	<circle id="Box" cx="20" cy="20" r="20" fill="url(#paint_linear_2)" />
+	<path id="" d="M18.04 13.001L21.7607 13.001L21.1406 22.1416L18.6602 22.1416L18.04 13.001ZM19.9004 27.1611Q19.0801 27.1611 18.5283 26.6338Q17.9814 26.1016 17.9814 25.3398Q17.9814 24.5781 18.5186 24.0703Q19.0605 23.5576 19.9004 23.5576Q20.7402 23.5576 21.2773 24.0703Q21.8193 24.5781 21.8193 25.3398Q21.8193 26.1016 21.2676 26.6338Q20.7207 27.1611 19.9004 27.1611Z" fill="rgb(240,245,255)" fill-rule="nonzero" />
+</svg>
+
+
+
+
+
+
+
+
+
+
