@@ -907,8 +907,8 @@
     }
 
     .auth-modal-card {
-        --auth-mobile-card-height: min(76vh, 620px);
-        --auth-mobile-switch-height: clamp(190px, 34vh, 260px);
+        --auth-mobile-card-height: min(82dvh, 590px);
+        --auth-mobile-switch-height: clamp(150px, 31dvh, 210px);
         --auth-mobile-drag-offset: 0px;
         --auth-mobile-drag-progress: 0;
         --auth-mobile-active-opacity: 1;
@@ -916,12 +916,12 @@
 
         width: min(100%, 336px);
         height: var(--auth-mobile-card-height);
-        min-height: 520px;
+        min-height: 0;
         position: relative;
         overflow: hidden;
         display: block;
         background: #F0F5FF;
-        border-radius: 44px;
+        border-radius: 36px;
         box-sizing: border-box;
     }
 
@@ -947,7 +947,7 @@
         z-index: 2;
         height: var(--auth-mobile-switch-height);
         overflow: hidden;
-        border-radius: 38px 38px 0 0;
+        border-radius: 34px 34px 0 0;
         cursor: pointer;
         background: none;
         touch-action: none;
@@ -958,7 +958,7 @@
     .auth-modal-card.mode-sign-up .auth-switch-column,
     .auth-modal-card.mode-recovery .auth-switch-column {
         inset: 0 0 auto;
-        border-radius: 0 0 38px 38px;
+        border-radius: 0 0 34px 34px;
     }
 
     .auth-switch-column::before {
@@ -976,8 +976,8 @@
         z-index: 4;
         top: 14px;
         left: 50%;
-        width: 76px;
-        height: 6px;
+        width: 54px;
+        height: 3px;
         border-radius: 999px;
         background: rgba(240, 245, 255, 0.96);
         transform: translateX(-50%);
@@ -1003,20 +1003,20 @@
 
     .auth-modal-card.is-mobile-dragging:not(.mode-sign-up):not(.mode-recovery) .auth-switch-column {
         inset: auto 0 0;
-        border-radius: 30px 30px 0 0;
+        border-radius: 28px 28px 0 0;
     }
 
     .auth-modal-card.is-mobile-dragging.mode-sign-up .auth-switch-column,
     .auth-modal-card.is-mobile-dragging.mode-recovery .auth-switch-column {
         inset: 0 0 auto;
-        border-radius: 0 0 30px 30px;
+        border-radius: 0 0 28px 28px;
     }
 
     .auth-modal-card.is-mobile-dragging:not(.mode-sign-up):not(.mode-recovery) .auth-switch-copy-sign-in .auth-switch-panel-content,
     .auth-modal-card.is-mobile-dragging.mode-sign-up .auth-switch-copy-sign-up .auth-switch-panel-content,
     .auth-modal-card.is-mobile-dragging.mode-recovery .auth-switch-copy-sign-up .auth-switch-panel-content {
-        opacity: var(--auth-mobile-active-opacity);
-        transform: translateY(var(--auth-mobile-copy-offset));
+        opacity: 1;
+        transform: translateY(0);
     }
 
     .auth-switch-stage {
@@ -1066,7 +1066,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 34px 0 22px;
+        padding: 26px 0 18px;
     }
 
     .auth-switch-copy .auth-switch-panel-content {
@@ -1107,17 +1107,17 @@
 
     .auth-panel-title {
         color: #F0F5FF;
-        font-size: clamp(20px, 5.4vw, 28px);
+        font-size: clamp(18px, 5vw, 24px);
         text-shadow: -0.15em -0.04em 0px #4488EE;
     }
 
     .auth-panel-copy {
         width: 100%;
         max-width: 220px;
-        margin: 20px 0 0;
+        margin: 16px 0 0;
         color: #F0F5FF;
         font-family: 'Montserrat', sans-serif;
-        font-size: clamp(11px, 3vw, 14px);
+        font-size: clamp(9px, 2.65vw, 13px);
         font-weight: 500;
         line-height: 1.65;
         letter-spacing: 0.03em;
@@ -1144,18 +1144,18 @@
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        margin-top: clamp(44px, 11vh, 78px);
+        margin-top: clamp(42px, 10dvh, 72px);
     }
 
     .auth-modal-card.mode-sign-up .auth-form-modal,
     .auth-modal-card.mode-recovery .auth-form-modal {
-        margin-top: calc(var(--auth-mobile-switch-height) + 34px);
+        margin-top: calc(var(--auth-mobile-switch-height) + 30px);
     }
 
     .auth-modal-heading {
         margin-bottom: 24px;
         padding: 0;
-        font-size: clamp(21px, 5.8vw, 30px);
+        font-size: clamp(18px, 5.2vw, 26px);
         background: linear-gradient(to bottom, #787CFE 0%, #00E2E0 100%);
         -webkit-background-clip: text;
         background-clip: text;
@@ -1165,8 +1165,8 @@
 
     .auth-modal-field {
         width: 100%;
-        height: 42px;
-        margin-bottom: 22px;
+        height: 32px;
+        margin-bottom: 18px;
         padding: 0 24px;
         border: 2px solid transparent;
         border-radius: 100px;
@@ -1178,7 +1178,7 @@
         box-shadow: inset 0 2px 4px rgba(164, 185, 230, 0.5);
         color: #A4B9E6;
         font-family: 'Montserrat', sans-serif;
-        font-size: 12px;
+        font-size: 9px;
         font-weight: 600;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
     }
@@ -1186,7 +1186,7 @@
     .auth-modal-field::placeholder {
         color: #A4B9E6;
         font-family: 'Montserrat', sans-serif;
-        font-size: 12px;
+        font-size: 9px;
         font-weight: 700;
         opacity: 1;
     }
@@ -1203,8 +1203,8 @@
     .auth-password-row,
     .auth-login-password-row {
         width: 100%;
-        height: 42px;
-        margin-bottom: 22px;
+        height: 32px;
+        margin-bottom: 18px;
         display: flex;
         align-items: center;
         overflow: hidden;
@@ -1245,15 +1245,15 @@
     }
 
     .auth-password-peek-button {
-        width: 28px;
-        min-width: 28px;
+        width: 24px;
+        min-width: 24px;
         height: 100%;
         margin: 0 18px 0 0;
         border: none;
         background-color: transparent;
         background-repeat: no-repeat;
         background-position: center;
-        background-size: 18px auto;
+        background-size: 15px auto;
         cursor: pointer;
     }
 
@@ -1275,8 +1275,8 @@
     }
 
     .auth-submit-pill {
-        width: 170px;
-        height: 42px;
+        width: 156px;
+        height: 32px;
         align-self: center;
         border: none;
         border-radius: 100px;
@@ -1285,7 +1285,7 @@
         color: #F0F5FF;
         cursor: pointer;
         font-family: 'Montserrat', sans-serif;
-        font-size: 12px;
+        font-size: 9px;
         font-weight: 700;
         letter-spacing: 0.03em;
         text-transform: uppercase;
@@ -1299,10 +1299,10 @@
     }
 
     .auth-form-modal .status-message {
-        margin: -10px 0 18px 18px;
+        margin: -8px 0 14px 18px;
         color: #DF2E80;
         font-family: 'Montserrat', sans-serif;
-        font-size: 11px;
+        font-size: 9px;
         font-weight: 500;
     }
 
@@ -1357,18 +1357,46 @@
 
     @keyframes mobileSwitchColumnUp {
         0% {
+            height: var(--auth-mobile-switch-height);
+            border-radius: 34px 34px 0 0;
+            transform: translateY(0);
+        }
+        48% {
+            height: var(--auth-mobile-card-height);
+            border-radius: 34px;
+            transform: translateY(0);
+        }
+        62% {
+            height: var(--auth-mobile-card-height);
+            border-radius: 34px;
             transform: translateY(0);
         }
         100% {
+            height: var(--auth-mobile-switch-height);
+            border-radius: 0 0 34px 34px;
             transform: translateY(calc(var(--auth-mobile-switch-height) - var(--auth-mobile-card-height)));
         }
     }
 
     @keyframes mobileSwitchColumnDown {
         0% {
+            height: var(--auth-mobile-switch-height);
+            border-radius: 0 0 34px 34px;
+            transform: translateY(0);
+        }
+        48% {
+            height: var(--auth-mobile-card-height);
+            border-radius: 34px;
+            transform: translateY(0);
+        }
+        62% {
+            height: var(--auth-mobile-card-height);
+            border-radius: 34px;
             transform: translateY(0);
         }
         100% {
+            height: var(--auth-mobile-switch-height);
+            border-radius: 34px 34px 0 0;
             transform: translateY(calc(var(--auth-mobile-card-height) - var(--auth-mobile-switch-height)));
         }
     }
@@ -1396,12 +1424,13 @@
             opacity: 1;
             transform: translateY(0);
         }
-        58% {
-            opacity: 0;
+        38% {
+            opacity: 1;
+            transform: translateY(0);
         }
         100% {
             opacity: 0;
-            transform: translateY(-34px);
+            transform: translateY(-18px);
         }
     }
 
@@ -1433,35 +1462,45 @@
     }
 
     .auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-column {
-        animation: mobileSwitchColumnUp 0.6s ease-in-out forwards;
+        animation: mobileSwitchColumnUp 0.76s cubic-bezier(0.72, 0, 0.24, 1) forwards;
     }
 
     .auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-stage {
-        animation: mobileSwitchStageDown 0.6s ease-in-out forwards;
+        animation: none;
     }
 
     .auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-copy-sign-in .auth-switch-panel-content,
     .auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-copy-sign-up .auth-switch-panel-content {
-        animation: mobileSwitchCopyExit 0.4s ease-in-out forwards;
+        animation: mobileSwitchCopyExit 0.32s ease-in-out 0.1s forwards;
     }
 
     .auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-copy-sign-up .auth-switch-panel-content,
     .auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-copy-sign-in .auth-switch-panel-content {
         opacity: 0;
-        animation: mobileSwitchCopyEnter 0.28s ease-out 0.34s forwards;
+        animation: none;
     }
 
     .auth-modal-card.toggle-right.toggle-switch-panel .auth-switch-column {
-        animation: mobileSwitchColumnDown 0.6s ease-in-out forwards;
+        animation: mobileSwitchColumnDown 0.76s cubic-bezier(0.72, 0, 0.24, 1) forwards;
     }
 
     .auth-modal-card.mode-sign-up.toggle-right.toggle-switch-panel .auth-switch-stage {
-        animation: mobileSwitchStageUp 0.6s ease-in-out forwards;
+        animation: none;
     }
 
     .auth-switch-column.transition-switch-copy-enter .auth-switch-panel-content,
     .auth-switch-column.transition-recovery-enter .auth-switch-panel-content {
-        animation: mobileSwitchCopyEnter 0.28s ease-out both;
+        animation: mobileSwitchCopyEnter 0.3s ease-out both;
+    }
+
+    .auth-modal-card.toggle-left.toggle-switch-panel .auth-switch-column::after {
+        top: auto;
+        bottom: 14px;
+    }
+
+    .auth-modal-card.toggle-right.toggle-switch-panel .auth-switch-column::after {
+        top: 14px;
+        bottom: auto;
     }
 }
 
@@ -1471,12 +1510,12 @@
     }
 
     .auth-modal-card {
-        --auth-mobile-card-height: min(82vh, 590px);
-        --auth-mobile-switch-height: clamp(170px, 30vh, 220px);
+        --auth-mobile-card-height: min(82dvh, 590px);
+        --auth-mobile-switch-height: clamp(150px, 31dvh, 205px);
 
-        width: min(100%, 300px);
-        min-height: 500px;
-        border-radius: 38px;
+        width: clamp(156px, 78vw, 300px);
+        min-height: 0;
+        border-radius: 34px;
     }
 
     .auth-form-column {

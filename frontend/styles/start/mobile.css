@@ -923,36 +923,42 @@
 
 @media (max-width: 520px) {
     .auth-screen {
-        padding: 10px;
+        padding: 12px;
     }
 
     .auth-layout,
     .auth-modal-card,
     .auth-modal-card.mode-sign-up,
     .auth-modal-card.mode-recovery {
-        width: 100%;
-        max-width: none;
+        width: min(100%, 360px);
+        max-width: 360px;
     }
 
     .auth-modal-card,
     .auth-modal-card.mode-sign-up,
     .auth-modal-card.mode-recovery {
-        border-radius: 24px;
+        width: clamp(156px, 78vw, 300px);
+        height: min(82dvh, 590px);
+        min-height: 0;
+        border-radius: 34px;
     }
 
-    .auth-form-column,
+    .auth-form-column {
+        padding: 0 22px;
+    }
+
     .auth-switch-column {
-        padding: 28px 14px;
+        padding: 0;
     }
 
     .auth-panel-title,
     .auth-modal-heading {
-        font-size: 34px;
-        line-height: 0.95;
+        font-size: clamp(18px, 5.2vw, 26px);
+        line-height: 1.25;
     }
 
     .auth-panel-copy {
-        font-size: 14px;
+        font-size: clamp(9px, 2.65vw, 13px);
     }
 
     .auth-switch-pill,
@@ -961,9 +967,20 @@
     .auth-modal-field-password,
     .auth-inline-pill,
     .auth-password-peek-button {
-        min-height: 54px;
-        height: 54px;
-        font-size: 15px;
+        min-height: 32px;
+        height: 32px;
+        font-size: 9px;
+    }
+
+    .auth-switch-pill {
+        min-height: 0;
+        height: 0;
+    }
+
+    .auth-password-peek-button {
+        width: 24px;
+        min-width: 24px;
+        height: 100%;
     }
 
     .profile-app,

@@ -186,6 +186,7 @@ function transitionAuthView(nextView: View): void {
     if (isCurrentAuthView && isNextAuthView && isHTMLElement(authModalCard) && isHTMLElement(formContent)) {
         const isMovingToSignUp = nextView === "sign-up";
         const authFormContent = formContent;
+        const transitionDurationMs = window.matchMedia(MOBILE_AUTH_QUERY).matches ? 760 : 600;
         
         // Add animation classes to container
         authModalCard.classList.add(isMovingToSignUp ? "toggle-left" : "toggle-right");
@@ -197,7 +198,7 @@ function transitionAuthView(nextView: View): void {
             currentForm.classList.add("transition-exit");
         }
 
-        // Wait for animation to complete (0.6s)
+        // Wait for animation to complete before rendering the target auth state.
         setTimeout(() => {
             appState.view = nextView;
             if (isHTMLElement(authSwitchColumn) && (nextView === "sign-in" || nextView === "sign-up")) {
@@ -237,8 +238,8 @@ function transitionAuthView(nextView: View): void {
                     authSwitchColumn.classList.remove("transition-recovery-enter");
                     authSwitchColumn.classList.remove("transition-switch-copy-enter");
                 }
-            }, 600);
-        }, 600);
+            }, transitionDurationMs);
+        }, transitionDurationMs);
     } else {
         // For non-auth view transitions, just set view normally
         appState.view = nextView;
@@ -514,6 +515,10 @@ async function bootstrap(): Promise<void> {
     loadPersistedActivityFeed();
     loadPersistedNewsFeed();
 
+    if (isHTMLElement(authSwitchColumn) && isHTMLElement(authModalCard)) {
+        bindMobileAuthCurtain(authSwitchColumn, authModalCard);
+    }
+
     setAppBridge({
         render,
         setStatus,
@@ -596,6 +601,7 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
     let startY = 0;
     let activePointerId: number | null = null;
     let isDragging = false;
+    let dragMaxDistance = 1;
     const clearDragState = (): void => {
         modalCard.classList.remove("is-mobile-dragging");
         modalCard.style.removeProperty("--auth-mobile-drag-offset");
@@ -605,6 +611,7 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
         switchColumn.style.removeProperty("touch-action");
         isDragging = false;
         activePointerId = null;
+        dragMaxDistance = 1;
     };
 
     const getTargetView = (): View | null => {
@@ -644,7 +651,7 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
     const getMaxDistance = (): number => {
         const cardHeight = modalCard.getBoundingClientRect().height;
         const switchHeight = switchColumn.getBoundingClientRect().height;
-        return Math.max(cardHeight - switchHeight, 1);
+        return Math.max(cardHeight / 2 - switchHeight, 1);
     };
 
     switchColumn.addEventListener("pointerdown", (event: PointerEvent) => {
@@ -664,6 +671,7 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
 
         startY = event.clientY;
         activePointerId = event.pointerId;
+        dragMaxDistance = getMaxDistance();
         modalCard.style.setProperty("--auth-mobile-drag-offset", "0px");
         modalCard.style.setProperty("--auth-mobile-drag-progress", "0");
         switchColumn.style.touchAction = "none";
@@ -677,9 +685,8 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
 
         const rawDistance = getDragDistance(event.clientY);
         const distance = Math.max(rawDistance, 0);
-        const maxDistance = getMaxDistance();
+        const maxDistance = dragMaxDistance;
         const progress = Math.min(distance / maxDistance, 1);
-        const activeOpacity = Math.max(1 - progress * 2.4, 0);
 
         if (distance > 4) {
             isDragging = true;
@@ -689,8 +696,6 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
 
         modalCard.style.setProperty("--auth-mobile-drag-offset", `${Math.min(distance, maxDistance)}px`);
         modalCard.style.setProperty("--auth-mobile-drag-progress", progress.toFixed(3));
-        modalCard.style.setProperty("--auth-mobile-active-opacity", activeOpacity.toFixed(3));
-        modalCard.style.setProperty("--auth-mobile-copy-offset", `${Math.round(progress * -18)}px`);
     });
 
     const endDrag = (event: PointerEvent): void => {
@@ -699,7 +704,8 @@ function bindMobileAuthCurtain(switchColumn: HTMLElement, modalCard: HTMLElement
         }
 
         const distance = Math.max(getDragDistance(event.clientY), 0);
-        const shouldSwitch = isDragging && (distance > 72 || distance / getMaxDistance() > 0.28);
+        const maxDistance = dragMaxDistance;
+        const shouldSwitch = isDragging && (distance > Math.min(32, maxDistance * 0.35) || distance / maxDistance > 0.35);
 
         if (switchColumn.hasPointerCapture(event.pointerId)) {
             switchColumn.releasePointerCapture(event.pointerId);
