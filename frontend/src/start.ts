@@ -2438,8 +2438,116 @@ function formatShortDate(value: string | null | undefined): string {
     return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }
 
+function getTempTeamHistoryPreview(): TeamHistoryItem[] {
+    return [
+        {
+            label: "WORKSHOP",
+            title: "Команда «организаторы» провела воркшоп по проектированию API.",
+            meta: "",
+            pointsLabel: "50"
+        },
+        {
+            label: "ACHIEVEMENT",
+            title: "Егор Габов получил ачивку «Свой вклад».",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "CHECK-IN",
+            title: "Команда «Кодеры» завершила check-in 6 недели.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "TRAINING",
+            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "RESCUE",
+            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "WORKSHOP",
+            title: "Команда «организаторы» провела воркшоп по проектированию API.",
+            meta: "",
+            pointsLabel: "50"
+        },
+        {
+            label: "ACHIEVEMENT",
+            title: "Егор Габов получил ачивку «Свой вклад».",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "CHECK-IN",
+            title: "Команда «Кодеры» завершила check-in 6 недели.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "TRAINING",
+            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "RESCUE",
+            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
+            meta: "",
+            pointsLabel: "15"
+        }
+    ];
+}
+
 function getTeamHistoryItems(): TeamHistoryItem[] {
-    return [];
+    const checkIns = appState.teamCheckIns.map<TeamHistoryItem>((checkIn) => ({
+        label: "CHECK-IN",
+        title: `Команда завершила check-in ${checkIn.weekNumber} недели.`,
+        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc),
+        pointsLabel: "15"
+    }));
+
+    const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
+        label: "СПАСЕНИЕ",
+        title: request.fromTeamName
+            ? `Команда «${request.fromTeamName}» отправила запрос на помощь по теме «${request.topic || "Спасение"}».`
+            : `Запрос на помощь по теме «${request.topic || "Спасение"}».`,
+        meta: `${request.fromTeamName} → ${request.toTeamName}`,
+        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined
+    }));
+
+    const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
+        label: "ЗАЯВКА",
+        title: `${request.displayName || request.userName || "Участник"} подал заявку на вступление в команду.`,
+        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
+    }));
+
+    const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
+        label: "ГОЛОС",
+        title: `Вы оценили вклад участника ${vote.toUserName || "участника"} на ${vote.score}/5.`,
+        meta: formatShortDate(vote.createdAtUtc)
+    }));
+
+    const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
+    // TEMP: переключить на false после проверки вёрстки истории
+    const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
+    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
+        return getTempTeamHistoryPreview();
+    }
+
+    return items.length > 0
+        ? items
+        : [
+              {
+                  label: "СТАРТ",
+                  title: "История активности появится после check-in, спасения или голосования.",
+                  meta: "MVP"
+              }
+          ];
 }
 
 function getJoinableTeams(searchQuery?: string): TeamSearchItem[] {
@@ -2843,78 +2951,75 @@ function renderTeamModal(): string {
             .filter((team) => team.id !== currentTeamId)
             .map((team) => `<option value="${team.id}" ${draft.targetTeamId === String(team.id) ? "selected" : ""}>${escapeHtml(team.name)}</option>`)
             .join("");
-        return renderProfileModalShell({
-            ariaLabel: "Спасение",
-            closeButtonId: "teamCloseRescueButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal team-rescue-modal",
-            extraCardClass: "profile-modal-card--form",
-            bodyHtml: `
-                <h2 class="profile-shell-title">СПАСЕНИЕ</h2>
-                <form id="teamRescueForm" class="team-rescue-form profile-modal-card-body" novalidate>
-                    <select id="teamRescueTargetInput" class="team-rescue-field" aria-label="Команда для помощи">
-                        <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
-                        ${targetOptions}
-                    </select>
-                    <div class="team-rescue-topic-row">
-                        <input
-                            id="teamRescueTopicInput"
-                            class="team-rescue-field team-rescue-field--topic"
-                            type="text"
-                            placeholder="ТЕМА"
-                            value="${escapeHtml(draft.topic)}"
-                            autocomplete="off"
-                        >
-                        <input
-                            id="teamRescueTagInput"
-                            class="team-rescue-field team-rescue-field--tag"
-                            type="text"
-                            placeholder="ТЕГ"
-                            value="${escapeHtml(draft.tag)}"
-                            autocomplete="off"
-                        >
-                    </div>
-                    <textarea
-                        id="teamRescueDescriptionInput"
-                        class="team-rescue-textarea"
-                        placeholder=" "
-                        aria-label="Описание ситуации"
-                    >${escapeHtml(draft.description)}</textarea>
-                    <div class="team-rescue-photo-row">
-                        <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
-                        <label class="team-rescue-photo-btn">
-                            ВЫБРАТЬ
+        return `
+                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-rescue-card team-rescue-card--team-page">
+                        <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
+                        <p class="team-rescue-dots" aria-hidden="true">...</p>
+                        <h2 class="team-rescue-title team-rescue-title--sr">Спасение</h2>
+                        <form id="teamRescueForm" class="team-rescue-form team-rescue-form--team-page" novalidate>
+                            <select id="teamRescueTargetInput" class="team-rescue-field team-rescue-field--team team-rescue-select" aria-label="Команда для помощи">
+                                <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
+                                ${targetOptions}
+                            </select>
                             <input
-                                type="file"
-                                id="teamRescuePhotoInput"
-                                class="team-rescue-file"
-                                accept="image/*"
-                                hidden
+                                id="teamRescueTopicInput"
+                                class="team-rescue-field team-rescue-field--name"
+                                type="text"
+                                placeholder="НАЗВАНИЕ"
+                                value="${escapeHtml(draft.topic)}"
+                                autocomplete="off"
                             >
-                        </label>
+                            <input
+                                id="teamRescueTagInput"
+                                class="team-rescue-field team-rescue-field--tag"
+                                type="text"
+                                placeholder="ТЕГ"
+                                value="${escapeHtml(draft.tag)}"
+                                autocomplete="off"
+                            >
+                            <textarea
+                                id="teamRescueDescriptionInput"
+                                class="team-rescue-textarea"
+                                placeholder="..."
+                                aria-label="Описание ситуации"
+                            >${escapeHtml(draft.description)}</textarea>
+                            <div class="team-rescue-photo-row team-rescue-photo-row--mockup">
+                                <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
+                                <label class="team-rescue-photo-btn">
+                                    ВЫБРАТЬ
+                                    <input
+                                        type="file"
+                                        id="teamRescuePhotoInput"
+                                        class="team-rescue-file"
+                                        accept="image/*"
+                                        hidden
+                                    >
+                                </label>
+                            </div>
+                            <div class="team-rescue-duo-row">
+                                <input
+                                    id="teamRescueLeagueInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ЛИГА"
+                                    value="${escapeHtml(draft.league)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="teamRescueDeadlineInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ДЕДЛАЙН"
+                                    value="${escapeHtml(draft.deadline)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
+                        </form>
                     </div>
-                    <div class="team-rescue-duo-row">
-                        <input
-                            id="teamRescueLeagueInput"
-                            class="team-rescue-field team-rescue-field--duo"
-                            type="text"
-                            placeholder="ЛИГА"
-                            value="${escapeHtml(draft.league)}"
-                            autocomplete="off"
-                        >
-                        <input
-                            id="teamRescueDeadlineInput"
-                            class="team-rescue-field team-rescue-field--duo"
-                            type="text"
-                            placeholder="ДЕДЛАЙН"
-                            value="${escapeHtml(draft.deadline)}"
-                            autocomplete="off"
-                        >
-                    </div>
-                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
-                </form>
-            `
-        });
+                </div>`;
     }
 
     if (appState.teamModal === "requests") {
