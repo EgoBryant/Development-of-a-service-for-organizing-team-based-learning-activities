@@ -2479,11 +2479,7 @@ function getTeamMembersForView(): TeamMemberView[] {
                     ? getAvatarDisplay() || member.avatarUrl || ""
                     : member.avatarUrl || "",
             userPoints: member.userPoints,
-<<<<<<< HEAD
-            canVote: member.id !== currentUserId,
-=======
-            canVote: !isSameUserId(member.id, currentUserId ?? "") && !voteByTarget.has(member.id),
->>>>>>> c83f3346b79c024a58eaeb3e403ae275d6ffeee3
+            canVote: !isSameUserId(member.id, currentUserId ?? ""),
             voteScore: voteByTarget.get(member.id) ?? null
         }));
     }
@@ -2497,7 +2493,7 @@ function getTeamMembersForView(): TeamMemberView[] {
         displayName: member.displayName,
         roleLabel: member.roleLabel,
         avatarUrl: member.avatarUrl,
-        canVote: member.id !== `user-${currentUserId ?? ""}`,
+        canVote: !isSameUserId(member.id, currentUserId ?? ""),
         voteScore: voteByTargetId.get(member.id) ?? null
     }));
 }
