@@ -27,6 +27,7 @@ public class RatingTeamMemberResponse
     public string Id { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string RoleLabel { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
 }
 
 public class RatingTeamHistoryItemResponse

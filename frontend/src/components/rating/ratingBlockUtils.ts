@@ -65,23 +65,42 @@ export function renderSortMenuHtml(block: "users" | "teams", sortKey: RatingSort
         </div>`;
 }
 
-export function renderUserFeaturedCardHtml(entry: RatingLeaderboardEntry, dataAttr: string, place: number): string {
+function renderUserPodiumSlot(
+    entry: RatingLeaderboardEntry | undefined,
+    place: 1 | 2 | 3,
+    dataAttr: "data-rating-user-id"
+): string {
+    const placeClass =
+        place === 1
+            ? "rating-user-podium-slot--first"
+            : place === 2
+              ? "rating-user-podium-slot--second"
+              : "rating-user-podium-slot--third";
+
+    if (!entry) {
+        return `<div class="rating-user-podium-slot ${placeClass} rating-user-podium-slot--empty" aria-hidden="true"></div>`;
+    }
+
     const pointsText = String(entry.points);
+    const placeIconUrl = place === 1 ? rating1IconUrl : place === 2 ? rating2IconUrl : rating3IconUrl;
     const avatarSrc = resolveUserAvatarUrl(entry.id, entry.avatarUrl);
     const photoInner = avatarSrc
-        ? `<img class="rating-featured-card-image" src="${escapeHtml(avatarSrc)}" alt="" loading="lazy">`
-        : `<span class="rating-featured-card-placeholder">Фото</span>`;
+        ? `<img class="rating-user-podium-image" src="${escapeHtml(avatarSrc)}" alt="" loading="lazy">`
+        : `<span class="rating-user-podium-placeholder">Фото</span>`;
 
     return `
         <button
             type="button"
-            class="rating-featured-card rating-featured-card--user"
+            class="rating-user-podium-slot ${placeClass}"
             ${dataAttr}="${escapeHtml(entry.id)}"
             aria-label="${place} место — ${escapeHtml(entry.label)}"
         >
-            <div class="rating-featured-card-photo" aria-hidden="true">
-                ${photoInner}
-                <span class="rating-featured-card-rank">${place}</span>
+            <div class="rating-user-podium-card">
+                <div class="rating-user-podium-photo" aria-hidden="true">${photoInner}</div>
+                <span class="rating-user-podium-points">
+                    <img class="rating-user-podium-points-icon" src="${escapeHtml(placeIconUrl)}" alt="" aria-hidden="true">
+                    <span class="gradient-text">${escapeHtml(pointsText)}</span>
+                </span>
             </div>
             <span class="rating-featured-card-name">${escapeHtml(entry.label)}</span>
             <span class="rating-featured-card-points">
@@ -90,6 +109,19 @@ export function renderUserFeaturedCardHtml(entry: RatingLeaderboardEntry, dataAt
                 <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
             </span>
         </button>`;
+}
+
+export function renderUserPodiumHtml(entries: RatingLeaderboardEntry[]): string {
+    if (!entries.length) {
+        return `<p class="rating-list-empty">Ничего не найдено</p>`;
+    }
+
+    return `
+        <div class="rating-user-podium" role="list" aria-label="Тройка лидеров">
+            ${renderUserPodiumSlot(entries[1], 2, "data-rating-user-id")}
+            ${renderUserPodiumSlot(entries[0], 1, "data-rating-user-id")}
+            ${renderUserPodiumSlot(entries[2], 3, "data-rating-user-id")}
+        </div>`;
 }
 
 function renderTeamPodiumSlot(
@@ -115,10 +147,12 @@ function renderTeamPodiumSlot(
             aria-label="${place} место — ${escapeHtml(entry.label)}"
         >
             <div class="rating-team-podium-card">
-                <img class="rating-team-podium-icon" src="${escapeHtml(iconUrl)}" alt="" aria-hidden="true">
-                <span class="rating-team-podium-name">${escapeHtml(entry.label)}</span>
-                <span class="rating-team-podium-points">${escapeHtml(pointsText)}</span>
+                <span class="rating-team-podium-name gradient-text">${escapeHtml(entry.label)}</span>
             </div>
+            <span class="rating-team-podium-points">
+                <img class="rating-team-podium-points-icon" src="${escapeHtml(iconUrl)}" alt="" aria-hidden="true">
+                <span class="gradient-text">${escapeHtml(pointsText)}</span>
+            </span>
         </button>`;
 }
 
@@ -137,10 +171,16 @@ export function renderTeamPodiumHtml(entries: RatingLeaderboardEntry[]): string 
 
 export function renderListRowHtml(entry: RatingLeaderboardEntry, dataAttr: string, variant: "users" | "teams" = "users"): string {
     const pointsText = String(entry.points);
-    const rowClass = variant === "teams" ? "rating-list-row rating-list-row--clickable rating-list-row--team" : "rating-list-row rating-list-row--clickable";
+    const rowClass =
+        variant === "teams"
+            ? "rating-list-row rating-list-row--clickable rating-list-row--team"
+            : "rating-list-row rating-list-row--clickable rating-list-row--user";
 
     return `
         <button type="button" class="${rowClass}" role="listitem" ${dataAttr}="${escapeHtml(entry.id)}">
+            <span class="rating-list-main gradient-text">${escapeHtml(String(entry.rank))}</span>
+            <span class="rating-list-label gradient-text">${escapeHtml(entry.label)}</span>
+            <span class="rating-list-points"><span class="gradient-text">${escapeHtml(pointsText)}</span></span>
             <span class="rating-list-main">${escapeHtml(String(entry.rank))}</span>
             <span class="rating-list-label">${escapeHtml(entry.label)}</span>
             ${variant === "users"
@@ -167,11 +207,7 @@ export function renderFeaturedRowHtml(
         return renderTeamPodiumHtml(entries);
     }
 
-    if (!entries.length) {
-        return `<p class="rating-list-empty">Ничего не найдено</p>`;
-    }
-
-    return entries.map((entry, index) => renderUserFeaturedCardHtml(entry, dataAttr, index + 1)).join("");
+    return renderUserPodiumHtml(entries);
 }
 
 export function renderListRowsHtml(

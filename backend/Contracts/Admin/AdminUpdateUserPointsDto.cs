@@ -8,6 +8,15 @@ public class AdminUpdateUserPointsDto
     public int UserPoints { get; set; }
 }
 
+public class AdminUpdateUserPointsByEmailDto
+{
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Range(0, 1_000_000)]
+    public int UserPoints { get; set; }
+}
+
 public class AdminUpdateTeamScoreDto
 {
     [Range(0, 1_000_000)]
