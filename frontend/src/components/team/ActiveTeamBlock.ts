@@ -42,7 +42,12 @@ export function renderActiveTeamBlock(): string {
 
             return `
             <div class="team-member-card">
-                <div class="team-member-avatar">${avatarInner}</div>
+                <button
+                    type="button"
+                    class="team-member-avatar team-member-avatar-btn"
+                    data-team-open-member-profile="${escapeHtml(member.id)}"
+                    aria-label="Профиль ${escapeHtml(member.displayName)}"
+                >${avatarInner}</button>
                 <span class="team-member-role">${escapeHtml(member.roleLabel)}</span>
                 <button
                     type="button"
@@ -68,6 +73,12 @@ export function renderActiveTeamBlock(): string {
             </div>`
               )
               .join("");
+
+    const goToEventsButtonHtml = isHistoryEmpty
+        ? `<button type="button" class="team-action-btn team-action-btn--blue" id="teamGoToEventsButton">К СОБЫТИЯМ</button>`
+        : "";
+
+    const historyPanelClass = isHistoryEmpty ? "team-history-panel" : "team-history-panel team-history-panel--filled";
 
     return `
         <div class="team-active-wrap">
@@ -98,7 +109,7 @@ export function renderActiveTeamBlock(): string {
             </div>
 
             <div class="team-active-lower">
-                <div class="team-history-panel">
+                <div class="${historyPanelClass}">
                     <div class="team-history-head">
                         <h3 class="team-history-title">ИСТОРИЯ АКТИВНОСТИ</h3>
                         <button type="button" class="team-checkin-btn" id="teamCheckInButton" ${isCaptain ? "" : "disabled"}>CHECK-IN</button>
@@ -113,7 +124,7 @@ export function renderActiveTeamBlock(): string {
                     </div>
 
                     <div class="team-history-actions">
-                        <button type="button" class="team-action-btn team-action-btn--blue" id="teamGoToEventsButton">К СОБЫТИЯМ</button>
+                        ${goToEventsButtonHtml}
                         <button type="button" class="team-action-btn team-action-btn--pink" data-team-rescue-button>СПАСЕНИЕ</button>
                     </div>
                 </div>

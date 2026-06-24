@@ -319,6 +319,17 @@ export function wireTeamPageEvents(root: HTMLElement): void {
         });
     }
 
+    root.querySelectorAll<HTMLButtonElement>("[data-team-open-member-profile]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const memberId = button.dataset.teamOpenMemberProfile ?? "";
+            if (!memberId) {
+                return;
+            }
+
+            bridge.openTeamMemberProfile(memberId);
+        });
+    });
+
     root.querySelectorAll<HTMLButtonElement>("[data-team-card-action]").forEach((button) => {
         button.addEventListener("click", () => {
             const idx = Number(button.dataset.memberIndex ?? "0");

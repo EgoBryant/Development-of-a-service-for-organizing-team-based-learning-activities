@@ -6,7 +6,7 @@ import { getRatingUserById } from "../../state/ratingDataState";
 import { escapeHtml } from "../../utils/html";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
 
-function renderPublicAchievementsStrip(earnedCount: number): string {
+export function renderPublicAchievementsStrip(earnedCount: number): string {
     return PROFILE_ACHIEVEMENTS.map((achievement, index) => {
         const status = index < earnedCount ? "earned" : index === earnedCount ? "progress" : "locked";
         return `

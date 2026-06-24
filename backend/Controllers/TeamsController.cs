@@ -167,6 +167,10 @@ public class TeamsController : ApiControllerBase
                 title: "Team not found",
                 detail: "Team with this invite code was not found.",
                 statusCode: StatusCodes.Status404NotFound)),
+            JoinTeamResultType.TeamFull => Conflict(Problem(
+                title: "Team is full",
+                detail: "A team cannot have more than 6 members.",
+                statusCode: StatusCodes.Status409Conflict)),
             JoinTeamResultType.Joined when result.Team is not null => Ok(result.Team),
             _ => Problem(
                 title: "Team join failed",
@@ -236,6 +240,10 @@ public class TeamsController : ApiControllerBase
                 title: "Join request already exists",
                 detail: "User already has a pending request for this team.",
                 statusCode: StatusCodes.Status409Conflict)),
+            TeamJoinRequestResultType.TeamFull => Conflict(Problem(
+                title: "Team is full",
+                detail: "A team cannot have more than 6 members.",
+                statusCode: StatusCodes.Status409Conflict)),
             TeamJoinRequestResultType.Created when result.Request is not null => CreatedAtAction(
                 nameof(GetJoinRequests),
                 new { scope = "outgoing" },
@@ -281,6 +289,10 @@ public class TeamsController : ApiControllerBase
             TeamJoinRequestResultType.ApplicantAlreadyInTeam => Conflict(Problem(
                 title: "Team membership conflict",
                 detail: "The applicant already belongs to a team.",
+                statusCode: StatusCodes.Status409Conflict)),
+            TeamJoinRequestResultType.TeamFull => Conflict(Problem(
+                title: "Team is full",
+                detail: "A team cannot have more than 6 members.",
                 statusCode: StatusCodes.Status409Conflict)),
             TeamJoinRequestResultType.Updated when result.Request is not null => Ok(result.Request),
             _ => Problem(

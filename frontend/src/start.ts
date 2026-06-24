@@ -59,6 +59,7 @@ import type {
     EventsCalendarScope,
     EventsFeedTab,
     EventsModalKind,
+    ExternalProfileView,
     ProfileModalKind,
     View
 } from "./types/app";
@@ -98,7 +99,9 @@ import {
     renderProfileTeamSuccessModal
 } from "./components/profile/ProfileTeamModals";
 import { renderProfileModalShell } from "./components/profile/ProfileModalShell";
-import { renderTeamRequestsApplicantDock } from "./components/team/TeamRequestsApplicantDock";
+import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
+import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
+import { renderPublicAchievementsStrip } from "./components/rating/PublicUserProfile";
 import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
@@ -124,11 +127,13 @@ import {
     updateTeamJoinRequestStatus
 } from "./services/teamApi";
 import { getErrorMessage } from "./services/httpClient";
+import { queueRescueAssignmentTask } from "./services/rescueAssignmentsQueue";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
-import { isSameUserId } from "./utils/ratingAvatars";
+import { isSameUserId, resolveUserAvatarUrl } from "./utils/ratingAvatars";
+import { getRescueCalendarMonthKey } from "./utils/rescueFormUi";
 
 /** Событие открытия модалки «Спасение» с любого места UI. */
 export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
@@ -179,8 +184,8 @@ const appState: AppState = {
     teamVoteMemberIndex: 0,
     teamRequestsCurrentIndex: 0,
     teamRequestsInviteLink: "",
-    teamRequestsApplicantRequestId: null,
-    teamRequestsApplicantRating: null,
+    externalProfileView: null,
+    externalProfileRating: null,
     localCreatedTeam: null,
     currentTeam: null,
     teamCatalog: [],
@@ -320,7 +325,7 @@ function createEmptyTeamRescueDraft(): TeamRescueDraft {
         description: "",
         league: "",
         deadline: "",
-        photoFileName: ""
+        attachments: []
     };
 }
 
@@ -357,6 +362,10 @@ async function submitTeamCheckIn(weekNumber: number, reportText: string): Promis
     const created = await createCheckIn(token, { weekNumber, reportText });
     appState.teamCheckIns = [created, ...appState.teamCheckIns.filter((item) => item.id !== created.id)];
     await refreshTeamWorkspace();
+}
+
+function resolveTeamMemberAvatarUrl(memberId: string, avatarUrl?: string | null): string {
+    return resolveUserAvatarUrl(memberId, avatarUrl);
 }
 
 function parseVoteTargetUserId(memberId: string): number | null {
@@ -398,6 +407,11 @@ function parseLocalDateTimeToUtc(value: string): string | null {
 
     const date = new Date(trimmed);
     return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+async function submitTeamRescueDraftToAssignments(draft: TeamRescueDraft): Promise<void> {
+    queueRescueAssignmentTask(draft);
+    // TODO(assignments-section): передать draft в раздел «ЗАДАНИЯ», когда раздел будет реализован.
 }
 
 async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
@@ -538,12 +552,22 @@ function findTeamJoinRequestById(requestId: number): TeamJoinRequestResponse | u
     return appState.teamJoinRequests.find((request) => request.id === requestId);
 }
 
-function getActiveTeamRequestApplicant(): TeamJoinRequestResponse | undefined {
-    if (!appState.teamRequestsApplicantRequestId) {
+function isViewingExternalProfile(): boolean {
+    return appState.externalProfileView !== null;
+}
+
+function clearExternalProfileView(): void {
+    appState.externalProfileView = null;
+    appState.externalProfileRating = null;
+}
+
+function getActiveJoinRequestForExternalProfile(): TeamJoinRequestResponse | undefined {
+    const view = appState.externalProfileView;
+    if (!view || view.source !== "join-request" || !view.requestId) {
         return undefined;
     }
 
-    const request = findTeamJoinRequestById(appState.teamRequestsApplicantRequestId);
+    const request = findTeamJoinRequestById(view.requestId);
     if (!request || request.status !== "Pending") {
         return undefined;
     }
@@ -551,27 +575,49 @@ function getActiveTeamRequestApplicant(): TeamJoinRequestResponse | undefined {
     return request;
 }
 
-function clearTeamRequestApplicantReview(): void {
-    appState.teamRequestsApplicantRequestId = null;
-    appState.teamRequestsApplicantRating = null;
-}
-
-function returnToTeamRequests(): void {
-    clearTeamRequestApplicantReview();
-    appState.dashboardSection = "team";
-    persistDashboardSectionToStorage();
-    appState.teamModal = "requests";
-    render();
-}
-
-function openTeamRequestApplicantProfile(requestId: number): void {
-    const request = findTeamJoinRequestById(requestId);
-    if (!request || request.status !== "Pending") {
+function validateExternalProfileView(): void {
+    const view = appState.externalProfileView;
+    if (!view) {
         return;
     }
 
-    appState.teamRequestsApplicantRequestId = requestId;
-    appState.teamRequestsApplicantRating = null;
+    if (view.source === "join-request" && !getActiveJoinRequestForExternalProfile()) {
+        clearExternalProfileView();
+        return;
+    }
+
+    if (view.source === "team-member") {
+        const stillInTeam = getTeamMembersForView().some(
+            (member) => parseVoteTargetUserId(member.id) === view.userId
+        );
+        if (!stillInTeam) {
+            clearExternalProfileView();
+        }
+    }
+}
+
+function returnFromExternalProfile(): void {
+    const source = appState.externalProfileView?.source;
+    clearExternalProfileView();
+    appState.dashboardSection = "team";
+    persistDashboardSectionToStorage();
+    appState.teamModal = source === "join-request" ? "requests" : "none";
+    render();
+}
+
+function openExternalUserProfile(view: ExternalProfileView): void {
+    const currentUserId = appState.profile?.id;
+    if (currentUserId != null && view.userId === currentUserId) {
+        clearExternalProfileView();
+        appState.teamModal = "none";
+        appState.dashboardSection = "profile";
+        persistDashboardSectionToStorage();
+        render();
+        return;
+    }
+
+    appState.externalProfileView = view;
+    appState.externalProfileRating = null;
     appState.teamModal = "none";
     appState.dashboardSection = "profile";
     persistDashboardSectionToStorage();
@@ -582,18 +628,51 @@ function openTeamRequestApplicantProfile(requestId: number): void {
         return;
     }
 
-    void fetchRatingUserById(token, request.userId)
+    void fetchRatingUserById(token, view.userId)
         .then((ratingUser) => {
-            if (appState.teamRequestsApplicantRequestId !== requestId) {
+            if (appState.externalProfileView?.userId !== view.userId) {
                 return;
             }
 
-            appState.teamRequestsApplicantRating = ratingUser;
+            appState.externalProfileRating = ratingUser;
             render();
         })
         .catch(() => {
-            // Профиль отображается по данным заявки.
+            // Профиль отображается по данным команды или заявки.
         });
+}
+
+function openTeamRequestApplicantProfile(requestId: number): void {
+    const request = findTeamJoinRequestById(requestId);
+    if (!request || request.status !== "Pending") {
+        return;
+    }
+
+    openExternalUserProfile({
+        userId: request.userId,
+        source: "join-request",
+        requestId,
+        fallbackName: request.displayName || request.userName,
+        fallbackAvatarUrl: request.avatarUrl
+    });
+}
+
+function openTeamMemberProfile(memberId: string): void {
+    const userId = parseVoteTargetUserId(memberId);
+    if (userId === null) {
+        return;
+    }
+
+    const member = getTeamMembersForView().find(
+        (item) => parseVoteTargetUserId(item.id) === userId
+    );
+
+    openExternalUserProfile({
+        userId,
+        source: "team-member",
+        fallbackName: member?.displayName,
+        fallbackAvatarUrl: member?.avatarUrl
+    });
 }
 
 function handleTeamJoinRequestDecision(id: number, status: string): void {
@@ -609,7 +688,7 @@ function handleTeamJoinRequestDecision(id: number, status: string): void {
                     ? "Заявка на вступление принята."
                     : "Заявка на вступление отклонена."
             );
-            returnToTeamRequests();
+            returnFromExternalProfile();
         })
         .catch((error: unknown) => {
             setStatus(getErrorMessage(error), "error");
@@ -767,6 +846,7 @@ async function bootstrap(): Promise<void> {
         createTeamRescueRequest: submitTeamRescueRequest,
         updateTeamHelpRequestStatus: submitHelpRequestStatus,
         openTeamOverlayModal: (kind, memberIndex) => openTeamModal(kind, memberIndex),
+        openTeamMemberProfile,
         openTeamOnboardingModal: openTeamOnboardingModal,
         openTeamRescue: openRescueModal,
         navigateToRating: openRatingDashboard,
@@ -800,7 +880,7 @@ async function bootstrap(): Promise<void> {
 
     appState.isSubmitting = true;
     appState.view = "sign-in";
-    setStatus("Восстанавливаем сессию...");
+    clearStatus();
     render();
 
     try {
@@ -809,7 +889,7 @@ async function bootstrap(): Promise<void> {
         await refreshTeamWorkspace();
         await refreshRatingWorkspace();
         appState.view = "account";
-        setStatus("Сессия восстановлена.");
+        clearStatus();
     } catch (error) {
         clearSession();
         setStatus(getErrorMessage(error), "error");
@@ -1435,8 +1515,8 @@ function resetProfileUi(): void {
     appState.teamVoteMemberIndex = 0;
     appState.teamRequestsCurrentIndex = 0;
     appState.teamRequestsInviteLink = "";
-    appState.teamRequestsApplicantRequestId = null;
-    appState.teamRequestsApplicantRating = null;
+    appState.externalProfileView = null;
+    appState.externalProfileRating = null;
     appState.localCreatedTeam = null;
     appState.currentTeam = null;
     appState.teamCatalog = [];
@@ -1557,6 +1637,10 @@ function renderTeamRequestsCarouselHtml(
     }
 
     const currentRequest = pendingJoinRequests[currentIndex];
+    const candidateName =
+        currentRequest.displayName?.trim() ||
+        currentRequest.userName?.trim() ||
+        "Участник";
     const actionsHtml = canAct
         ? `
             <div class="team-requests-actions">
@@ -1576,6 +1660,12 @@ function renderTeamRequestsCarouselHtml(
             </button>
             <div class="team-requests-candidate-card" data-request-id="${escapeHtml(String(currentRequest.id))}">
                 ${renderTeamJoinRequestPhotoHtml(currentRequest, Boolean(currentRequest))}
+                <p class="team-requests-candidate-name">${escapeHtml(candidateName)}</p>
+                <button
+                    type="button"
+                    class="team-requests-profile-btn"
+                    data-team-request-open-profile="${escapeHtml(String(currentRequest.id))}"
+                >ПРОФИЛЬ</button>
                 ${actionsHtml}
             </div>
             <button type="button" class="team-requests-nav" id="teamRequestsNext" ${currentIndex >= pendingJoinRequests.length - 1 ? "disabled" : ""} aria-label="Следующий">
@@ -2438,10 +2528,7 @@ function getTeamRoster(): TeamMemberRow[] {
             id: String(member.id),
             displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
-            avatarUrl:
-                isSameUserId(member.id, appState.profile?.id ?? "")
-                    ? getAvatarDisplay() || member.avatarUrl || ""
-                    : member.avatarUrl || "",
+            avatarUrl: resolveTeamMemberAvatarUrl(String(member.id), member.avatarUrl),
             isCaptain: member.isCaptain
         }));
     }
@@ -2474,10 +2561,7 @@ function getTeamMembersForView(): TeamMemberView[] {
             id: String(member.id),
             displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
-            avatarUrl:
-                isSameUserId(member.id, currentUserId ?? "")
-                    ? getAvatarDisplay() || member.avatarUrl || ""
-                    : member.avatarUrl || "",
+            avatarUrl: resolveTeamMemberAvatarUrl(String(member.id), member.avatarUrl),
             userPoints: member.userPoints,
             canVote: !isSameUserId(member.id, currentUserId ?? ""),
             voteScore: voteByTarget.get(member.id) ?? null
@@ -2779,7 +2863,7 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     appState.eventsModal = "none";
     closeTeamEventModals();
     appState.teamModal = kind;
-    const roster = getTeamRoster();
+    const roster = kind === "vote" ? getTeamMembersForView() : getTeamRoster();
     const safeIndex =
         roster.length > 0 ? Math.min(Math.max(0, memberIndex), roster.length - 1) : 0;
     appState.teamVoteMemberIndex = safeIndex;
@@ -2791,6 +2875,10 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
 
     if (kind === "rescue") {
         ensureTeamRescueDraft();
+        teamFlowState.rescueLeagueDropdownOpen = false;
+        teamFlowState.rescueTagDropdownOpen = false;
+        teamFlowState.rescueDeadlineCalendarOpen = false;
+        teamFlowState.rescueCalendarMonthKey = getRescueCalendarMonthKey();
     }
 
     if (kind === "checkIn") {
@@ -2798,11 +2886,26 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
         teamFlowState.checkInError = "";
     }
 
+    if (kind === "vote") {
+        const member = roster[safeIndex];
+        const memberUserId = member ? parseVoteTargetUserId(member.id) : null;
+        const existingVote = memberUserId !== null
+            ? appState.teamMyVotes.find((vote) => vote.toUserId === memberUserId)
+            : undefined;
+        teamFlowState.voteDraftScore = existingVote?.score ?? null;
+        teamFlowState.voteDropdownOpen = false;
+    }
+
     render();
 }
 
 function closeTeamModal(): void {
     appState.teamModal = "none";
+    teamFlowState.voteDropdownOpen = false;
+    teamFlowState.voteDraftScore = null;
+    teamFlowState.rescueLeagueDropdownOpen = false;
+    teamFlowState.rescueTagDropdownOpen = false;
+    teamFlowState.rescueDeadlineCalendarOpen = false;
     render();
 }
 
@@ -2814,10 +2917,10 @@ function syncTeamRescueDraftFromForm(): void {
     const draft = ensureTeamRescueDraft();
     const target = profileMount.querySelector("#teamRescueTargetInput");
     const topic = profileMount.querySelector("#teamRescueTopicInput");
-    const tag = profileMount.querySelector("#teamRescueTagInput");
     const description = profileMount.querySelector("#teamRescueDescriptionInput");
-    const league = profileMount.querySelector("#teamRescueLeagueInput");
-    const deadline = profileMount.querySelector("#teamRescueDeadlineInput");
+    const leagueValue = profileMount.querySelector("#teamRescueLeagueValue");
+    const tagValue = profileMount.querySelector("#teamRescueTagValue");
+    const deadlineValue = profileMount.querySelector("#teamRescueDeadlineValue");
 
     if (target instanceof HTMLSelectElement) {
         draft.targetTeamId = target.value;
@@ -2825,17 +2928,76 @@ function syncTeamRescueDraftFromForm(): void {
     if (isHTMLInputElement(topic)) {
         draft.topic = topic.value;
     }
-    if (isHTMLInputElement(tag)) {
-        draft.tag = tag.value;
-    }
     if (description instanceof HTMLTextAreaElement) {
         draft.description = description.value;
     }
-    if (isHTMLInputElement(league)) {
-        draft.league = league.value;
+    if (isHTMLInputElement(leagueValue)) {
+        draft.league = leagueValue.value;
     }
-    if (isHTMLInputElement(deadline)) {
-        draft.deadline = deadline.value;
+    if (isHTMLInputElement(tagValue)) {
+        draft.tag = tagValue.value;
+    }
+    if (isHTMLInputElement(deadlineValue)) {
+        draft.deadline = deadlineValue.value;
+    }
+}
+
+function wireTeamVoteModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "vote") {
+        return;
+    }
+
+    const pickerButton = profileMount.querySelector("#teamVotePickerButton");
+    const picker = profileMount.querySelector("#teamVotePicker");
+
+    if (isHTMLButtonElement(pickerButton)) {
+        pickerButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            teamFlowState.voteDropdownOpen = !teamFlowState.voteDropdownOpen;
+            render();
+        });
+    }
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-vote-score]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const panel = button.closest<HTMLElement>("[data-team-vote-member-id]");
+            const memberId = panel?.dataset.teamVoteMemberId ?? "";
+            const score = Number(button.dataset.teamVoteScore ?? "0");
+            if (!memberId || score < 1 || score > 5) {
+                return;
+            }
+
+            teamFlowState.voteDraftScore = score;
+            teamFlowState.voteDropdownOpen = false;
+
+            void submitTeamVote(memberId, score)
+                .then(() => {
+                    closeTeamModal();
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
+        });
+    });
+
+    if (teamFlowState.voteDropdownOpen) {
+        const closeDropdown = (event: Event) => {
+            const target = event.target;
+            if (!(target instanceof Node) || picker?.contains(target)) {
+                return;
+            }
+
+            teamFlowState.voteDropdownOpen = false;
+            document.removeEventListener("click", closeDropdown);
+            render();
+        };
+
+        window.setTimeout(() => {
+            document.addEventListener("click", closeDropdown);
+        }, 0);
     }
 }
 
@@ -2845,127 +3007,99 @@ function wireTeamRescueModalEvents(): void {
     }
 
     const draft = ensureTeamRescueDraft();
-
-    const teamCloseRescue = profileMount.querySelector("#teamCloseRescueButton");
-    if (isHTMLButtonElement(teamCloseRescue)) {
-        teamCloseRescue.addEventListener("click", () => {
-            syncTeamRescueDraftFromForm();
-            closeTeamModal();
-        });
-    }
-
-    const target = profileMount.querySelector("#teamRescueTargetInput");
-    const topic = profileMount.querySelector("#teamRescueTopicInput");
-    const tag = profileMount.querySelector("#teamRescueTagInput");
-    const description = profileMount.querySelector("#teamRescueDescriptionInput");
-    const league = profileMount.querySelector("#teamRescueLeagueInput");
-    const deadline = profileMount.querySelector("#teamRescueDeadlineInput");
-    const photoInput = profileMount.querySelector("#teamRescuePhotoInput");
-    const photoLabel = profileMount.querySelector("#teamRescuePhotoLabel");
-    const rescueForm = profileMount.querySelector("#teamRescueForm");
-
-    const bindInput = (el: Element | null, key: keyof Pick<TeamRescueDraft, "topic" | "tag" | "league" | "deadline">): void => {
-        if (!isHTMLInputElement(el)) {
-            return;
-        }
-        el.addEventListener("input", () => {
-            draft[key] = el.value;
-        });
-    };
-
-    bindInput(topic, "topic");
-    bindInput(tag, "tag");
-    bindInput(league, "league");
-    bindInput(deadline, "deadline");
-
-    if (target instanceof HTMLSelectElement) {
-        target.addEventListener("change", () => {
-            draft.targetTeamId = target.value;
-        });
-    }
-
-    if (description instanceof HTMLTextAreaElement) {
-        description.addEventListener("input", () => {
-            draft.description = description.value;
-        });
-    }
-
-    if (isHTMLInputElement(photoInput)) {
-        photoInput.addEventListener("change", () => {
-            const file = photoInput.files?.[0];
-            draft.photoFileName = file?.name ?? "";
-            if (photoLabel instanceof HTMLElement) {
-                photoLabel.textContent = draft.photoFileName.trim() || "ФОТО";
-            }
-        });
-    }
-
-    if (isHTMLFormElement(rescueForm)) {
-        rescueForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            syncTeamRescueDraftFromForm();
-
-            if (!draft.targetTeamId.trim()) {
-                setStatus("Выберите команду для запроса спасения.", "error");
+    wireTeamRescueModal(profileMount, {
+        draft,
+        syncDraftFromForm: syncTeamRescueDraftFromForm,
+        onClose: closeTeamModal,
+        onRender: render,
+        onSubmit: (nextDraft) => {
+            if (!nextDraft.topic.trim()) {
+                setStatus("Укажите название спасения.", "error");
                 render();
                 return;
             }
 
-            if (!draft.topic.trim()) {
-                setStatus("Укажите тему запроса на спасение.", "error");
+            if (!nextDraft.description.trim()) {
+                setStatus("Опишите проблему для запроса спасения.", "error");
                 render();
                 return;
             }
 
-            if (!draft.description.trim()) {
-                setStatus("Опишите ситуацию для запроса спасения.", "error");
-                render();
-                return;
-            }
-
-            void submitTeamRescueRequest({ ...draft })
+            void submitTeamRescueDraftToAssignments(nextDraft)
                 .then(() => {
                     appState.teamRescueDraft = createEmptyTeamRescueDraft();
+                    teamFlowState.rescueLeagueDropdownOpen = false;
+                    teamFlowState.rescueTagDropdownOpen = false;
+                    teamFlowState.rescueDeadlineCalendarOpen = false;
                     closeTeamModal();
-                    setStatus("Спасение: запрос помощи отправлен.");
+                    clearStatus();
                     render();
                 })
                 .catch((error: unknown) => {
                     setStatus(getErrorMessage(error), "error");
                     render();
                 });
-        });
+        }
+    });
+}
+
+function formatVoteScoreLabel(score: number): string {
+    if (score === 1) {
+        return "балл";
     }
+
+    if (score >= 2 && score <= 4) {
+        return "балла";
+    }
+
+    return "баллов";
+}
+
+function renderTeamVoteScoreDisplay(score: number | null): string {
+    if (score === null) {
+        return `<span class="team-vote-display-placeholder">—</span>`;
+    }
+
+    return `
+        <span class="team-vote-display-value">${score}</span>
+        <span class="team-vote-display-label">${formatVoteScoreLabel(score)}</span>
+        <img src="${escapeHtml(scoreMobileIconUrl)}" alt="" class="team-vote-display-icon" aria-hidden="true">`;
 }
 
 function renderTeamModal(): string {
     if (appState.teamModal === "vote") {
-        const roster = getTeamRoster();
-        const member = roster[appState.teamVoteMemberIndex] ?? roster[0];
+        const members = getTeamMembersForView();
+        const member = members[appState.teamVoteMemberIndex] ?? members[0];
         const memberUserId = member ? parseVoteTargetUserId(member.id) : null;
         const existingVote = memberUserId !== null
             ? appState.teamMyVotes.find((vote) => vote.toUserId === memberUserId)
             : undefined;
-        const voteAvatarInner = member?.avatarUrl
-            ? `<img src="${escapeHtml(member.avatarUrl)}" alt="" loading="lazy">`
+        const selectedScore = teamFlowState.voteDraftScore ?? existingVote?.score ?? null;
+        const voteAvatarUrl = member ? resolveTeamMemberAvatarUrl(member.id, member.avatarUrl) : "";
+        const voteAvatarInner = voteAvatarUrl
+            ? `<img src="${escapeHtml(voteAvatarUrl)}" alt="" loading="lazy">`
             : "";
         const voteRole = member?.roleLabel ?? "РОЛЬ";
         const avatarClass = voteAvatarInner ? "team-vote-avatar has-image" : "team-vote-avatar";
-        const voteButtons = [1, 2, 3, 4, 5]
+        const dropdownOptions = [1, 2, 3, 4, 5]
             .map((score) => `
                 <button
                     type="button"
-                    class="team-vote-score${existingVote?.score === score ? " is-active" : ""}"
+                    class="team-vote-dropdown-option${selectedScore === score ? " is-active" : ""}"
                     data-team-vote-score="${score}"
                 >${score}</button>`)
             .join("");
+        const dropdownOpenClass = teamFlowState.voteDropdownOpen ? " is-open" : "";
+        const voteCardClass = teamFlowState.voteDropdownOpen
+            ? "team-vote-card team-vote-card--dropdown-open"
+            : "team-vote-card";
 
         return renderProfileModalShell({
             ariaLabel: "Голосование",
             closeButtonId: "teamCloseVoteButton",
             backdropCloseAttr: 'data-close-team-modal="1"',
             extraModalClass: "team-overlay-modal",
-            extraCardClass: "team-vote-card",
+            extraCardClass: voteCardClass,
             bodyHtml: `
                 <h2 class="profile-shell-title">ГОЛОСОВАНИЕ</h2>
                 <div class="team-vote-hero">
@@ -2973,8 +3107,33 @@ function renderTeamModal(): string {
                     <div class="team-vote-role-pill">${escapeHtml(voteRole)}</div>
                     <p class="team-vote-name">${escapeHtml(member?.displayName ?? "УЧАСТНИК")}</p>
                 </div>
-                <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
-                    ${voteButtons}
+                <div class="team-vote-controls" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
+                    <div class="team-vote-display-row" aria-live="polite">
+                        <div class="team-vote-display-field">
+                            ${renderTeamVoteScoreDisplay(selectedScore)}
+                        </div>
+                        <span class="team-vote-display-badge">БАЛЛЫ</span>
+                    </div>
+                    <div class="team-vote-picker-row">
+                        <div class="team-vote-picker${dropdownOpenClass}" id="teamVotePicker">
+                            <button
+                                type="button"
+                                class="team-vote-picker-trigger"
+                                id="teamVotePickerButton"
+                                aria-expanded="${teamFlowState.voteDropdownOpen ? "true" : "false"}"
+                                aria-controls="teamVoteDropdown"
+                            >БАЛЛЫ</button>
+                            <div
+                                class="team-vote-dropdown"
+                                id="teamVoteDropdown"
+                                role="listbox"
+                                aria-label="Выбор баллов от 1 до 5"
+                                ${teamFlowState.voteDropdownOpen ? "" : "hidden"}
+                            >
+                                ${dropdownOptions}
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 ${existingVote ? `<p class="team-vote-hint">Вы можете изменить оценку от 1 до 5.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
             `
@@ -3020,81 +3179,16 @@ function renderTeamModal(): string {
 
     if (appState.teamModal === "rescue") {
         const draft = ensureTeamRescueDraft();
-        const photoLabel = draft.photoFileName.trim() || "ФОТО";
         const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId;
         const targetOptions = appState.teamCatalog
             .filter((team) => team.id !== currentTeamId)
             .map((team) => `<option value="${team.id}" ${draft.targetTeamId === String(team.id) ? "selected" : ""}>${escapeHtml(team.name)}</option>`)
             .join("");
-        return `
-                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
-                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
-                    <div class="profile-modal-card team-rescue-card team-rescue-card--team-page">
-                        <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
-                        <p class="team-rescue-dots" aria-hidden="true">...</p>
-                        <h2 class="team-rescue-title team-rescue-title--sr">Спасение</h2>
-                        <form id="teamRescueForm" class="team-rescue-form team-rescue-form--team-page" novalidate>
-                            <select id="teamRescueTargetInput" class="team-rescue-field team-rescue-field--team team-rescue-select" aria-label="Команда для помощи">
-                                <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
-                                ${targetOptions}
-                            </select>
-                            <input
-                                id="teamRescueTopicInput"
-                                class="team-rescue-field team-rescue-field--name"
-                                type="text"
-                                placeholder="НАЗВАНИЕ"
-                                value="${escapeHtml(draft.topic)}"
-                                autocomplete="off"
-                            >
-                            <input
-                                id="teamRescueTagInput"
-                                class="team-rescue-field team-rescue-field--tag"
-                                type="text"
-                                placeholder="ТЕГ"
-                                value="${escapeHtml(draft.tag)}"
-                                autocomplete="off"
-                            >
-                            <textarea
-                                id="teamRescueDescriptionInput"
-                                class="team-rescue-textarea"
-                                placeholder="..."
-                                aria-label="Описание ситуации"
-                            >${escapeHtml(draft.description)}</textarea>
-                            <div class="team-rescue-photo-row team-rescue-photo-row--mockup">
-                                <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
-                                <label class="team-rescue-photo-btn">
-                                    ВЫБРАТЬ
-                                    <input
-                                        type="file"
-                                        id="teamRescuePhotoInput"
-                                        class="team-rescue-file"
-                                        accept="image/*"
-                                        hidden
-                                    >
-                                </label>
-                            </div>
-                            <div class="team-rescue-duo-row">
-                                <input
-                                    id="teamRescueLeagueInput"
-                                    class="team-rescue-field team-rescue-field--duo"
-                                    type="text"
-                                    placeholder="ЛИГА"
-                                    value="${escapeHtml(draft.league)}"
-                                    autocomplete="off"
-                                >
-                                <input
-                                    id="teamRescueDeadlineInput"
-                                    class="team-rescue-field team-rescue-field--duo"
-                                    type="text"
-                                    placeholder="ДЕДЛАЙН"
-                                    value="${escapeHtml(draft.deadline)}"
-                                    autocomplete="off"
-                                >
-                            </div>
-                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
-                        </form>
-                    </div>
-                </div>`;
+
+        return renderTeamRescueModal({
+            draft,
+            targetOptionsHtml: targetOptions
+        });
     }
 
     if (appState.teamModal === "requests") {
@@ -3915,13 +4009,12 @@ function bindAchievementCustomScrollbar(scroller: HTMLElement): void {
 }
 
 function renderProfileMainHtml(): string {
-    if (appState.teamRequestsApplicantRequestId && !getActiveTeamRequestApplicant()) {
-        clearTeamRequestApplicantReview();
-    }
+    validateExternalProfileView();
 
-    const applicantRequest = getActiveTeamRequestApplicant();
-    const viewingApplicant = Boolean(applicantRequest);
-    const applicantRating = appState.teamRequestsApplicantRating;
+    const externalView = appState.externalProfileView;
+    const externalRating = appState.externalProfileRating;
+    const joinRequest = getActiveJoinRequestForExternalProfile();
+    const viewingExternalProfile = Boolean(externalView);
     const profile = appState.profile;
 
     const leagueLabel = "ЛИГА";
@@ -3936,20 +4029,35 @@ function renderProfileMainHtml(): string {
     let avatarSrc: string;
     let achievementsContent: string;
 
-    if (viewingApplicant && applicantRequest) {
+    if (viewingExternalProfile && externalView) {
         fullName =
-            applicantRating?.name?.trim() ||
-            applicantRequest.displayName?.trim() ||
-            applicantRequest.userName?.trim() ||
+            externalRating?.name?.trim() ||
+            joinRequest?.displayName?.trim() ||
+            joinRequest?.userName?.trim() ||
+            externalView.fallbackName?.trim() ||
             "Участник";
-        group = applicantRating?.groupTitle?.trim() || "—";
-        teamPillText = applicantRating?.teamName?.trim() || "КОМАНДА";
-        leagueValue = applicantRating?.league?.trim() || "Новичок";
-        pointsValue = applicantRating ? String(applicantRating.points) : "—";
+        group = externalRating?.groupTitle?.trim() || "—";
+        teamPillText = externalRating?.teamName?.trim() || (externalRating?.hasTeam ? "КОМАНДА" : "БЕЗ КОМАНДЫ");
+        leagueValue = externalRating?.league?.trim() || "Новичок";
+        pointsValue = externalRating ? String(externalRating.points) : "—";
         ratingValue =
-            applicantRating && applicantRating.rank > 0 ? `${applicantRating.rank} место` : "—";
-        avatarSrc = applicantRequest.avatarUrl?.trim() || "";
-        achievementsContent = `
+            externalRating && externalRating.rank > 0 ? `${externalRating.rank} место` : "—";
+        avatarSrc =
+            externalRating?.avatarUrl?.trim() ||
+            joinRequest?.avatarUrl?.trim() ||
+            externalView.fallbackAvatarUrl?.trim() ||
+            "";
+        achievementsContent =
+            externalRating && externalRating.achievementsCount > 0
+                ? `
+                    <div class="profile-achievements-scroll-wrap">
+                        <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
+                        <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
+                        <div class="profile-achievements-scroll" id="profileAchievementsScroll">
+                            ${renderPublicAchievementsStrip(externalRating.achievementsCount)}
+                        </div>
+                    </div>`
+                : `
                     <div class="profile-achievements-empty" aria-live="polite">
                         <p class="profile-achievements-empty-text">Достижения участника появятся здесь после выполнения челленджей.</p>
                     </div>`;
@@ -3990,7 +4098,7 @@ function renderProfileMainHtml(): string {
         ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
         : `<span class="profile-photo-placeholder">Фото</span>`;
 
-    const ratingTrackHtml = viewingApplicant
+    const ratingTrackHtml = viewingExternalProfile
         ? `
                             <div class="profile-stat-track profile-stat-track--rating">
                                 <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
@@ -4008,21 +4116,25 @@ function renderProfileMainHtml(): string {
                                 <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
                             </button>`;
 
-    const teamPillHtml = viewingApplicant
+    const teamPillHtml = viewingExternalProfile
         ? `<div class="profile-info-pill profile-info-pill-accent">${escapeHtml(teamPillText)}</div>`
         : `<button type="button" class="profile-info-pill profile-info-pill-accent" id="profileTeamPillButton">${escapeHtml(teamPillText)}</button>`;
 
     const dockHtml =
-        viewingApplicant && applicantRequest
-            ? renderTeamRequestsApplicantDock(applicantRequest.id, isTeamCaptain())
+        viewingExternalProfile && externalView
+            ? renderExternalProfileDock({
+                source: externalView.source,
+                requestId: externalView.requestId,
+                canAct: externalView.source === "join-request" ? isTeamCaptain() : false
+            })
             : "";
 
     return `
-            <section class="profile-main${viewingApplicant ? " profile-main--requests-review" : ""}">
+            <section class="profile-main${viewingExternalProfile ? " profile-main--requests-review profile-main--external-view" : ""}">
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
-                            <div class="profile-photo" id="profileOwnPhoto">${photoContent}</div>
+                            <div class="profile-photo${avatarSrc ? " has-image" : ""}" id="profileOwnPhoto">${photoContent}</div>
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
@@ -4521,7 +4633,7 @@ function wireProfileViewEvents(): void {
 
     wireMobileProfileMenu();
 
-    if (appState.dashboardSection === "profile") {
+    if (appState.dashboardSection === "profile" && !isViewingExternalProfile()) {
         const photoEl = profileMount.querySelector("#profileOwnPhoto");
         if (photoEl instanceof HTMLElement) {
             const src = getAvatarDisplay();
@@ -4606,8 +4718,8 @@ function wireProfileViewEvents(): void {
                 return;
             }
 
-            if (getActiveTeamRequestApplicant()) {
-                clearTeamRequestApplicantReview();
+            if (isViewingExternalProfile()) {
+                clearExternalProfileView();
                 appState.teamModal = "none";
             }
 
@@ -4644,6 +4756,8 @@ function wireProfileViewEvents(): void {
 
     wireTeamRescueModalEvents();
 
+    wireTeamVoteModalEvents();
+
     profileMount.querySelectorAll<HTMLElement>("[data-close-team-modal]").forEach((node) => {
         node.addEventListener("click", () => {
             closeTeamModal();
@@ -4656,32 +4770,6 @@ function wireProfileViewEvents(): void {
             closeTeamModal();
         });
     }
-
-    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-vote-score]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const card = button.closest<HTMLElement>("[data-team-vote-member-id]");
-            const memberId = card?.dataset.teamVoteMemberId ?? "";
-            const score = Number(button.dataset.teamVoteScore ?? "0");
-            if (!memberId || score < 1 || score > 5) {
-                return;
-            }
-
-            const numericMemberId = parseVoteTargetUserId(memberId);
-            const hadExistingVote = numericMemberId !== null
-                && appState.teamMyVotes.some((vote) => vote.toUserId === numericMemberId);
-
-            void submitTeamVote(memberId, score)
-                .then(() => {
-                    setStatus(hadExistingVote ? "Оценка изменена." : "Голос сохранен.");
-                    closeTeamModal();
-                    render();
-                })
-                .catch((error: unknown) => {
-                    setStatus(getErrorMessage(error), "error");
-                    render();
-                });
-        });
-    });
 
     const teamCloseCheckIn = profileMount.querySelector("#teamCloseCheckInButton");
     if (isHTMLButtonElement(teamCloseCheckIn)) {
@@ -4791,9 +4879,9 @@ function wireProfileViewEvents(): void {
         });
     });
 
-    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-request-back]").forEach((button) => {
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-external-profile-back], [data-team-request-back]").forEach((button) => {
         button.addEventListener("click", () => {
-            returnToTeamRequests();
+            returnFromExternalProfile();
         });
     });
 
@@ -5253,19 +5341,17 @@ function buildUserName(email: string): string {
 function updateStatusBlock(): void {
     const statusNode = document.querySelector(".status-message");
     if (!(statusNode instanceof HTMLElement)) {
-        render();
         return;
     }
 
-    statusNode.textContent = appState.statusMessage;
-    statusNode.classList.toggle("status-error", appState.statusTone === "error");
-    statusNode.classList.toggle("hidden", !appState.statusMessage);
+    statusNode.textContent = "";
+    statusNode.classList.add("hidden");
+    statusNode.classList.remove("status-error");
+    statusNode.setAttribute("aria-hidden", "true");
 }
 
 function renderStatusBlock(): string {
-    const toneClass = appState.statusTone === "error" ? "status-error" : "";
-    const hiddenClass = appState.statusMessage ? "" : "hidden";
-    return `<p class="status-message ${toneClass} ${hiddenClass}">${escapeHtml(appState.statusMessage)}</p>`;
+    return `<p class="status-message hidden" aria-hidden="true"></p>`;
 }
 
 function isInvalidCredentialsError(): boolean {

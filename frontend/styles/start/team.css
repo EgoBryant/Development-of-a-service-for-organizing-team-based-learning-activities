@@ -249,6 +249,23 @@ button.team-topbar-tab--active:hover {
     box-shadow: 0 10px 26px rgba(60, 80, 200, 0.2);
 }
 
+.team-member-avatar-btn {
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.team-member-avatar-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 34px rgba(60, 80, 200, 0.22);
+}
+
+.team-member-avatar-btn:focus-visible {
+    outline: 2px solid rgba(120, 124, 254, 0.85);
+    outline-offset: 3px;
+}
+
 .team-member-avatar img {
     width: 100%;
     height: 100%;
@@ -320,6 +337,9 @@ button.team-topbar-tab--active:hover {
 
 /* ─── История активности ─── */
 .team-history-panel {
+    --team-history-row-height: clamp(58px, 7vh, 81px);
+    --team-history-points-width: clamp(110px, 13vw, 243px);
+    --team-history-row-pad-right: calc(var(--team-history-points-width) + clamp(8px, 1vw, 16px));
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
@@ -330,6 +350,21 @@ button.team-topbar-tab--active:hover {
     box-sizing: border-box;
     box-shadow: 0 6px 20px rgba(60, 80, 200, 0.1);
     overflow: hidden;
+}
+
+.team-history-panel--filled {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.team-history-panel--filled .team-history-body {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.team-history-panel--filled .team-history-rows {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .team-history-body {
@@ -428,8 +463,8 @@ button.team-topbar-tab--active:hover {
 .team-history-row {
     position: relative;
     display: block;
-    min-height: 81px;
-    padding: 0 253px 0 24px;
+    min-height: var(--team-history-row-height);
+    padding: 0 var(--team-history-row-pad-right) 0 clamp(16px, 1.5vw, 24px);
     border-radius: 999px;
     background: rgba(255, 255, 255, 1);
     flex-shrink: 0;
@@ -445,16 +480,16 @@ button.team-topbar-tab--active:hover {
 .team-history-row-text {
     display: block;
     min-width: 0;
-    min-height: 81px;
+    min-height: var(--team-history-row-height);
     padding: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     box-sizing: border-box;
     font-family: "Montserrat", sans-serif;
-    font-size: 15px;
+    font-size: clamp(12px, 0.95vw, 15px);
     font-weight: 500;
-    line-height: 81px;
+    line-height: var(--team-history-row-height);
     letter-spacing: 0;
     text-align: left;
     color: rgba(23, 45, 157, 1);
@@ -466,16 +501,16 @@ button.team-topbar-tab--active:hover {
 .team-history-row-points {
     position: absolute;
     top: 50%;
-    right: 10px;
+    right: clamp(6px, 0.8vw, 10px);
     z-index: 2;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    width: 243px;
-    min-width: 243px;
-    height: 60px;
-    min-height: 60px;
+    gap: clamp(4px, 0.5vw, 8px);
+    width: var(--team-history-points-width);
+    min-width: var(--team-history-points-width);
+    height: clamp(44px, 5.5vh, 60px);
+    min-height: clamp(44px, 5.5vh, 60px);
     padding: 0;
     border-radius: 999px;
     background: rgba(255, 255, 255, 1);
@@ -487,7 +522,7 @@ button.team-topbar-tab--active:hover {
 .team-history-row-points-value,
 .team-history-row-points-label {
     font-family: "Montserrat", sans-serif;
-    font-size: 20px;
+    font-size: clamp(14px, 1.2vw, 20px);
     font-weight: 800;
     line-height: 1;
     color: rgba(0, 169, 242, 1);
@@ -509,6 +544,10 @@ button.team-topbar-tab--active:hover {
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
+}
+
+.team-history-panel--filled .team-history-body {
+    position: relative;
 }
 
 .team-action-btn {
@@ -964,4 +1003,28 @@ button.team-topbar-tab--active:hover {
 .team-requests-photo-btn:focus-visible {
     outline: 2px solid rgba(120, 124, 254, 0.85);
     outline-offset: 3px;
+}
+
+.team-requests-candidate-name {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: rgba(35, 45, 95, 0.92);
+}
+
+.team-requests-profile-btn {
+    margin-top: 8px;
+    min-height: 32px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #ffffff;
+    cursor: pointer;
+    background: var(--exam-button-gradient);
+    box-shadow: 0 10px 22px rgba(60, 80, 200, 0.18);
 }

@@ -308,7 +308,7 @@ export function wireRatingPageEvents(root: HTMLElement): void {
                 description: ratingFlowState.rescueDraft.description,
                 league: "",
                 deadline: ratingFlowState.rescueDraft.dateTime,
-                photoFileName: ""
+                attachments: []
             })
                 .then(() => {
                     ratingFlowState.rescueDraft = createEmptyRescueDraft();

@@ -1,4 +1,5 @@
 import type { NoTeamView, TeamCreateDraft, TeamEventCreateDraft, TeamEventModalKind } from "../types/team";
+import { getRescueCalendarMonthKey } from "../utils/rescueFormUi";
 
 export interface TeamFlowState {
     noTeamView: NoTeamView;
@@ -13,6 +14,12 @@ export interface TeamFlowState {
     checkInWeek: string;
     checkInReport: string;
     checkInError: string;
+    voteDraftScore: number | null;
+    voteDropdownOpen: boolean;
+    rescueLeagueDropdownOpen: boolean;
+    rescueTagDropdownOpen: boolean;
+    rescueDeadlineCalendarOpen: boolean;
+    rescueCalendarMonthKey: string;
 }
 
 export function createEmptyTeamEventDraft(): TeamEventCreateDraft {
@@ -44,7 +51,13 @@ export const teamFlowState: TeamFlowState = {
     eventShowValidationError: false,
     checkInWeek: "",
     checkInReport: "",
-    checkInError: ""
+    checkInError: "",
+    voteDraftScore: null,
+    voteDropdownOpen: false,
+    rescueLeagueDropdownOpen: false,
+    rescueTagDropdownOpen: false,
+    rescueDeadlineCalendarOpen: false,
+    rescueCalendarMonthKey: getRescueCalendarMonthKey()
 };
 
 export function openTeamEventCreateModal(): void {

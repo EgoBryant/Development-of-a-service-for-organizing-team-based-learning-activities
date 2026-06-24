@@ -27,6 +27,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<KrkOptions>(builder.Configuration.GetSection(KrkOptions.SectionName));
 builder.Services.Configure<LeagueOptions>(builder.Configuration.GetSection(LeagueOptions.SectionName));
+builder.Services.Configure<TeamOptions>(builder.Configuration.GetSection(TeamOptions.SectionName));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
