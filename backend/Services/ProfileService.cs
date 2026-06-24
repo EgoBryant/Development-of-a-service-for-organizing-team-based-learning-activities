@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TeamExamProject.Contracts.Auth;
 using TeamExamProject.Contracts.Profile;
 using TeamExamProject.Data;
 using TeamExamProject.Models;
+using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
@@ -15,10 +17,12 @@ public class ProfileService : IProfileService
     private const int MaxAvatarUrlChars = 2_800_000;
 
     private readonly AppDbContext _dbContext;
+    private readonly LeagueOptions _leagueOptions;
 
-    public ProfileService(AppDbContext dbContext)
+    public ProfileService(AppDbContext dbContext, IOptions<LeagueOptions> leagueOptions)
     {
         _dbContext = dbContext;
+        _leagueOptions = leagueOptions.Value;
     }
 
     public async Task<UserProfileResponse?> GetProfileAsync(int userId, CancellationToken cancellationToken = default)
@@ -50,6 +54,7 @@ public class ProfileService : IProfileService
 
         var personalContribution = await CalculatePersonalContributionAsync(user.Id, cancellationToken);
         var personalRating = CalculatePersonalRating(user.UserPoints, personalContribution);
+        var personalRank = await CalculatePersonalRankAsync(user.Id, personalRating, cancellationToken);
 
         return new UserProfileResponse
         {
@@ -76,6 +81,7 @@ public class ProfileService : IProfileService
             TeamScore = team?.Score ?? 0,
             UserPoints = user.UserPoints,
             PersonalRating = personalRating,
+            PersonalRank = personalRank,
             PersonalContribution = personalContribution,
             PersonalLeague = ResolvePersonalLeague(personalRating)
         };
@@ -210,19 +216,36 @@ public class ProfileService : IProfileService
     private static int CalculatePersonalRating(int userPoints, double personalContribution) =>
         userPoints + (int)Math.Round(personalContribution * 20d, MidpointRounding.AwayFromZero);
 
-    private static string ResolvePersonalLeague(int personalRating)
+    private string ResolvePersonalLeague(int personalRating)
     {
-        if (personalRating >= 900)
-        {
-            return "Легенда";
-        }
+        if (personalRating >= _leagueOptions.GoldThreshold) return _leagueOptions.GoldLabel;
+        if (personalRating >= _leagueOptions.SilverThreshold) return _leagueOptions.SilverLabel;
+        if (personalRating >= _leagueOptions.BronzeThreshold) return _leagueOptions.BronzeLabel;
+        return _leagueOptions.BaseLabel;
+    }
 
-        if (personalRating >= 350)
-        {
-            return "Профи";
-        }
+    private async Task<int> CalculatePersonalRankAsync(int userId, int personalRating, CancellationToken cancellationToken)
+    {
+        var allPoints = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Role != Roles.Admin)
+            .Select(u => new { u.Id, u.UserPoints })
+            .ToListAsync(cancellationToken);
 
-        return "Новичок";
+        var voteSums = await _dbContext.Votes
+            .AsNoTracking()
+            .GroupBy(v => v.ToUserId)
+            .Select(g => new { UserId = g.Key, Avg = g.Average(v => (double)v.Score) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Avg, cancellationToken);
+
+        var higherCount = allPoints.Count(u =>
+        {
+            var contrib = voteSums.GetValueOrDefault(u.Id);
+            var rating = u.UserPoints + (int)Math.Round(contrib * 20d, MidpointRounding.AwayFromZero);
+            return rating > personalRating || (rating == personalRating && u.Id < userId);
+        });
+
+        return higherCount + 1;
     }
 
     private async Task<UserProfileResponse> BuildProfileAsync(int userId, CancellationToken cancellationToken)

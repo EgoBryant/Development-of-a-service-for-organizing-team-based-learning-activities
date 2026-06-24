@@ -30,6 +30,7 @@ import {
     getSettingsPhotoDisplay,
     renderSettingsPageMain
 } from "./pages/SettingsPage";
+import { renderTasksPageMain, wireTasksPageEvents } from "./pages/TasksPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
 import { ratingFlowState } from "./state/ratingFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
@@ -71,6 +72,7 @@ import type {
     EventsModalKind,
     ExternalProfileView,
     ProfileModalKind,
+    TasksKrcTier,
     View
 } from "./types/app";
 import type { AuthResponse, UserProfileResponse } from "./types/auth";
@@ -113,11 +115,14 @@ import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/
 import { renderTeamCheckInModal, wireTeamCheckInModal } from "./components/modals/TeamCheckInModal";
 import { renderTeamLeaveModal, wireTeamLeaveModal } from "./components/modals/TeamLeaveModal";
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
-import { renderPublicAchievementsStrip } from "./components/rating/PublicUserProfile";
 import { getProfileAchievementById } from "./data/profileAchievements";
+import { fetchAchievementsCatalog, fetchMyAchievements, fetchUserAchievements } from "./services/achievementsApi";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
+    collectKnownUserAvatars,
+    enrichRatingTeamsWithKnownAvatars,
+    enrichRatingUsersWithKnownAvatars,
     mergeSessionTeamIntoRatingTeams,
     mergeSessionUserIntoRatingUsers
 } from "./services/ratingSessionData";
@@ -146,6 +151,14 @@ import { queueRescueAssignmentTask } from "./services/rescueAssignmentsQueue";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
+import {
+    clearAchievementsData,
+    getMyProfileAchievements,
+    getUserProfileAchievements,
+    setAchievementsCatalog,
+    setMyAchievements,
+    setUserAchievements
+} from "./state/achievementsState";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
 import { isSameUserId, resolveUserAvatarUrl } from "./utils/ratingAvatars";
 import { getRescueCalendarMonthKey } from "./utils/rescueFormUi";
@@ -196,6 +209,7 @@ const appState: AppState = {
     eventsShareLink: "",
     newsCreateDraft: null,
     newsShowValidationError: false,
+    tasksKrcTier: "pro",
     teamVoteMemberIndex: 0,
     teamRequestsCurrentIndex: 0,
     teamRequestsInviteLink: "",
@@ -224,8 +238,8 @@ const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
-const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 767px)";
-const DESKTOP_DASHBOARD_QUERY = "(min-width: 768px)";
+const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 1024px)";
+const DESKTOP_DASHBOARD_QUERY = "(min-width: 1025px)";
 const MOBILE_BOTTOM_NAV_CLOSED_HEIGHT = 76;
 const MOBILE_BOTTOM_NAV_OPEN_HEIGHT = 116;
 const MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY = 1.35;
@@ -684,6 +698,19 @@ function openExternalUserProfile(view: ExternalProfileView): void {
         .catch(() => {
             // Профиль отображается по данным команды или заявки.
         });
+
+    void fetchUserAchievements(token, view.userId)
+        .then((items) => {
+            if (appState.externalProfileView?.userId !== view.userId) {
+                return;
+            }
+
+            setUserAchievements(view.userId, items);
+            render();
+        })
+        .catch(() => {
+            setUserAchievements(view.userId, []);
+        });
 }
 
 function openTeamRequestApplicantProfile(requestId: number): void {
@@ -931,6 +958,7 @@ async function bootstrap(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshMyAchievementsWorkspace(session.token);
         await refreshTeamWorkspace();
         await refreshRatingWorkspace();
         appState.view = "account";
@@ -1604,6 +1632,7 @@ function resetProfileUi(): void {
     appState.teamWeeklyStats = null;
     appState.teamJoinRequests = [];
     appState.teamMyVotes = [];
+    clearAchievementsData();
     clearRatingData();
 }
 
@@ -1843,6 +1872,7 @@ function hydrateProfileClientStateFromStorage(): void {
         data.dashboardSection === "profile" ||
         data.dashboardSection === "team" ||
         data.dashboardSection === "rating" ||
+        data.dashboardSection === "tasks" ||
         data.dashboardSection === "events" ||
         data.dashboardSection === "settings"
     ) {
@@ -2803,6 +2833,46 @@ function getSessionToken(): string | null {
     return loadSession()?.token ?? null;
 }
 
+async function refreshMyAchievementsWorkspace(token = getSessionToken()): Promise<void> {
+    if (!token) {
+        clearAchievementsData();
+        return;
+    }
+
+    const [catalog, earned] = await Promise.all([
+        fetchAchievementsCatalog(token).catch(() => null),
+        fetchMyAchievements(token).catch(() => [])
+    ]);
+
+    if (catalog) {
+        setAchievementsCatalog(catalog);
+    }
+    setMyAchievements(earned, appState.profile?.id);
+}
+
+async function refreshAchievementsForUsers(token: string, userIds: readonly string[]): Promise<void> {
+    const numericUserIds = Array.from(new Set(userIds))
+        .map((userId) => Number(userId))
+        .filter((userId) => Number.isInteger(userId) && userId > 0);
+
+    if (numericUserIds.length === 0) {
+        return;
+    }
+
+    const catalog = await fetchAchievementsCatalog(token).catch(() => null);
+    if (catalog) {
+        setAchievementsCatalog(catalog);
+    }
+
+    await Promise.all(
+        numericUserIds.map((userId) =>
+            fetchUserAchievements(token, userId)
+                .then((items) => setUserAchievements(userId, items))
+                .catch(() => setUserAchievements(userId, []))
+        )
+    );
+}
+
 async function refreshCurrentUserProfile(): Promise<void> {
     const token = getSessionToken();
     if (!token) {
@@ -2811,17 +2881,20 @@ async function refreshCurrentUserProfile(): Promise<void> {
 
     appState.profile = await fetchCurrentUser(token);
     hydrateProfileClientStateFromStorage();
+    await refreshMyAchievementsWorkspace(token);
 }
 
 function openRatingDashboard(): void {
     appState.dashboardSection = "rating";
     persistDashboardSectionToStorage();
     clearStatus();
-    void refreshRatingWorkspace().then(() => {
-        if (appState.dashboardSection === "rating") {
-            render();
-        }
-    });
+    void refreshTeamWorkspace()
+        .then(() => refreshRatingWorkspace())
+        .then(() => {
+            if (appState.dashboardSection === "rating") {
+                render();
+            }
+        });
     render();
 }
 
@@ -2831,15 +2904,44 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         return;
     }
 
+    if (!appState.teamCatalog.length) {
+        try {
+            appState.teamCatalog = await fetchTeams(token);
+        } catch {
+            appState.teamCatalog = [];
+        }
+    }
+
     const [teams, users] = await Promise.all([
         fetchRatingTeams(token).catch(() => []),
         fetchRatingUsers(token).catch(() => [])
     ]);
 
-    setRatingData(
-        mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam),
-        mergeSessionUserIntoRatingUsers(users, appState.profile)
+    const avatarLookup = collectKnownUserAvatars({
+        teamCatalog: appState.teamCatalog,
+        currentTeam: appState.currentTeam,
+        joinRequests: appState.teamJoinRequests,
+        ratingTeams: teams
+    });
+
+    const enrichedUsers = enrichRatingUsersWithKnownAvatars(users, avatarLookup);
+    const enrichedTeams = enrichRatingTeamsWithKnownAvatars(teams, avatarLookup);
+
+    const mergedTeams = mergeSessionTeamIntoRatingTeams(
+        enrichedTeams,
+        appState.profile,
+        appState.currentTeam,
+        appState.localCreatedTeam
     );
+    const mergedUsers = mergeSessionUserIntoRatingUsers(enrichedUsers, appState.profile);
+
+    setRatingData(mergedTeams, mergedUsers);
+
+    const userIds = [
+        ...mergedUsers.map((user) => user.id),
+        ...mergedTeams.flatMap((team) => team.members.map((member) => member.id))
+    ];
+    await refreshAchievementsForUsers(token, userIds);
 }
 
 async function refreshTeamWorkspace(): Promise<void> {
@@ -4547,7 +4649,10 @@ function renderProfileModal(): string {
         case "teamSuccess":
             return renderProfileTeamSuccessModal();
         case "achievement":
-            return renderProfileAchievementModal(getProfileAchievementById(appState.profileAchievementId));
+            return renderProfileAchievementModal(getProfileAchievementById(
+                appState.profileAchievementId,
+                getMyProfileAchievements()
+            ));
         default:
             return "";
     }
@@ -4712,14 +4817,15 @@ function renderProfileMainHtml(): string {
             joinRequest?.avatarUrl?.trim() ||
             externalView.fallbackAvatarUrl?.trim() ||
             "";
+        const externalAchievements = getUserProfileAchievements(externalView.userId);
         achievementsContent =
-            externalRating && externalRating.achievementsCount > 0
+            externalAchievements.length > 0
                 ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderPublicAchievementsStrip(externalRating.achievementsCount)}
+                            ${renderProfileAchievementStrip(externalAchievements, { interactive: false })}
                         </div>
                     </div>`
                 : `
@@ -4730,21 +4836,22 @@ function renderProfileMainHtml(): string {
         const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
         pointsValue = String(actualPoints);
         ratingValue =
-            profile?.personalRating && profile.personalRating > 0
-                ? `${profile.personalRating} место`
+            profile?.personalRank && profile.personalRank > 0
+                ? `${profile.personalRank} место`
                 : "—";
         leagueValue = normalizePersonalLeague(profile?.personalLeague);
         fullName = getFullNameDisplay();
         group = getGroupDisplay();
         teamPillText = getEffectiveTeamName() || "КОМАНДА";
         avatarSrc = getAvatarDisplay();
+        const ownAchievements = getMyProfileAchievements();
         achievementsContent = hasProfileAchievements(profile)
             ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderProfileAchievementStrip()}
+                            ${renderProfileAchievementStrip(ownAchievements)}
                         </div>
                         <div class="profile-achievements-bar" id="profileAchievementsBar" aria-hidden="true">
                             <div class="profile-achievements-thumb" id="profileAchievementsThumb"></div>
@@ -4845,11 +4952,12 @@ function renderProfileView(): void {
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
+    const navTasksActive = appState.dashboardSection === "tasks" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
     const navSettingsActive = appState.dashboardSection === "settings" ? " is-active" : "";
     const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}${isDashboardNavigationBlocked() ? " is-dashboard-modal-open" : ""}`;
     const extraNavHtml = `
-                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
+                    <button type="button" class="profile-nav-button${navTasksActive}" data-dashboard="tasks"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
                     <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
 
     const mainColumn =
@@ -4857,15 +4965,17 @@ function renderProfileView(): void {
             ? renderTeamPageMain(statusHtml)
             : appState.dashboardSection === "rating"
               ? renderRatingPageMain(statusHtml)
-              : appState.dashboardSection === "events"
-                ? renderEventsDashboardMain(statusHtml)
-                : appState.dashboardSection === "settings"
-                  ? renderSettingsPageMain(
-                      statusHtml,
-                      appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
-                      appState.profileAvatarFileName
-                  )
-                  : renderProfileMainHtml();
+              : appState.dashboardSection === "tasks"
+                ? renderTasksPageMain(statusHtml, appState.tasksKrcTier)
+                : appState.dashboardSection === "events"
+                  ? renderEventsDashboardMain(statusHtml)
+                  : appState.dashboardSection === "settings"
+                    ? renderSettingsPageMain(
+                        statusHtml,
+                        appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
+                        appState.profileAvatarFileName
+                    )
+                    : renderProfileMainHtml();
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
@@ -4957,6 +5067,32 @@ function wireMobileProfileMenu(): void {
     let velocityY = 0;
 
     const isBottomNavLayout = (): boolean => window.matchMedia(MOBILE_BOTTOM_NAV_QUERY).matches;
+
+    const isNavButtonTarget = (target: Element): boolean => Boolean(target.closest(".profile-nav-button"));
+
+    const canStartMenuGesture = (target: Element, clientY: number): boolean => {
+        if (isNavButtonTarget(target)) {
+            return false;
+        }
+
+        if (target.closest(".profile-modal, button, input, textarea, select, a, label")) {
+            return false;
+        }
+
+        const isOpen = profileApp.classList.contains("is-mobile-menu-open");
+        if (target.closest(".profile-sidebar-swipe-handle")) {
+            return true;
+        }
+
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const isInsideSidebar = clientY >= sidebarRect.top - 12 && clientY <= sidebarRect.bottom + 12;
+        if (isOpen && isInsideSidebar) {
+            return true;
+        }
+
+        const appRect = profileApp.getBoundingClientRect();
+        return clientY >= appRect.bottom - 160;
+    };
 
     const getMenuHeights = (): { closed: number; open: number } => ({
         closed: MOBILE_BOTTOM_NAV_CLOSED_HEIGHT,
@@ -5110,7 +5246,7 @@ function wireMobileProfileMenu(): void {
             }
 
             if (profileApp.classList.contains("is-mobile-menu-open")) {
-                setMenuOpen(false);
+                setMenuOpen(false, false);
             }
         });
     });
@@ -5212,7 +5348,7 @@ function wireMobileProfileMenu(): void {
     };
 
     const onPointerDown = (event: PointerEvent): void => {
-        if (!isBottomNavLayout() || event.pointerType === "mouse" && event.button !== 0) {
+        if (!isBottomNavLayout() || event.pointerType === "mouse" || event.button !== 0) {
             return;
         }
 
@@ -5222,6 +5358,10 @@ function wireMobileProfileMenu(): void {
 
         const target = event.target;
         if (!(target instanceof Element) || target.closest(".profile-modal")) {
+            return;
+        }
+
+        if (!canStartMenuGesture(target, event.clientY)) {
             return;
         }
 
@@ -5439,6 +5579,13 @@ function wireProfileViewEvents(): void {
     if (appState.dashboardSection === "team" && isHTMLElement(profileMount)) {
         wireTeamPageEvents(profileMount);
     }
+    if (appState.dashboardSection === "tasks" && isHTMLElement(profileMount)) {
+        wireTasksPageEvents(profileMount, (tier: TasksKrcTier) => {
+            appState.tasksKrcTier = tier;
+            clearStatus();
+            render();
+        });
+    }
     if (appState.dashboardSection === "settings") {
         wireSettingsPageEvents();
     }
@@ -5593,7 +5740,7 @@ function wireProfileViewEvents(): void {
     profileMount.querySelectorAll<HTMLButtonElement>(".profile-achievement-item").forEach((button) => {
         button.addEventListener("click", () => {
             const achievementId = button.dataset.achievementId ?? "";
-            appState.profileAchievementId = getProfileAchievementById(achievementId).id;
+            appState.profileAchievementId = getProfileAchievementById(achievementId, getMyProfileAchievements()).id;
             openProfileModal("achievement");
         });
     });
@@ -5850,11 +5997,13 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.signIn.password = "";
@@ -5908,11 +6057,13 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.view = "account";
@@ -5942,6 +6093,7 @@ async function refreshProfile(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshMyAchievementsWorkspace(session.token);
         await refreshTeamWorkspace();
         setStatus("Данные обновлены.");
     } catch (error) {
@@ -5966,6 +6118,7 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             }
             appState.profile = p;
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(bearerToken);
             await refreshTeamWorkspace();
             render();
         } catch {

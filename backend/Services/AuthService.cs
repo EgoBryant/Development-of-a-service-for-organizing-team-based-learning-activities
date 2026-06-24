@@ -140,6 +140,7 @@ public class AuthService : IAuthService
             TeamScore = profile.TeamScore,
             UserPoints = profile.UserPoints,
             PersonalRating = profile.PersonalRating,
+            PersonalRank = profile.PersonalRank,
             PersonalContribution = profile.PersonalContribution,
             PersonalLeague = profile.PersonalLeague
         };

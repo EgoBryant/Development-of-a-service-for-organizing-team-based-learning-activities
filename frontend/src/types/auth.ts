@@ -25,6 +25,7 @@ export interface AuthResponse {
     teamScore: number;
     userPoints: number;
     personalRating: number;
+    personalRank: number;
     personalContribution: number;
     personalLeague: string;
 }
@@ -53,6 +54,7 @@ export interface UserProfileResponse {
     teamScore: number;
     userPoints: number;
     personalRating: number;
+    personalRank: number;
     personalContribution: number;
     personalLeague: string;
 }

@@ -44,6 +44,23 @@ public class AdminController : ApiControllerBase
         return NoContent();
     }
 
+    /// <summary>Обновляет персональные баллы пользователя по email.</summary>
+    [HttpPatch("users/by-email/points")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUserPointsByEmail(AdminUpdateUserPointsByEmailDto request, CancellationToken cancellationToken)
+    {
+        var updated = await _adminUserService.UpdatePointsByEmailAsync(request.Email, request.UserPoints, cancellationToken);
+        if (!updated)
+        {
+            return NotFound(Problem(
+                title: "User not found",
+                detail: $"User with email '{request.Email}' was not found.",
+                statusCode: StatusCodes.Status404NotFound));
+        }
+        return NoContent();
+    }
+
     /// <summary>Полный пересчёт КРК для всех команд.</summary>
     [HttpPost("krk/recalculate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

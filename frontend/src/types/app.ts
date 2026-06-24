@@ -17,7 +17,8 @@ import type { SignInState, SignUpState, UserProfileResponse } from "./auth";
 import type { RatingUser } from "./rating";
 
 export type View = "home" | "sign-in" | "sign-up" | "password-recovery" | "account";
-export type DashboardSection = "profile" | "team" | "rating" | "events" | "settings";
+export type DashboardSection = "profile" | "team" | "rating" | "tasks" | "events" | "settings";
+export type TasksKrcTier = "novice" | "pro" | "legend";
 
 export type ExternalProfileSource = "join-request" | "team-member";
 
@@ -74,6 +75,7 @@ export interface AppState {
     eventsShareLink: string;
     newsCreateDraft: NewsCreateDraft | null;
     newsShowValidationError: boolean;
+    tasksKrcTier: TasksKrcTier;
     teamVoteMemberIndex: number;
     teamRequestsCurrentIndex: number;
     teamRequestsInviteLink: string;

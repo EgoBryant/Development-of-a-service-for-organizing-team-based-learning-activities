@@ -28,6 +28,7 @@ public class AuthResponse
     public int TeamScore { get; set; }
     public int UserPoints { get; set; }
     public int PersonalRating { get; set; }
+    public int PersonalRank { get; set; }
     public double PersonalContribution { get; set; }
     public string PersonalLeague { get; set; } = string.Empty;
 }
