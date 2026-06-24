@@ -62,6 +62,10 @@ export function getErrorMessage(error: unknown): string {
         return "Не удалось связаться с сервером. Проверьте, что backend запущен.";
     }
 
+    if (error instanceof Error && (error as Error & { status?: number }).status === 403) {
+        return "��� ������� � ����� ��������.";
+    }
+
     return error instanceof Error ? error.message : "Не удалось выполнить запрос.";
 }
 

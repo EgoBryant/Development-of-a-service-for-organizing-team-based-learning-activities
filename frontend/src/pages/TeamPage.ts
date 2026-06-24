@@ -81,10 +81,9 @@ function syncTeamCarouselArrows(root: HTMLElement): void {
 export function renderTeamPageMain(statusHtml: string): string {
     const bridge = getAppBridge();
     const hasTeamAccess = bridge.hasTeamAccess();
-    const isCaptain = bridge.isCurrentUserCaptain();
     const body = hasTeamAccess ? renderActiveTeamBlock() : renderNoTeamBlock();
     const rescueButton = hasTeamAccess
-        ? `<button type="button" class="team-action-btn team-action-btn--pink team-rescue-mobile-action" id="teamRescueButton" data-team-rescue-button ${isCaptain ? "" : "disabled"}>СПАСЕНИЕ</button>`
+        ? `<button type="button" class="team-action-btn team-action-btn--pink team-rescue-mobile-action" id="teamRescueButton" data-team-rescue-button>СПАСЕНИЕ</button>`
         : "";
 
     return `
@@ -319,17 +318,6 @@ export function wireTeamPageEvents(root: HTMLElement): void {
             bridge.openTeamOverlayModal("requests");
         });
     }
-
-    root.querySelectorAll<HTMLButtonElement>("[data-team-open-member-profile]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const memberId = button.dataset.teamOpenMemberProfile ?? "";
-            if (!memberId) {
-                return;
-            }
-
-            bridge.openTeamMemberProfile(memberId);
-        });
-    });
 
     root.querySelectorAll<HTMLButtonElement>("[data-team-card-action]").forEach((button) => {
         button.addEventListener("click", () => {

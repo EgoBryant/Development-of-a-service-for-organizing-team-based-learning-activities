@@ -1,4 +1,4 @@
-﻿import "../styles/start.css";
+﻿﻿import "../styles/start.css";
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
