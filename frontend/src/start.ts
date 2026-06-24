@@ -109,6 +109,9 @@ import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
+    collectKnownUserAvatars,
+    enrichRatingTeamsWithKnownAvatars,
+    enrichRatingUsersWithKnownAvatars,
     mergeSessionTeamIntoRatingTeams,
     mergeSessionUserIntoRatingUsers
 } from "./services/ratingSessionData";
@@ -2727,11 +2730,13 @@ function openRatingDashboard(): void {
     appState.dashboardSection = "rating";
     persistDashboardSectionToStorage();
     clearStatus();
-    void refreshRatingWorkspace().then(() => {
-        if (appState.dashboardSection === "rating") {
-            render();
-        }
-    });
+    void refreshTeamWorkspace()
+        .then(() => refreshRatingWorkspace())
+        .then(() => {
+            if (appState.dashboardSection === "rating") {
+                render();
+            }
+        });
     render();
 }
 
@@ -2741,14 +2746,37 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         return;
     }
 
+    if (!appState.teamCatalog.length) {
+        try {
+            appState.teamCatalog = await fetchTeams(token);
+        } catch {
+            appState.teamCatalog = [];
+        }
+    }
+
     const [teams, users] = await Promise.all([
         fetchRatingTeams(token).catch(() => []),
         fetchRatingUsers(token).catch(() => [])
     ]);
 
+    const avatarLookup = collectKnownUserAvatars({
+        teamCatalog: appState.teamCatalog,
+        currentTeam: appState.currentTeam,
+        joinRequests: appState.teamJoinRequests,
+        ratingTeams: teams
+    });
+
+    const enrichedUsers = enrichRatingUsersWithKnownAvatars(users, avatarLookup);
+    const enrichedTeams = enrichRatingTeamsWithKnownAvatars(teams, avatarLookup);
+
     setRatingData(
-        mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam),
-        mergeSessionUserIntoRatingUsers(users, appState.profile)
+        mergeSessionTeamIntoRatingTeams(
+            enrichedTeams,
+            appState.profile,
+            appState.currentTeam,
+            appState.localCreatedTeam
+        ),
+        mergeSessionUserIntoRatingUsers(enrichedUsers, appState.profile)
     );
 }
 
@@ -4418,12 +4446,12 @@ function renderProfileMainHtml(): string {
         const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
         pointsValue = String(actualPoints);
         ratingValue =
-            profile?.personalRating && profile.personalRating > 0
-                ? `${profile.personalRating} место`
+            profile?.personalRank && profile.personalRank > 0
+                ? `${profile.personalRank} место`
                 : "—";
         const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
         leagueValue =
-            rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
+            rawLeagueValue && rawLeagueValue.toUpperCase() !== "БАЗОВАЯ" ? rawLeagueValue : "БАЗОВАЯ";
         fullName = getFullNameDisplay();
         group = getGroupDisplay();
         teamPillText = getEffectiveTeamName() || "КОМАНДА";

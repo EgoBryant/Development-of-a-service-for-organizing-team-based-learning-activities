@@ -10,7 +10,8 @@
 }
 
 .team-rescue-card.profile-modal-card.profile-modal-card--shell,
-.event-success-card.profile-modal-card.profile-modal-card--shell {
+.event-success-card.profile-modal-card.profile-modal-card--shell,
+.team-vote-card.profile-modal-card.profile-modal-card--shell {
     width: 500px;
     height: 500px;
     min-width: 500px;
@@ -21,26 +22,6 @@
     border-radius: 40px;
     background: rgba(240, 245, 255, 1);
     padding: 56px 36px 40px;
-}
-
-.team-vote-card.profile-modal-card.profile-modal-card--shell {
-    width: min(500px, calc(100vw - 48px));
-    max-width: min(500px, calc(100vw - 48px));
-    min-width: 0;
-    height: auto;
-    min-height: 540px;
-    max-height: min(640px, calc(100dvh - 48px));
-    aspect-ratio: auto;
-    border-radius: 40px;
-    background: rgba(240, 245, 255, 1);
-    padding: 44px 28px 32px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    box-sizing: border-box;
-}
-
-.team-vote-card.profile-modal-card.profile-modal-card--shell.team-vote-card--dropdown-open {
-    overflow-y: visible;
 }
 
 .team-requests-card.profile-modal-card.profile-modal-card--shell {
@@ -323,18 +304,10 @@
     -webkit-backdrop-filter: blur(8px);
 }
 
-.event-create-modal .team-rescue-card,
-.event-create-modal .profile-modal-card.profile-modal-card--shell.profile-modal-card--form {
+.event-create-modal .team-rescue-card {
     width: min(100%, 560px);
-    min-width: 0;
-    max-width: 560px;
-    height: 600px;
-    min-height: 600px;
-    max-height: 600px;
-    aspect-ratio: auto;
     padding: 38px 34px 34px;
     gap: 20px;
-    overflow: hidden;
 }
 
 .event-create-modal .team-rescue-form {
@@ -501,25 +474,23 @@
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
-.team-vote-avatar.has-image img {
+.team-vote-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
     display: block;
 }
 
-.team-vote-card .team-vote-role-pill {
+.team-vote-role-pill {
     margin: 0;
     padding: 10px 20px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: inset 0 0 0 1px rgba(143, 159, 207, 0.18);
+    background: rgba(248, 248, 248, 1);
     text-align: center;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: var(--exam-muted);
+    color: rgba(160, 160, 160, 1);
 }
 
 .team-vote-name,
@@ -533,188 +504,6 @@
 
 .team-vote-hint {
     color: #8f9fcf;
-}
-
-.team-vote-controls {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 2px;
-}
-
-.team-vote-display-row {
-    position: relative;
-    width: 100%;
-    min-height: 72px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 6px 14px rgba(34, 79, 155, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 8px 10px 8px 22px;
-    box-sizing: border-box;
-}
-
-.team-vote-display-field {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 56px;
-    padding-left: 4px;
-}
-
-.team-vote-display-value {
-    font-family: "Montserrat", sans-serif;
-    font-size: clamp(22px, 2.2vw, 28px);
-    font-weight: 800;
-    line-height: 1;
-    color: rgba(0, 169, 242, 1);
-}
-
-.team-vote-display-label {
-    font-family: "Montserrat", sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 18px;
-    color: var(--exam-text);
-}
-
-.team-vote-display-icon {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    display: block;
-}
-
-.team-vote-display-placeholder {
-    font-family: "Montserrat", sans-serif;
-    font-size: clamp(24px, 2.4vw, 30px);
-    font-weight: 800;
-    line-height: 1;
-    color: var(--exam-muted);
-}
-
-.team-vote-display-badge {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 118px;
-    height: 56px;
-    padding: 0 22px;
-    border-radius: 999px;
-    background: rgba(230, 240, 255, 0.98);
-    box-shadow: inset 0 0 0 1px rgba(143, 159, 207, 0.16);
-    font-family: "Montserrat", sans-serif;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--exam-muted);
-}
-
-.team-vote-picker-row {
-    width: 100%;
-    display: flex;
-    justify-content: flex-start;
-}
-
-.team-vote-picker {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-}
-
-.team-vote-picker-trigger {
-    width: 100%;
-    min-height: 50px;
-    border: none;
-    border-radius: 999px;
-    padding: 0 44px 0 24px;
-    appearance: none;
-    -webkit-appearance: none;
-    background: var(--exam-button-gradient);
-    color: #ffffff;
-    font-family: "Montserrat", sans-serif;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    cursor: pointer;
-    box-shadow: 0 10px 22px rgba(27, 96, 222, 0.22);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.team-vote-picker-trigger::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid rgba(255, 255, 255, 0.96);
-    transform: translateY(-25%);
-    transition: transform 0.15s ease;
-}
-
-.team-vote-picker.is-open .team-vote-picker-trigger::after {
-    transform: translateY(-35%) rotate(180deg);
-}
-
-.team-vote-picker-trigger:hover,
-.team-vote-picker-trigger:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 14px 28px rgba(27, 96, 222, 0.28);
-    outline: none;
-}
-
-.team-vote-dropdown {
-    display: none;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 6px;
-    margin-top: 8px;
-    padding: 8px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 14px 32px rgba(12, 53, 139, 0.16);
-    border: 1px solid rgba(143, 159, 207, 0.18);
-    box-sizing: border-box;
-}
-
-.team-vote-picker.is-open .team-vote-dropdown {
-    display: grid;
-}
-
-.team-vote-dropdown-option {
-    border: none;
-    border-radius: 999px;
-    min-height: 36px;
-    padding: 0 6px;
-    background: rgba(230, 240, 255, 0.96);
-    color: var(--exam-text);
-    font-family: "Montserrat", sans-serif;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    text-align: center;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
-}
-
-.team-vote-dropdown-option:hover,
-.team-vote-dropdown-option.is-active {
-    background: var(--exam-button-gradient);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(27, 96, 222, 0.2);
 }
 
 .team-vote-score-row {
@@ -886,65 +675,37 @@
     z-index: 50;
 }
 
-.team-rescue-modal.profile-modal--shell .team-rescue-backdrop {
-    border-radius: 40px;
-    background: rgba(23, 45, 157, 0.18);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-}
-
 /* Модалка «Спасение» на вкладке команды — desktop по макету */
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page.profile-modal-card {
     width: min(440px, calc(100vw - 48px));
     max-width: 440px;
-    min-height: min(680px, calc(92dvh - 80px));
-    max-height: min(780px, 92dvh);
-    padding: 44px 28px 98px;
+    min-height: 0;
+    max-height: min(680px, 92dvh);
+    padding: 44px 48px 40px;
     border-radius: 40px;
     background: rgba(240, 245, 255, 1);
     box-shadow: 0 24px 56px rgba(19, 60, 150, 0.18);
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
     align-items: stretch;
     justify-content: flex-start;
     gap: 0;
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page .team-rescue-close {
-    background: var(--exam-button-gradient);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-purpose {
-    margin: 0 0 var(--team-rescue-title-field-gap, 40px);
-    width: 100%;
-    flex: 0 0 auto;
-    text-align: center;
-    font-family: "Montserrat", sans-serif;
-    font-size: 24px;
-    font-weight: 900;
-    letter-spacing: 0.12em;
-    line-height: 1.2;
-    text-transform: uppercase;
-    background: var(--exam-button-gradient);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-dots {
-    margin: 0;
+    margin: 0 0 18px;
     padding-right: 36px;
-    flex: 0 0 auto;
     text-align: center;
     color: rgba(167, 184, 227, 1);
     font-family: "Montserrat", sans-serif;
     font-size: 18px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    line-height: 1.2;
-    text-transform: uppercase;
+    letter-spacing: 0.35em;
+    line-height: 1;
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-title--sr {
@@ -960,504 +721,122 @@
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page {
-    --team-rescue-control-height: 47px;
-    --team-rescue-control-width: 148px;
-    --team-rescue-duo-gap: 12px;
-    --team-rescue-duo-btn-width: calc((100% - var(--team-rescue-duo-gap)) / 2);
-    --team-rescue-title-field-gap: 40px;
-    --team-rescue-field-width: 100%;
-    --team-rescue-block-width: 100%;
-    --team-rescue-btn-font-size: 13px;
-    flex: 1 1 auto;
-    min-height: 0;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--hidden {
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--team,
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--tag,
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-photo-label {
     display: none;
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description {
-    width: var(--team-rescue-field-width);
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea {
     background: rgba(230, 235, 245, 1);
     color: rgba(23, 45, 157, 1);
+    text-align: center;
+    text-transform: uppercase;
     border: none;
-    text-align: left;
-    text-transform: none;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    width: var(--team-rescue-field-width);
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name {
     min-height: 52px;
-    padding: 0 6px 0 20px;
-    border-radius: 26px;
-    background: rgba(230, 235, 245, 1);
-    box-sizing: border-box;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row:focus-within {
-    background: rgba(237, 242, 255, 1);
-    box-shadow: 0 0 0 4px rgba(62, 151, 255, 0.12);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name {
-    flex: 1 1 auto;
-    min-width: 0;
-    width: auto;
-    min-height: 52px;
-    height: auto;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name:focus {
-    background: transparent;
-    box-shadow: none;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown--tag {
-    position: relative;
-    flex: 0 1 auto;
-    width: auto;
-    min-width: 0;
-    max-width: 42%;
-    align-self: stretch;
-    display: flex;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-tag-trigger {
-    width: 100%;
-    max-width: 100%;
-    min-width: 72px;
-    height: 100%;
-    min-height: 52px;
-    padding: 0 14px;
-    overflow: hidden;
-    letter-spacing: 0.06em;
-    border-radius: 22px;
-    justify-content: flex-start;
-    text-align: left;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-tag-trigger-label {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown--tag .team-rescue-dropdown-menu {
-    top: calc(100% + 8px);
-    bottom: auto;
-    left: auto;
-    right: 0;
-    min-width: 196px;
-    z-index: 12;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown--tag .team-rescue-dropdown-option {
-    text-transform: none;
-    font-weight: 800;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 700;
     letter-spacing: 0.08em;
-    white-space: nowrap;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name {
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0;
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name::placeholder {
     color: rgba(167, 184, 227, 1);
-    text-transform: none;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description {
-    flex: 1 1 auto;
-    min-height: 72px;
-    max-height: none;
-    padding: 16px 20px;
-    border-radius: 26px;
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 1.35;
-    resize: none;
-    overflow-y: auto;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description::placeholder {
-    color: rgba(167, 184, 227, 1);
-    text-align: left;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--team-rescue-control-width);
-    align-items: stretch;
-    gap: 12px;
-    width: var(--team-rescue-block-width);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-    min-height: var(--team-rescue-control-height);
-    max-height: calc(var(--team-rescue-control-height) * 2 + 28px);
-    padding: 8px 10px;
-    border-radius: 22px;
-    background: rgba(230, 235, 245, 1);
-    box-sizing: border-box;
-    overflow: hidden;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-count {
-    margin: 0;
-    flex: 0 0 auto;
-    color: rgba(167, 184, 227, 1);
-    font-family: "Montserrat", sans-serif;
-    font-size: 12px;
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea {
+    min-height: 140px;
+    padding: 24px 22px;
+    border-radius: 32px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-align: left;
-    text-transform: lowercase;
+    line-height: 1.4;
+    text-transform: none;
+    resize: none;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list-wrap:not(:has(.team-rescue-attachments-list)) {
-    justify-content: center;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list-wrap:not(:has(.team-rescue-attachments-list)) .team-rescue-attachments-count {
-    padding-left: 10px;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-empty {
-    margin: 0;
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea::placeholder {
     color: rgba(167, 184, 227, 1);
-    font-family: "Montserrat", sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: lowercase;
+    text-align: center;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex: 1 1 auto;
-    min-height: 0;
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-photo-row--mockup {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    overflow-y: auto;
-    scrollbar-width: thin;
+    justify-content: flex-end;
+    margin-top: 2px;
+    background: transparent;
+    box-shadow: none;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list::-webkit-scrollbar {
-    width: 4px;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: rgba(120, 124, 254, 0.35);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachment-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 24px;
-    align-items: center;
-    gap: 8px;
-    min-height: 30px;
-    padding: 4px 8px 4px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: inset 0 0 0 1px rgba(120, 124, 254, 0.08);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachment-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: rgba(23, 45, 157, 1);
-    font-family: "Montserrat", sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    text-align: left;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachment-remove {
-    width: 24px;
-    height: 24px;
-    padding: 0;
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-photo-btn {
+    min-height: 48px;
+    min-width: 148px;
+    padding: 14px 32px;
     border: none;
-    border-radius: 50%;
-    background: rgba(223, 46, 128, 0.12);
-    color: rgba(223, 46, 128, 1);
-    font-size: 16px;
-    line-height: 1;
-    cursor: pointer;
-    transition: background-color 0.15s ease, transform 0.15s ease;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachment-remove:hover {
-    background: rgba(223, 46, 128, 0.2);
-    transform: scale(1.04);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-control-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--team-rescue-control-width);
-    min-width: var(--team-rescue-control-width);
-    height: var(--team-rescue-control-height);
-    min-height: var(--team-rescue-control-height);
-    padding: 0 18px;
-    border: none;
-    border-radius: 999px;
-    background: var(--exam-button-gradient);
+    background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
-    color: rgba(255, 255, 255, 1);
-    font-family: "Montserrat", sans-serif;
-    font-size: var(--team-rescue-btn-font-size);
+    font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    box-sizing: border-box;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-submit,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown-option {
-    font-size: var(--team-rescue-btn-font-size);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-control-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 24px rgba(120, 124, 254, 0.32);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-file-btn {
-    align-self: stretch;
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: stretch;
-    gap: var(--team-rescue-duo-gap);
-    width: var(--team-rescue-block-width);
-    margin-top: 0;
+    gap: 12px;
+    margin-top: 2px;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-dropdown,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-datepicker {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-control-btn {
-    width: 100%;
-    min-width: 0;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-datepicker {
-    position: relative;
-    width: var(--team-rescue-control-width);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown-trigger,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-datepicker-trigger {
-    width: 100%;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown-menu {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 8px);
-    z-index: 8;
-    display: none;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 16px 34px rgba(19, 60, 150, 0.18);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown.is-open .team-rescue-dropdown-menu {
-    display: flex;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown-option {
-    min-height: 40px;
-    padding: 0 14px;
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--duo {
+    min-height: 48px;
+    padding: 14px 18px;
     border: none;
-    border-radius: 999px;
-    background: rgba(237, 242, 255, 1);
-    color: rgba(23, 45, 157, 1);
-    font-family: "Montserrat", sans-serif;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown-option.is-active,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown-option:hover {
-    background: var(--exam-button-gradient);
+    background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     color: rgba(255, 255, 255, 1);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-calendar-popup {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 10px);
-    z-index: 70;
-    transform: translateX(-50%);
-    width: 248px;
-    padding: 12px;
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 20px 44px rgba(19, 60, 150, 0.22);
-    box-sizing: border-box;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-head {
-    display: grid;
-    grid-template-columns: 28px 1fr 28px;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-title {
-    text-align: center;
-    color: rgba(23, 45, 157, 1);
-    font-family: "Montserrat", sans-serif;
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
     font-size: 13px;
     font-weight: 800;
-    letter-spacing: 0.02em;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-nav {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(237, 242, 255, 1);
-    color: rgba(23, 45, 157, 1);
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-weekdays,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 4px;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-weekdays {
-    margin-bottom: 6px;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-weekday {
+    letter-spacing: 0.08em;
     text-align: center;
-    color: rgba(167, 184, 227, 1);
-    font-family: "Montserrat", sans-serif;
-    font-size: 10px;
-    font-weight: 700;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day {
-    min-height: 28px;
-    border: none;
-    border-radius: 999px;
-    background: transparent;
-    color: rgba(23, 45, 157, 1);
-    font-family: "Montserrat", sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day.is-outside-month {
-    color: rgba(167, 184, 227, 0.72);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day.is-today {
-    box-shadow: inset 0 0 0 1px rgba(120, 124, 254, 0.55);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day.is-past,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day:disabled {
-    opacity: 0.34;
-    cursor: not-allowed;
-    pointer-events: none;
-    background: transparent;
-    box-shadow: none;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day.is-past:hover,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day:disabled:hover {
-    background: transparent;
-    color: rgba(167, 184, 227, 0.72);
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-nav:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day.is-selected,
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-calendar-day:hover {
-    background: var(--exam-button-gradient);
-    color: rgba(255, 255, 255, 1);
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--duo::placeholder {
+    color: rgba(255, 255, 255, 0.96);
 }
 
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-submit {
     align-self: center;
-    width: var(--team-rescue-duo-btn-width);
-    min-width: var(--team-rescue-duo-btn-width);
-    max-width: var(--team-rescue-duo-btn-width);
-    height: var(--team-rescue-control-height);
-    min-height: var(--team-rescue-control-height);
-    margin-top: calc(var(--team-rescue-title-field-gap) - 12px);
-    margin-bottom: 0;
-    padding: 0 18px;
+    width: min(100%, 248px);
+    min-width: 220px;
+    min-height: 48px;
+    margin-top: 8px;
+    padding: 14px 42px;
     border: none;
-    background: var(--exam-button-gradient);
+    background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     box-shadow: 0 10px 24px rgba(120, 124, 254, 0.28);
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.1em;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description:focus {
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name:focus,
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea:focus {
     border-color: transparent;
     background: rgba(237, 242, 255, 1);
     box-shadow: 0 0 0 4px rgba(62, 151, 255, 0.12);
+}
+
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--duo:focus {
+    background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
+    box-shadow: 0 10px 24px rgba(120, 124, 254, 0.32);
 }

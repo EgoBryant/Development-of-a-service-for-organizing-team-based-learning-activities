@@ -151,9 +151,8 @@ using (var scope = app.Services.CreateScope())
         .GetRequiredService<ILoggerFactory>()
         .CreateLogger("DatabaseStartup");
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-    await InitializeDatabaseAsync(app, dbContext, passwordHasher, logger, connectionString);
+    await InitializeDatabaseAsync(app, dbContext, logger, connectionString);
 }
 
 if (app.Environment.IsDevelopment())
@@ -217,7 +216,6 @@ app.Run();
 static async Task InitializeDatabaseAsync(
     WebApplication app,
     AppDbContext dbContext,
-    IPasswordHasher<User> passwordHasher,
     ILogger logger,
     string connectionString)
 {
@@ -230,7 +228,7 @@ static async Task InitializeDatabaseAsync(
         {
             await dbContext.Database.MigrateAsync();
             await DatabaseSchemaRepair.ApplyAsync(dbContext, logger);
-            await SeedData.InitializeAsync(dbContext, passwordHasher);
+            await SeedData.InitializeAsync(dbContext);
             logger.LogInformation("Database migration and seed completed successfully.");
             return;
         }

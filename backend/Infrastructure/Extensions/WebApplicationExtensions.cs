@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using TeamExamProject.Data;
-using TeamExamProject.Models;
 
 namespace TeamExamProject.Infrastructure.Extensions;
 
@@ -20,9 +18,8 @@ public static class WebApplicationExtensions
             .GetRequiredService<ILoggerFactory>()
             .CreateLogger("DatabaseStartup");
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-        await InitializeDatabaseCoreAsync(app, dbContext, passwordHasher, logger, connectionString);
+        await InitializeDatabaseCoreAsync(app, dbContext, logger, connectionString);
     }
 
     public static WebApplication UseApplicationPipeline(this WebApplication app)
@@ -58,7 +55,6 @@ public static class WebApplicationExtensions
     private static async Task InitializeDatabaseCoreAsync(
         WebApplication app,
         AppDbContext dbContext,
-        IPasswordHasher<User> passwordHasher,
         ILogger logger,
         string connectionString)
     {
@@ -70,7 +66,7 @@ public static class WebApplicationExtensions
             try
             {
                 await dbContext.Database.MigrateAsync();
-                await SeedData.InitializeAsync(dbContext, passwordHasher);
+                await SeedData.InitializeAsync(dbContext);
                 logger.LogInformation("Database migration and seed completed successfully.");
                 return;
             }

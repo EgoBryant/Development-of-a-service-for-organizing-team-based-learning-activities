@@ -1019,6 +1019,41 @@
     overflow: hidden;
 }
 
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-leaderboard-tab.is-active {
+    background: transparent;
+    color: rgba(55, 100, 180, 1);
+    box-shadow: none;
+}
+
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-leaderboard-tab:not(.is-active) {
+    background: var(--exam-button-gradient);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(120, 124, 254, 0.28);
+}
+
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-toolbar {
+    background: rgba(240, 245, 255, 0.98);
+    box-shadow: 0 8px 20px rgba(33, 78, 154, 0.1);
+}
+
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-list-row--user,
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-list-row--clickable.rating-list-row--user {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 8px 18px rgba(33, 78, 154, 0.1);
+}
+
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-list-row--user .rating-list-points {
+    background: rgba(240, 245, 255, 1);
+    color: rgba(78, 95, 205, 1);
+    box-shadow: none;
+}
+
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-user-podium-points {
+    background: rgba(255, 255, 255, 0.98);
+    color: rgba(78, 95, 205, 1);
+    box-shadow: 0 10px 22px rgba(60, 80, 200, 0.14);
+}
+
 .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-hero-card,
 .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-achievements {
     border-radius: 0;
