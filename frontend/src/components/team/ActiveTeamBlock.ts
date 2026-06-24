@@ -17,6 +17,7 @@ function renderTeamHistoryPointsBadge(pointsLabel?: string): string {
     return `
         <span class="team-history-row-points">
             <span class="team-history-row-points-value">${escapeHtml(value)}</span>
+            <span class="team-history-row-points-label">баллов</span>
             <img src="${escapeHtml(scoreIconUrl)}" alt="" class="team-history-row-points-icon" aria-hidden="true">
         </span>`;
 }
@@ -27,7 +28,7 @@ export function renderActiveTeamBlock(): string {
     const members = bridge.getTeamMembers();
     const isCaptain = bridge.isCurrentUserCaptain();
     const history = bridge.getTeamHistory();
-    const krk = bridge.getTeamKrk();
+    const teamScore = bridge.getTeamScore();
 
     const memberCards = members
         .map((member, index) => {
@@ -75,11 +76,11 @@ export function renderActiveTeamBlock(): string {
                 <div class="team-topbar">
                     <div class="team-topbar-tabs">
                         <span class="team-topbar-tab team-topbar-tab--name">${escapeHtml(title)}</span>
-                        <button type="button" class="team-topbar-tab team-topbar-tab--active" id="teamOpenRequestsHeaderButton">ЗАЯВКИ</button>
+                        <button type="button" class="team-topbar-tab team-topbar-tab--active" id="teamOpenRequestsHeaderButton" aria-label="Заявки">ЗАЯВКИ</button>
                     </div>
                     <div class="team-topbar-krk">
-                        <span class="team-topbar-krk-label"><span class="team-topbar-krk-label-text">КРК</span></span>
-                        <span class="team-topbar-krk-value">${escapeHtml(krk)}</span>
+                        <span class="team-topbar-krk-label" aria-hidden="true"><span class="team-topbar-krk-label-text">БАЛЛЫ</span></span>
+                        <span class="team-topbar-krk-value">${escapeHtml(teamScore)}</span>
                     </div>
                 </div>
 

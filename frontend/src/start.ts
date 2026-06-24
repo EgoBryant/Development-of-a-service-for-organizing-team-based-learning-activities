@@ -186,6 +186,14 @@ const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
+const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 767px)";
+const MOBILE_BOTTOM_NAV_CLOSED_HEIGHT = 76;
+const MOBILE_BOTTOM_NAV_OPEN_HEIGHT = 116;
+const MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY = 1.35;
+const MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX = 10;
+const MOBILE_BOTTOM_NAV_FLING_VELOCITY = 0.32;
+const MOBILE_MENU_SNAP_MS = 680;
+const MOBILE_MENU_DRAG_SMOOTHING = 0.38;
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 
 void bootstrap();
@@ -3542,7 +3550,8 @@ function renderProfileView(): void {
                 <span aria-hidden="true"></span>
             </button>
             <div class="profile-menu-backdrop" data-profile-menu-close aria-hidden="true"></div>
-            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы">
+            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы" aria-expanded="false">
+                <div class="profile-sidebar-swipe-handle" aria-hidden="true"></div>
                 <nav class="profile-nav-top">
                     <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile"><img class="profile-nav-icon" src="${profileMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПРОФИЛЬ</span></button>
                     <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team"><img class="profile-nav-icon" src="${teamMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">КОМАНДА</span></button>
@@ -3591,86 +3600,168 @@ function wireMobileProfileMenu(): void {
     const menuButton = profileMount.querySelector("#profileMobileMenuButton");
     const backdrop = profileMount.querySelector("[data-profile-menu-close]");
     const sidebar = profileMount.querySelector<HTMLElement>("#profileDashboardMenu");
-    const navTop = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-top");
     const navBottom = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-bottom");
 
-    if (!profileApp || !isHTMLButtonElement(menuButton) || !sidebar || !navTop || !navBottom) {
+    if (!profileApp || !sidebar || !navBottom) {
         return;
     }
 
+    let startX = 0;
     let startY = 0;
     let activePointerId: number | null = null;
     let dragMode: "open" | "close" | null = null;
     let dragHeights: { closed: number; open: number } | null = null;
     let dragStartedOpen = false;
     let isDragging = false;
+    let suppressNavClickUntil = 0;
+    let lastProgress = 0;
+    let displayedProgress = 0;
+    let targetProgress = 0;
+    let snapTimer: number | null = null;
+    let dragFrameId: number | null = null;
+    let lastDragFrameTime = 0;
+    let lastMoveY = 0;
+    let lastMoveTime = 0;
+    let velocityY = 0;
 
-    const clearDragStyles = (): void => {
-        profileApp.classList.remove("is-mobile-menu-dragging");
-        sidebar.style.removeProperty("height");
-        sidebar.style.removeProperty("min-height");
-        sidebar.style.removeProperty("max-height");
-        sidebar.style.removeProperty("grid-template-rows");
-        sidebar.style.removeProperty("gap");
-        sidebar.style.removeProperty("transform");
-        navBottom.style.removeProperty("max-height");
-        navBottom.style.removeProperty("opacity");
-        navBottom.style.removeProperty("transform");
-        navBottom.style.removeProperty("pointer-events");
+    const isBottomNavLayout = (): boolean => window.matchMedia(MOBILE_BOTTOM_NAV_QUERY).matches;
+
+    const getMenuHeights = (): { closed: number; open: number } => ({
+        closed: MOBILE_BOTTOM_NAV_CLOSED_HEIGHT,
+        open: MOBILE_BOTTOM_NAV_OPEN_HEIGHT
+    });
+
+    const clampProgress = (value: number): number => Math.min(Math.max(value, 0), 1);
+
+    const updateMenuAria = (isOpen: boolean): void => {
+        if (isHTMLButtonElement(menuButton)) {
+            menuButton.setAttribute("aria-expanded", String(isOpen));
+            menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
+        }
+        sidebar.setAttribute("aria-expanded", String(isOpen));
+    };
+
+    const clearInlineMenuProgress = (): void => {
+        profileApp.style.removeProperty("--menu-progress");
         profileApp.style.removeProperty("touch-action");
         sidebar.style.removeProperty("touch-action");
     };
 
-    const applyMenuDragState = (height: number, heights: { closed: number; open: number }): void => {
-        const delta = Math.max(heights.open - heights.closed, 1);
-        const progress = Math.min(Math.max((height - heights.closed) / delta, 0), 1);
-        const topHeight = Math.max(Math.round(navTop.getBoundingClientRect().height), 38);
-        const bottomHeight = Math.max(Math.round(navBottom.scrollHeight), 38);
-        const bottomVisibleHeight = Math.round(bottomHeight * progress);
-
+    const applyMenuProgress = (progress: number): void => {
+        lastProgress = clampProgress(progress);
         profileApp.classList.add("is-mobile-menu-dragging");
-        sidebar.style.height = `${height}px`;
-        sidebar.style.minHeight = `${height}px`;
-        sidebar.style.maxHeight = `${height}px`;
-        sidebar.style.gridTemplateRows = `${topHeight}px ${bottomVisibleHeight}px`;
-        sidebar.style.gap = `${12 * progress}px`;
-        sidebar.style.transform = `translateY(${18 * (1 - progress)}px)`;
-        navBottom.style.maxHeight = `${bottomVisibleHeight}px`;
-        navBottom.style.opacity = progress.toFixed(3);
-        navBottom.style.transform = `translateY(${8 * (1 - progress)}px)`;
-        navBottom.style.pointerEvents = progress > 0.98 ? "auto" : "none";
+        profileApp.style.setProperty("--menu-progress", lastProgress.toFixed(4));
         profileApp.style.touchAction = "none";
+        sidebar.style.touchAction = "none";
     };
 
-    const getMenuHeights = (): { closed: number; open: number } => {
-        const wasOpen = profileApp.classList.contains("is-mobile-menu-open");
-        const currentHeight = Math.round(sidebar.getBoundingClientRect().height);
+    const stopDragAnimation = (): void => {
+        if (dragFrameId !== null) {
+            window.cancelAnimationFrame(dragFrameId);
+            dragFrameId = null;
+        }
+    };
 
-        if (wasOpen) {
-            profileApp.classList.remove("is-mobile-menu-dragging");
-            clearDragStyles();
-            profileApp.classList.remove("is-mobile-menu-open");
-            const closedHeight = Math.round(sidebar.getBoundingClientRect().height);
-            profileApp.classList.add("is-mobile-menu-open");
-            return { closed: closedHeight, open: currentHeight };
+    const runDragAnimation = (timestamp: number): void => {
+        if (lastDragFrameTime === 0) {
+            lastDragFrameTime = timestamp;
         }
 
-        profileApp.classList.add("is-mobile-menu-open");
-        const openHeight = Math.round(sidebar.getBoundingClientRect().height);
-        profileApp.classList.remove("is-mobile-menu-open");
-        return { closed: currentHeight, open: openHeight };
+        const frameDelta = Math.min(Math.max(timestamp - lastDragFrameTime, 8), 32);
+        lastDragFrameTime = timestamp;
+        const smoothing = 1 - Math.pow(1 - MOBILE_MENU_DRAG_SMOOTHING, frameDelta / 16.67);
+        displayedProgress += (targetProgress - displayedProgress) * smoothing;
+
+        if (Math.abs(targetProgress - displayedProgress) < 0.001) {
+            displayedProgress = targetProgress;
+            applyMenuProgress(displayedProgress);
+            dragFrameId = null;
+            lastDragFrameTime = 0;
+            return;
+        }
+
+        applyMenuProgress(displayedProgress);
+        dragFrameId = window.requestAnimationFrame(runDragAnimation);
     };
 
-    const setMenuOpen = (isOpen: boolean): void => {
-        clearDragStyles();
+    const setTargetProgress = (progress: number): void => {
+        targetProgress = clampProgress(progress);
+        if (dragFrameId === null) {
+            lastDragFrameTime = 0;
+            dragFrameId = window.requestAnimationFrame(runDragAnimation);
+        }
+    };
+
+    const readCurrentMenuProgress = (): number => {
+        const inlineProgress = profileApp.style.getPropertyValue("--menu-progress");
+        if (inlineProgress) {
+            const parsed = Number.parseFloat(inlineProgress);
+            if (Number.isFinite(parsed)) {
+                return clampProgress(parsed);
+            }
+        }
+
+        return profileApp.classList.contains("is-mobile-menu-open") ? 1 : 0;
+    };
+
+    const cancelSnapAnimation = (): void => {
+        if (snapTimer !== null) {
+            window.clearTimeout(snapTimer);
+            snapTimer = null;
+        }
+
+        profileApp.classList.remove("is-mobile-menu-snapping");
+    };
+
+    const setMenuOpenInstant = (isOpen: boolean): void => {
+        cancelSnapAnimation();
+        stopDragAnimation();
+        profileApp.classList.remove("is-mobile-menu-dragging");
+        profileApp.classList.remove("is-mobile-menu-snapping");
         profileApp.classList.toggle("is-mobile-menu-open", isOpen);
-        menuButton.setAttribute("aria-expanded", String(isOpen));
-        menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
+        updateMenuAria(isOpen);
+        clearInlineMenuProgress();
+        lastProgress = isOpen ? 1 : 0;
+        displayedProgress = lastProgress;
+        targetProgress = lastProgress;
     };
 
-    menuButton.addEventListener("click", () => {
-        setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
-    });
+    const snapMenuTo = (targetProgressValue: number): void => {
+        cancelSnapAnimation();
+        stopDragAnimation();
+
+        const target = clampProgress(targetProgressValue);
+        profileApp.classList.remove("is-mobile-menu-dragging");
+        profileApp.classList.add("is-mobile-menu-snapping");
+        profileApp.style.setProperty("--menu-progress", displayedProgress.toFixed(4));
+
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                profileApp.style.setProperty("--menu-progress", target.toFixed(4));
+            });
+        });
+
+        snapTimer = window.setTimeout(() => {
+            snapTimer = null;
+            setMenuOpenInstant(target >= 0.5);
+        }, MOBILE_MENU_SNAP_MS);
+    };
+
+    const setMenuOpen = (isOpen: boolean, animate = true): void => {
+        const target = isOpen ? 1 : 0;
+        if (!animate || Math.abs(lastProgress - target) < 0.02) {
+            setMenuOpenInstant(isOpen);
+            return;
+        }
+
+        snapMenuTo(target);
+    };
+
+    if (isHTMLButtonElement(menuButton)) {
+        menuButton.addEventListener("click", () => {
+            setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
+        });
+    }
 
     if (backdrop instanceof HTMLElement) {
         backdrop.addEventListener("click", () => {
@@ -3679,13 +3770,117 @@ function wireMobileProfileMenu(): void {
     }
 
     profileMount.querySelectorAll<HTMLButtonElement>(".profile-sidebar .profile-nav-button").forEach((button) => {
-        button.addEventListener("click", () => {
-            setMenuOpen(false);
+        button.addEventListener("click", (event) => {
+            if (Date.now() < suppressNavClickUntil) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+            }
+
+            if (profileApp.classList.contains("is-mobile-menu-open")) {
+                setMenuOpen(false);
+            }
         });
     });
 
-    profileApp.addEventListener("pointerdown", (event: PointerEvent) => {
-        if (!window.matchMedia(MOBILE_AUTH_QUERY).matches || event.pointerType === "mouse" || event.button !== 0) {
+    const resetGesture = (): void => {
+        activePointerId = null;
+        dragMode = null;
+        dragHeights = null;
+        isDragging = false;
+    };
+
+    const updateGesture = (clientX: number, clientY: number, preventDefault?: () => void): void => {
+        if (!dragMode || !dragHeights) {
+            return;
+        }
+
+        const deltaY = startY - clientY;
+        const deltaX = clientX - startX;
+
+        if (!isDragging) {
+            if (Math.abs(deltaY) < 4) {
+                return;
+            }
+
+            if (Math.abs(deltaY) <= Math.abs(deltaX) * 0.85) {
+                return;
+            }
+
+            isDragging = true;
+            preventDefault?.();
+        }
+
+        preventDefault?.();
+
+        const now = performance.now();
+        if (lastMoveTime > 0) {
+            const moveDelta = now - lastMoveTime;
+            if (moveDelta > 0) {
+                velocityY = (lastMoveY - clientY) / moveDelta;
+            }
+        }
+        lastMoveY = clientY;
+        lastMoveTime = now;
+
+        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
+        const distance = Math.max(rawDistance, 0) * MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY;
+        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
+        const progress =
+            dragMode === "open"
+                ? clampProgress(distance / maxDistance)
+                : clampProgress(1 - distance / maxDistance);
+
+        setTargetProgress(progress);
+    };
+
+    const finishGesture = (clientX: number, clientY: number): void => {
+        if (activePointerId === null) {
+            return;
+        }
+
+        if (!dragMode || !dragHeights) {
+            activePointerId = null;
+            return;
+        }
+
+        stopDragAnimation();
+        displayedProgress = targetProgress;
+        lastProgress = displayedProgress;
+
+        const deltaY = startY - clientY;
+        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
+        const distance = Math.max(rawDistance, 0) * MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY;
+        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
+        const progress = clampProgress(distance / maxDistance);
+
+        if (isDragging) {
+            suppressNavClickUntil = Date.now() + 450;
+        }
+
+        let shouldOpen = dragStartedOpen;
+        if (isDragging && dragMode === "open") {
+            shouldOpen =
+                velocityY >= MOBILE_BOTTOM_NAV_FLING_VELOCITY ||
+                distance >= MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX ||
+                progress >= 0.2 ||
+                lastProgress >= 0.55;
+        } else if (isDragging && dragMode === "close") {
+            shouldOpen = !(
+                velocityY <= -MOBILE_BOTTOM_NAV_FLING_VELOCITY ||
+                distance >= MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX ||
+                progress >= 0.2 ||
+                lastProgress <= 0.45
+            );
+        }
+
+        activePointerId = null;
+        resetGesture();
+        setMenuOpen(shouldOpen, isDragging);
+    };
+
+    const onPointerDown = (event: PointerEvent): void => {
+        if (!isBottomNavLayout() || event.pointerType === "mouse" && event.button !== 0) {
             return;
         }
 
@@ -3694,90 +3889,44 @@ function wireMobileProfileMenu(): void {
         }
 
         const target = event.target;
-        if (!(target instanceof Element)) {
-            return;
-        }
-
-        if (target.closest(".profile-nav-button, .profile-modal, button, input, textarea, select, a")) {
+        if (!(target instanceof Element) || target.closest(".profile-modal")) {
             return;
         }
 
         const isOpen = profileApp.classList.contains("is-mobile-menu-open");
-        const appRect = profileApp.getBoundingClientRect();
-        const sidebarRect = sidebar.getBoundingClientRect();
-        const isNearBottom = event.clientY >= appRect.bottom - 160;
-        const isInsideSidebar = event.clientY >= sidebarRect.top - 18;
+        cancelSnapAnimation();
+        stopDragAnimation();
 
-        if ((!isOpen && !isNearBottom) || (isOpen && !isInsideSidebar)) {
-            return;
-        }
-
+        startX = event.clientX;
         startY = event.clientY;
         activePointerId = event.pointerId;
         dragStartedOpen = isOpen;
         dragMode = isOpen ? "close" : "open";
         dragHeights = getMenuHeights();
         isDragging = false;
-        profileApp.style.touchAction = "none";
-        sidebar.style.touchAction = "none";
-        event.preventDefault();
-        sidebar.setPointerCapture(event.pointerId);
-    });
+        lastMoveY = event.clientY;
+        lastMoveTime = 0;
+        velocityY = 0;
+        lastProgress = readCurrentMenuProgress();
+        displayedProgress = lastProgress;
+        targetProgress = lastProgress;
 
-    profileApp.addEventListener("pointermove", (event: PointerEvent) => {
-        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
-            return;
+        try {
+            sidebar.setPointerCapture(event.pointerId);
+        } catch {
+            // Ignore capture errors on unsupported targets.
         }
-
-        const deltaY = startY - event.clientY;
-        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
-        const distance = Math.max(rawDistance, 0);
-        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
-        const nextHeight =
-            dragMode === "open"
-                ? Math.min(dragHeights.closed + distance, dragHeights.open)
-                : Math.max(dragHeights.open - distance, dragHeights.closed);
-
-        if (distance > 4) {
-            isDragging = true;
-            event.preventDefault();
-        }
-
-        applyMenuDragState(nextHeight, dragHeights);
-
-        if (distance >= maxDistance) {
-            applyMenuDragState(dragMode === "open" ? dragHeights.open : dragHeights.closed, dragHeights);
-        }
-    });
-
-    const finishSwipe = (event: PointerEvent): void => {
-        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
-            return;
-        }
-
-        const deltaY = startY - event.clientY;
-        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
-        const distance = Math.max(rawDistance, 0);
-        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
-        const shouldOpen =
-            dragMode === "open"
-                ? isDragging && distance / maxDistance > 0.35
-                : !(isDragging && distance / maxDistance > 0.35);
-
-        if (sidebar.hasPointerCapture(event.pointerId)) {
-            sidebar.releasePointerCapture(event.pointerId);
-        }
-
-        activePointerId = null;
-        dragMode = null;
-        dragHeights = null;
-        dragStartedOpen = false;
-        isDragging = false;
-        setMenuOpen(shouldOpen);
     };
 
-    profileApp.addEventListener("pointerup", finishSwipe);
-    profileApp.addEventListener("pointercancel", (event: PointerEvent) => {
+    const onPointerMove = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        updateGesture(event.clientX, event.clientY, () => event.preventDefault());
+    };
+
+    const onPointerUp = (event: PointerEvent): void => {
         if (activePointerId !== event.pointerId) {
             return;
         }
@@ -3786,14 +3935,26 @@ function wireMobileProfileMenu(): void {
             sidebar.releasePointerCapture(event.pointerId);
         }
 
-        activePointerId = null;
-        dragMode = null;
-        dragHeights = null;
-        const fallbackOpenState = dragStartedOpen;
-        dragStartedOpen = false;
-        isDragging = false;
-        setMenuOpen(fallbackOpenState);
-    });
+        finishGesture(event.clientX, event.clientY);
+    };
+
+    const onPointerCancel = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        if (sidebar.hasPointerCapture(event.pointerId)) {
+            sidebar.releasePointerCapture(event.pointerId);
+        }
+
+        setMenuOpenInstant(dragStartedOpen);
+        resetGesture();
+    };
+
+    sidebar.addEventListener("pointerdown", onPointerDown, { passive: false });
+    sidebar.addEventListener("pointermove", onPointerMove, { passive: false });
+    sidebar.addEventListener("pointerup", onPointerUp, { passive: false });
+    sidebar.addEventListener("pointercancel", onPointerCancel, { passive: false });
 }
 
 function wireProfileViewEvents(): void {
