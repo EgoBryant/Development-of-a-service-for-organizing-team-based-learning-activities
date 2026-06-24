@@ -2096,19 +2096,19 @@ function syncEventsFeedTabsIndicator(options?: { instant?: boolean }): void {
     }
 
     const indicator = tabsRoot.querySelector<HTMLElement>(".events-feed-tabs-indicator");
-    const activeTab = tabsRoot.querySelector<HTMLElement>(".events-feed-tab.is-active");
-    if (!indicator || !activeTab) {
+    const highlightedTab = tabsRoot.querySelector<HTMLElement>(".events-feed-tab:not(.is-active)");
+    if (!indicator || !highlightedTab) {
         return;
     }
 
     const applyPosition = (): void => {
         const tabsRect = tabsRoot.getBoundingClientRect();
-        const activeRect = activeTab.getBoundingClientRect();
-        const x = activeRect.left - tabsRect.left;
-        const y = activeRect.top - tabsRect.top;
+        const highlightedRect = highlightedTab.getBoundingClientRect();
+        const x = highlightedRect.left - tabsRect.left;
+        const y = highlightedRect.top - tabsRect.top;
 
-        indicator.style.width = `${activeRect.width}px`;
-        indicator.style.height = `${activeRect.height}px`;
+        indicator.style.width = `${highlightedRect.width}px`;
+        indicator.style.height = `${highlightedRect.height}px`;
         indicator.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     };
 
@@ -2210,13 +2210,6 @@ function wireEventsDashboardEvents(): void {
     if (isHTMLButtonElement(openCreate)) {
         openCreate.addEventListener("click", () => {
             openEventsCreateModal();
-        });
-    }
-
-    const openCreateNews = profileMount.querySelector("#eventsOpenCreateNewsButton");
-    if (isHTMLButtonElement(openCreateNews)) {
-        openCreateNews.addEventListener("click", () => {
-            openNewsCreateModal();
         });
     }
 
@@ -2496,10 +2489,9 @@ function wireEventsModalEvents(): void {
                     body: draft.body,
                     authorName: getNewsAuthorDisplayName()
                 });
-                appState.eventsFeedTab = "news";
                 closeNewsCreateModal();
                 setStatus("Новость опубликована.");
-                setEventsFeedTab("news", { forceRender: true });
+                setEventsFeedTab("activity", { forceRender: true });
             });
         }
 

@@ -759,12 +759,6 @@
         overflow-wrap: anywhere;
     }
 
-    .events-news-toolbar {
-        padding: 12px;
-        align-items: flex-start;
-        overflow-y: auto;
-    }
-
     .profile-modal--shell,
     .profile-modal--achievement,
     .profile-modal--team {

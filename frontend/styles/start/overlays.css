@@ -304,10 +304,18 @@
     -webkit-backdrop-filter: blur(8px);
 }
 
-.event-create-modal .team-rescue-card {
+.event-create-modal .team-rescue-card,
+.event-create-modal .profile-modal-card.profile-modal-card--shell.profile-modal-card--form {
     width: min(100%, 560px);
+    min-width: 0;
+    max-width: 560px;
+    height: 600px;
+    min-height: 600px;
+    max-height: 600px;
+    aspect-ratio: auto;
     padding: 38px 34px 34px;
     gap: 20px;
+    overflow: hidden;
 }
 
 .event-create-modal .team-rescue-form {

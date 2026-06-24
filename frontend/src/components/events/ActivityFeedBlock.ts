@@ -1,40 +1,28 @@
-import postImageUrl from "../../assets/icons/Post.png";
+import { getNewsFeedItems } from "../../state/newsFeedState";
+import type { NewsPost } from "../../types/news";
 import { escapeHtml } from "../../utils/html";
 
-function renderActivityFeatured(): string {
+function renderActivityRow(item: NewsPost): string {
+    const text = item.body.trim() || item.title.trim();
+    const badgeHtml = item.pointsLabel
+        ? `<span class="events-feed-list-badge">${escapeHtml(item.pointsLabel)}</span>`
+        : "";
+
     return `
-        <article class="events-feed-feature-card" aria-label="Что такое КРК">
-            <div class="events-feed-feature">
-                <div class="events-feed-feature-head">
-                    <div class="events-feed-feature-media">
-                        <img src="${escapeHtml(postImageUrl)}" alt="" width="1456" height="720" loading="lazy">
-                    </div>
-                    <div class="events-feed-feature-lead">
-                        <h3 class="events-feed-feature-title">ЧТО ТАКОЕ КРК?</h3>
-                        <p class="events-feed-feature-intro">
-                            Привет! Ты уже в игре, а значит, пришло время узнать, как устроен наш главный
-                            показатель — КРК, или Командный Рейтинговый Коэффициент.
-                        </p>
-                    </div>
-                </div>
-                <div class="events-feed-feature-body">
-                    <p class="events-feed-feature-text">
-                        Система вычисляет его автоматически по прозрачной формуле. Большая часть, целых 60%, приходится
-                        на ваш базовый рейтинг. Еще 30% составляет коэффициент сплочённости, который оценивает вашу
-                        активность и взаимодействие внутри коллектива. Остальные 10% — это бонусный коэффициент,
-                        который вы лично зарабатываете за выполнение челленджей, получение ачивок и спасение других
-                        команд. Именно КРК определяет ваше место в таблице рейтинга всех студентов и автоматически
-                        присваивает вам лигу от «Новичка» до «Легенды».
-                    </p>
-                    <p class="events-feed-feature-text events-feed-feature-text--footer">
-                        Прокачивайте свой КРК, поднимайтесь в топ-10 игроков и ведите команду к победе!
-                    </p>
-                </div>
-            </div>
-        </article>`;
+        <li class="events-feed-list-item" role="listitem">
+            <p class="events-feed-list-text">${escapeHtml(text)}</p>
+            ${badgeHtml}
+        </li>`;
 }
 
 export function renderActivityFeedPanel(isVisible: boolean): string {
+    const items = getNewsFeedItems();
+    const rowsHtml = items.length
+        ? items.map(renderActivityRow).join("")
+        : `<li class="events-feed-list-item events-feed-list-item--empty" role="listitem">
+                <p class="events-feed-list-text">Пока нет записей.</p>
+           </li>`;
+
     return `
         <div
             class="events-feed-panel events-feed-panel--activity"
@@ -43,6 +31,8 @@ export function renderActivityFeedPanel(isVisible: boolean): string {
             aria-labelledby="eventsFeedTabActivity"
             ${isVisible ? "" : "hidden"}
         >
-            ${renderActivityFeatured()}
+            <ul class="events-feed-list events-feed-list--cards" role="list">
+                ${rowsHtml}
+            </ul>
         </div>`;
 }

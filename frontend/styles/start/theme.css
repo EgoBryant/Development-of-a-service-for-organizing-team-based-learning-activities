@@ -217,9 +217,10 @@
     height: var(--events-feed-block-height);
     min-height: var(--events-feed-block-height);
     max-height: var(--events-feed-block-height);
+    align-self: flex-end;
     margin-top: auto;
     margin-right: 0;
-    width: calc(100% - var(--events-content-inline-pad));
+    width: 100%;
     max-width: none;
     box-sizing: border-box;
     overflow: hidden;
@@ -522,7 +523,6 @@
 .team-member-action:hover,
 .team-top-pill:hover,
 .team-rescue-pill:hover,
-.events-news-add-btn:hover,
 .profile-pill-wide:hover {
     transform: translateY(-2px);
     box-shadow: 0 18px 32px rgba(27, 96, 222, 0.24);
@@ -1145,7 +1145,6 @@
 .rating-profile-tab.is-active,
 .rating-filter-option.is-active,
 .rating-filter-option:hover,
-.events-news-add-btn,
 .events-calendar-create-btn,
 .events-calendar-scope-btn.is-active,
 .events-calendar-event-pill,
