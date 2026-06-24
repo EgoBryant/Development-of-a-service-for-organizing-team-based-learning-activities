@@ -13,7 +13,8 @@ public enum TeamJoinRequestResultType
     AlreadyPending,
     InvalidStatus,
     Forbidden,
-    ApplicantAlreadyInTeam
+    ApplicantAlreadyInTeam,
+    TeamFull
 }
 
 public sealed class TeamJoinRequestResult

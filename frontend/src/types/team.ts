@@ -21,6 +21,11 @@ export interface TeamMemberView {
     voteScore?: number | null;
 }
 
+export interface TeamRescueAttachment {
+    id: string;
+    name: string;
+}
+
 export interface TeamRescueDraft {
     targetTeamId: string;
     topic: string;
@@ -28,7 +33,7 @@ export interface TeamRescueDraft {
     description: string;
     league: string;
     deadline: string;
-    photoFileName: string;
+    attachments: TeamRescueAttachment[];
 }
 
 export interface TeamMemberRow {

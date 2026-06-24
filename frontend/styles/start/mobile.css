@@ -831,6 +831,135 @@
         overflow: hidden;
     }
 
+    .team-vote-card.profile-modal-card.profile-modal-card--shell,
+    .profile-modal-card.profile-modal-card--shell.team-vote-card {
+        width: min(calc(100vw - 24px), 340px);
+        height: auto;
+        min-width: 0;
+        min-height: 0;
+        max-width: min(calc(100vw - 24px), 340px);
+        max-height: min(calc(100dvh - 24px), 560px);
+        aspect-ratio: auto;
+        padding: 28px 14px 18px;
+        padding-top: 28px;
+        gap: 10px;
+        border-radius: 24px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .team-vote-card .profile-shell-title {
+        margin: 0 0 2px;
+        width: 100%;
+        box-sizing: border-box;
+        padding-inline: 32px;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+    }
+
+    .team-vote-card .profile-modal-close-btn {
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .team-vote-card .profile-modal-close-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .team-vote-card .team-vote-hero {
+        gap: 8px;
+    }
+
+    .team-vote-card .team-vote-avatar {
+        width: min(84px, 22vw);
+        border-radius: 18px;
+    }
+
+    .team-vote-card .team-vote-role-pill {
+        padding: 7px 14px;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+    }
+
+    .team-vote-card .team-vote-name {
+        font-size: 10px;
+        line-height: 1.25;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    .team-vote-card .team-vote-hint {
+        font-size: 10px;
+        line-height: 1.35;
+    }
+
+    .team-vote-card .team-vote-controls {
+        gap: 12px;
+    }
+
+    .team-vote-card .team-vote-display-row {
+        min-height: 64px;
+        padding: 6px 8px 6px 16px;
+    }
+
+    .team-vote-card .team-vote-display-field {
+        min-height: 50px;
+        gap: 6px;
+    }
+
+    .team-vote-card .team-vote-display-value {
+        font-size: 22px;
+    }
+
+    .team-vote-card .team-vote-display-label {
+        font-size: 16px;
+        line-height: 16px;
+    }
+
+    .team-vote-card .team-vote-display-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .team-vote-card .team-vote-display-badge {
+        min-width: 96px;
+        height: 50px;
+        padding: 0 16px;
+        font-size: 10px;
+    }
+
+    .team-vote-card .team-vote-picker {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .team-vote-card .team-vote-picker-trigger {
+        min-height: 44px;
+        padding-right: 38px;
+        font-size: 11px;
+    }
+
+    .team-vote-card .team-vote-dropdown {
+        gap: 5px;
+        margin-top: 6px;
+        padding: 6px;
+        border-radius: 16px;
+    }
+
+    .team-vote-card .team-vote-dropdown-option {
+        min-height: 32px;
+        padding: 0 4px;
+        font-size: 13px;
+    }
+
+    .team-vote-card.team-vote-card--dropdown-open.profile-modal-card.profile-modal-card--shell {
+        overflow-y: visible;
+    }
+
     .profile-team-create-body {
         gap: 16px;
     }
@@ -851,12 +980,18 @@
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page.profile-modal-card {
         width: min(calc(100vw - 24px), 420px);
         max-width: min(calc(100vw - 24px), 420px);
-        min-height: 0;
+        min-height: min(560px, calc(100dvh - 48px));
         max-height: calc(100dvh - 24px);
-        padding: 28px 18px 22px;
+        padding: 28px 14px 98px;
         border-radius: 28px;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
         gap: 0;
+    }
+
+    .team-rescue-modal.profile-modal--shell .team-rescue-backdrop {
+        border-radius: 24px;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page .team-rescue-close {
@@ -867,26 +1002,23 @@
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page {
+        flex: 1 1 auto;
+        min-height: 0;
+        --team-rescue-control-height: 47px;
+        --team-rescue-duo-gap: 8px;
+        --team-rescue-duo-btn-width: calc((100% - var(--team-rescue-duo-gap)) / 2);
+        --team-rescue-title-field-gap: 40px;
+        --team-rescue-field-width: 100%;
+        --team-rescue-block-width: 100%;
         gap: 10px;
     }
 
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--team,
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--tag {
-        display: block;
-        min-height: 44px;
-        padding: 12px 16px;
-        border: none;
-        background: rgba(230, 235, 245, 1);
-        color: rgba(23, 45, 157, 1);
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-align: center;
-        text-transform: uppercase;
-    }
-
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--team:has(option[value=""]:checked) {
-        color: rgba(167, 184, 227, 1);
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-purpose {
+        margin-top: 20px;
+        margin-bottom: var(--team-rescue-title-field-gap, 40px);
+        width: 100%;
+        font-size: 20px;
+        letter-spacing: 0.12em;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-dots {
@@ -896,62 +1028,99 @@
         letter-spacing: 0.28em;
     }
 
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-photo-row--mockup {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 8px;
-        justify-content: stretch;
-    }
-
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-photo-label {
-        display: flex;
-        min-height: 44px;
-        padding: 0 16px;
-        border-radius: 999px;
-        background: rgba(230, 235, 245, 1);
-        color: rgba(167, 184, 227, 1);
-        font-size: 11px;
-        justify-content: center;
-    }
-
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-photo-btn,
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-submit {
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-row {
+        grid-template-columns: minmax(0, 1fr) var(--team-rescue-control-width, 148px);
         width: 100%;
-        min-width: 0;
-        max-width: none;
-        min-height: 44px;
-        padding: 12px 18px;
-        font-size: 12px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-attachments-list-wrap {
+        max-height: calc(var(--team-rescue-control-height, 47px) * 2 + 24px);
+        padding: 6px 8px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row {
+        min-height: 50px;
+        padding: 0 5px 0 18px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name {
+        min-height: 50px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-dropdown--tag {
+        max-width: 46%;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-tag-trigger {
+        min-width: 64px;
+        min-height: 50px;
+        height: 100%;
+        padding: 0 12px;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name,
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--team,
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--tag {
-        min-height: 44px;
-        padding: 12px 16px;
-        font-size: 12px;
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description {
+        width: 100%;
     }
 
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea {
-        min-height: 108px;
-        padding: 18px 16px;
-        border-radius: 24px;
-        font-size: 12px;
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-submit {
+        width: var(--team-rescue-duo-btn-width);
+        min-width: var(--team-rescue-duo-btn-width);
+        max-width: var(--team-rescue-duo-btn-width);
+        min-height: 47px;
+        height: 47px;
+        padding: 12px 18px;
+        margin-top: calc(var(--team-rescue-title-field-gap, 40px) - 10px);
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--team,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--tag {
+        min-height: 50px;
+        padding: 14px 18px;
+        font-size: 14px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name {
+        min-height: 0;
+        height: auto;
+        padding: 0;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description {
+        flex: 1 1 auto;
+        min-height: 68px;
+        max-height: none;
+        padding: 18px 18px;
+        border-radius: 26px;
+        font-size: 14px;
+        overflow-y: auto;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        gap: var(--team-rescue-duo-gap, 8px);
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-dropdown,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-datepicker {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-control-btn {
+        width: 100%;
+        min-width: 0;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--duo {
         min-height: 44px;
         padding: 12px 14px;
         font-size: 11px;
-    }
-
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-submit {
-        margin-top: 4px;
     }
 
     .team-rescue-topic-row,
@@ -1046,14 +1215,6 @@
 
     .event-success-qr {
         width: min(180px, 70vw);
-    }
-
-    .team-vote-score-row {
-        gap: 6px;
-    }
-
-    .team-vote-score {
-        min-height: 42px;
     }
 
     .team-request-list {
@@ -1555,7 +1716,7 @@
         padding: 18px 16px 12px;
         display: grid;
         grid-template-rows: auto auto;
-        gap: 12px;
+        gap: 14px;
         border-radius: 20px;
         overflow: hidden;
         background: rgba(240, 245, 255, 0.96);
@@ -1589,16 +1750,36 @@
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
         align-items: center;
-        gap: 10px;
+        gap: 22px;
         flex: none;
+    }
+
+    .profile-sidebar .profile-nav-top,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-top {
+        grid-template-columns: repeat(5, 42px);
+        justify-content: center;
     }
 
     .profile-sidebar .profile-nav-bottom,
     .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
-        grid-template-columns: repeat(2, 42px);
+        grid-template-columns: repeat(5, 42px);
+        justify-content: center;
+        justify-items: center;
+    }
+
+    .profile-sidebar .profile-nav-bottom #profileSettingsButton,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom #profileSettingsButton,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom #profileSettingsButton {
+        grid-column: 1;
+    }
+
+    .profile-sidebar .profile-nav-bottom #profileLogoutButton,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom #profileLogoutButton,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom #profileLogoutButton {
+        grid-column: 2;
     }
 
     .profile-sidebar .profile-nav-button,
@@ -1845,6 +2026,37 @@
         .profile-modal--form .profile-modal-file,
         .profile-modal--form .profile-pill-button {
             width: 100%;
+        }
+
+        .team-vote-card.profile-modal-card.profile-modal-card--shell,
+        .profile-modal-card.profile-modal-card--shell.team-vote-card {
+            width: calc(100vw - 24px);
+            max-width: calc(100vw - 24px);
+            padding: 24px 12px 16px;
+        }
+
+        .team-vote-card .team-vote-avatar {
+            width: min(76px, 20vw);
+        }
+
+        .team-vote-card .team-vote-display-row {
+            min-height: 58px;
+            padding-left: 14px;
+        }
+
+        .team-vote-card .team-vote-display-badge {
+            min-width: 88px;
+            height: 46px;
+            padding: 0 12px;
+        }
+
+        .team-vote-card .team-vote-picker {
+            width: 100%;
+        }
+
+        .team-vote-card .team-vote-dropdown-option {
+            min-height: 30px;
+            font-size: 12px;
         }
     }
 
@@ -2271,8 +2483,8 @@
     .profile-sidebar .profile-nav-bottom,
     .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
-        justify-self: start;
-        justify-content: start;
+        justify-self: stretch;
+        width: 100%;
     }
 
     .profile-app.is-achievement-modal-open .profile-main {
@@ -2759,6 +2971,63 @@
         height: 12px;
     }
 
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-body {
+        position: relative;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-body::after {
+        content: "";
+        display: block;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: clamp(40px, 11vw, 56px);
+        pointer-events: none;
+        z-index: 2;
+        background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.55) 45%,
+            rgba(255, 255, 255, 0.96) 100%
+        );
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-rows {
+        --team-history-fade-size: clamp(40px, 11vw, 56px);
+        padding-bottom: clamp(8px, 2.4vw, 14px);
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            #000 0,
+            #000 calc(100% - var(--team-history-fade-size)),
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            #000 0,
+            #000 calc(100% - var(--team-history-fade-size)),
+            transparent 100%
+        );
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled {
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-body,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-rows {
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-actions {
+        display: none;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+    }
+
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-actions {
         position: static;
         flex: 0 0 auto;
@@ -2842,21 +3111,34 @@
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-top,
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
         display: grid;
-        gap: 8px;
+        gap: 20px;
     }
 
     .profile-sidebar .profile-nav-top,
     .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-top,
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-top {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(5, 38px);
+        justify-content: center;
     }
 
     .profile-sidebar .profile-nav-bottom,
     .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom,
     .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom {
-        grid-template-columns: repeat(2, 38px);
-        justify-self: start;
-        justify-content: start;
+        grid-template-columns: repeat(5, 38px);
+        justify-content: center;
+        justify-items: center;
+    }
+
+    .profile-sidebar .profile-nav-bottom #profileSettingsButton,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom #profileSettingsButton,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom #profileSettingsButton {
+        grid-column: 1;
+    }
+
+    .profile-sidebar .profile-nav-bottom #profileLogoutButton,
+    .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar .profile-nav-bottom #profileLogoutButton,
+    .profile-app--dashboard-profile .profile-sidebar .profile-nav-bottom #profileLogoutButton {
+        grid-column: 2;
     }
 
     .profile-sidebar .profile-nav-button,
@@ -2875,8 +3157,26 @@
         width: calc(100vw - 20px);
         max-width: calc(100vw - 20px);
         max-height: calc(100dvh - 104px);
-        padding: 24px 16px 20px;
+        padding: 24px 12px 98px;
         border-radius: 24px;
+    }
+
+    .team-overlay-modal.profile-modal--shell .team-vote-card.profile-modal-card.profile-modal-card--shell {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        max-height: calc(100dvh - 104px);
+    }
+
+    .team-vote-card .team-vote-display-row {
+        min-height: 60px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-purpose {
+        margin-top: 24px;
+        margin-bottom: var(--team-rescue-title-field-gap, 40px);
+        width: 100%;
+        font-size: 18px;
+        letter-spacing: 0.12em;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-dots {
@@ -2887,16 +3187,40 @@
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page {
+        --team-rescue-duo-gap: 8px;
+        --team-rescue-duo-btn-width: calc((100% - var(--team-rescue-duo-gap)) / 2);
+        --team-rescue-title-field-gap: 40px;
         gap: 8px;
     }
 
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea {
-        min-height: 96px;
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description {
+        flex: 1 1 auto;
+        min-height: 64px;
+        max-height: none;
         padding: 16px 14px;
         border-radius: 20px;
+        overflow-y: auto;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--team-rescue-duo-gap, 8px);
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-dropdown,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-datepicker,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-duo-row .team-rescue-control-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-submit {
+        width: var(--team-rescue-duo-btn-width);
+        min-width: var(--team-rescue-duo-btn-width);
+        max-width: var(--team-rescue-duo-btn-width);
+        margin-top: calc(var(--team-rescue-title-field-gap, 40px) - 8px);
     }
 }

@@ -379,7 +379,7 @@
 .profile-photo,
 .profile-photo.has-image,
 .team-member-avatar,
-.team-vote-avatar,
+.team-vote-avatar:not(.has-image),
 .team-request-avatar,
 .rating-team-photo {
     background:
@@ -498,9 +498,14 @@
 .rating-list-points,
 .rating-podium-points,
 .team-member-role,
-.team-vote-role-pill {
+.team-vote-card .team-vote-role-pill {
     background: rgba(240, 245, 255, 1);
     color: var(--exam-muted);
+}
+
+.team-vote-card .team-vote-role-pill {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(143, 159, 207, 0.18);
 }
 
 .rating-podium-card {
@@ -697,17 +702,17 @@
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-dashboard-main {
+    flex: 1 1 auto;
     min-height: 0;
     max-height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-wrap,
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-blocks {
-    flex: 0 0 auto;
-    min-height: auto;
-    overflow: visible;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-dashboard-main {
@@ -717,8 +722,9 @@
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-wrap {
     flex: 1 1 auto;
     min-height: 0;
+    height: 100%;
     overflow: hidden;
-    gap: clamp(28px, 4vh, 52px);
+    gap: clamp(18px, 2.4vh, 36px);
     padding: clamp(22px, 3vh, 34px) 0 0 0;
     box-sizing: border-box;
 }
@@ -734,7 +740,10 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding-top: clamp(8px, 1.2vh, 16px);
+    align-self: stretch;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 0;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-topbar {
@@ -880,19 +889,86 @@
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel {
-    flex: 0 0 auto;
-    height: clamp(320px, 38vh, 420px);
-    min-height: 320px;
-    max-height: 420px;
-    margin-top: clamp(4px, 0.8vh, 10px);
-    padding: 24px 30px 18px;
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: clamp(220px, 28vh, 320px);
+    height: auto;
+    max-height: none;
+    margin-top: 0;
+    padding: clamp(18px, 2vh, 24px) clamp(20px, 2.2vw, 30px) clamp(14px, 1.6vh, 18px);
     border-radius: 28px;
+    overflow: hidden;
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-body,
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-rows {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-rows {
+    --team-history-fade-size: clamp(72px, 9vh, 108px);
+    padding-bottom: clamp(52px, 6vh, 72px);
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--team-history-fade-size)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--team-history-fade-size)),
+        transparent 100%
+    );
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-body::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(72px, 9vh, 108px);
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.55) 45%,
+        rgba(255, 255, 255, 0.96) 100%
+    );
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-actions {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(10px, 1.4vh, 16px);
+    transform: translateX(-50%);
+    z-index: 4;
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel--filled .team-history-actions .team-action-btn {
+    pointer-events: auto;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-title {
-    font-size: 36px;
+    font-size: clamp(22px, 2vw, 36px);
     font-weight: 800;
-    
+
     background: linear-gradient(135deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -921,8 +997,9 @@
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-action-btn--pink {
-    min-width: 170px;
-    min-height: 38px;
+    min-width: clamp(150px, 11vw, 170px);
+    min-height: clamp(36px, 4.2vh, 38px);
+    box-shadow: 0 10px 24px rgba(223, 46, 128, 0.32);
 }
 
 .profile-app--dashboard-profile:has(.rating-dashboard-main) .profile-sidebar {
@@ -1059,18 +1136,83 @@
     margin-top: 118px;
 }
 
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-lower {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-self: stretch;
+    width: 100%;
+    margin-top: auto;
+}
+
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel {
-    flex: 0 0 auto;
-    height: clamp(320px, 38vh, 420px);
-    min-height: 320px;
-    max-height: 420px;
-    margin-top: clamp(4px, 0.8vh, 10px);
-    padding: 24px 30px 18px;
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: clamp(220px, 28vh, 320px);
+    height: auto;
+    max-height: none;
+    margin-top: 0;
+    padding: clamp(18px, 2vh, 24px) clamp(20px, 2.2vw, 30px) clamp(14px, 1.6vh, 18px);
     border-radius: 28px;
+    overflow: hidden;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel--filled {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel--filled .team-history-rows {
+    --team-history-fade-size: clamp(72px, 9vh, 108px);
+    padding-bottom: clamp(52px, 6vh, 72px);
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--team-history-fade-size)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--team-history-fade-size)),
+        transparent 100%
+    );
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel--filled .team-history-body::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(72px, 9vh, 108px);
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.55) 45%,
+        rgba(255, 255, 255, 0.96) 100%
+    );
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel--filled .team-history-actions {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(10px, 1.4vh, 16px);
+    transform: translateX(-50%);
+    z-index: 4;
+    pointer-events: none;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel--filled .team-history-actions .team-action-btn {
+    pointer-events: auto;
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-title {
-    font-size: 36px;
+    font-size: clamp(22px, 2vw, 36px);
     font-weight: 800;
     background: linear-gradient(135deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     -webkit-background-clip: text;
@@ -1152,6 +1294,8 @@
 .event-success-done,
 .inline-button,
 .secondary-action,
+.team-vote-dropdown-option:hover,
+.team-vote-dropdown-option.is-active,
 .team-vote-score:hover:not(:disabled),
 .team-vote-score.is-active {
     background: var(--exam-button-gradient);

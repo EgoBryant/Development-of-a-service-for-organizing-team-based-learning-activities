@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TeamExamProject.Contracts.ActivityFeed;
 using TeamExamProject.Contracts.Teams;
 using TeamExamProject.Data;
 using TeamExamProject.Models;
+using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
@@ -13,15 +15,18 @@ public class TeamService : ITeamService
     private readonly AppDbContext _dbContext;
     private readonly IKrkCalculationService _krkCalculationService;
     private readonly IActivityFeedService _activityFeed;
+    private readonly TeamOptions _teamOptions;
 
     public TeamService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
-        IActivityFeedService activityFeed)
+        IActivityFeedService activityFeed,
+        IOptions<TeamOptions> teamOptions)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
         _activityFeed = activityFeed;
+        _teamOptions = teamOptions.Value;
     }
 
     public async Task<IReadOnlyCollection<TeamResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -196,6 +201,11 @@ public class TeamService : ITeamService
             return new JoinTeamResult { Type = JoinTeamResultType.TeamNotFound };
         }
 
+        if (await IsTeamFullAsync(team.Id, cancellationToken))
+        {
+            return new JoinTeamResult { Type = JoinTeamResultType.TeamFull };
+        }
+
         user.TeamId = team.Id;
         user.Role = Roles.Student;
         await CancelPendingJoinRequestsForUserAsync(user.Id, cancellationToken);
@@ -272,6 +282,11 @@ public class TeamService : ITeamService
         if (team is null)
         {
             return new TeamJoinRequestResult { Type = TeamJoinRequestResultType.TeamNotFound };
+        }
+
+        if (await IsTeamFullAsync(team.Id, cancellationToken))
+        {
+            return new TeamJoinRequestResult { Type = TeamJoinRequestResultType.TeamFull };
         }
 
         var hasPending = await _dbContext.TeamJoinRequests.AnyAsync(existingRequest =>
@@ -370,6 +385,11 @@ public class TeamService : ITeamService
             if (applicant.TeamId is not null)
             {
                 return new TeamJoinRequestResult { Type = TeamJoinRequestResultType.ApplicantAlreadyInTeam };
+            }
+
+            if (await IsTeamFullAsync(joinRequest.TeamId, cancellationToken))
+            {
+                return new TeamJoinRequestResult { Type = TeamJoinRequestResultType.TeamFull };
             }
 
             applicant.TeamId = joinRequest.TeamId;
@@ -492,6 +512,12 @@ public class TeamService : ITeamService
             .SingleAsync(existing => existing.Id == teamId, cancellationToken);
 
         return MapTeamResponse(refreshed);
+    }
+
+    private async Task<bool> IsTeamFullAsync(int teamId, CancellationToken cancellationToken)
+    {
+        var memberCount = await _dbContext.Users.CountAsync(user => user.TeamId == teamId, cancellationToken);
+        return memberCount >= _teamOptions.MaxMembers;
     }
 
     private async Task<string> GenerateInviteCodeAsync(CancellationToken cancellationToken)

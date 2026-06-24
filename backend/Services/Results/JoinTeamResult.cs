@@ -7,7 +7,8 @@ public enum JoinTeamResultType
     Joined,
     UserNotFound,
     AlreadyInTeam,
-    TeamNotFound
+    TeamNotFound,
+    TeamFull
 }
 
 public sealed class JoinTeamResult

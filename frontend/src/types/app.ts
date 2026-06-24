@@ -17,6 +17,16 @@ import type { RatingUser } from "./rating";
 export type View = "home" | "sign-in" | "sign-up" | "password-recovery" | "account";
 export type DashboardSection = "profile" | "team" | "rating" | "events" | "settings";
 
+export type ExternalProfileSource = "join-request" | "team-member";
+
+export interface ExternalProfileView {
+    userId: number;
+    source: ExternalProfileSource;
+    requestId?: number;
+    fallbackName?: string;
+    fallbackAvatarUrl?: string;
+}
+
 export type EventsCalendarScope = "all" | "mine";
 export type EventsFeedTab = "activity" | "news";
 export type EventsModalKind = "none" | "create" | "success" | "createNews";
@@ -65,8 +75,8 @@ export interface AppState {
     teamVoteMemberIndex: number;
     teamRequestsCurrentIndex: number;
     teamRequestsInviteLink: string;
-    teamRequestsApplicantRequestId: number | null;
-    teamRequestsApplicantRating: RatingUser | null;
+    externalProfileView: ExternalProfileView | null;
+    externalProfileRating: RatingUser | null;
     localCreatedTeam: LocalCreatedTeam | null;
     currentTeam: TeamResponse | null;
     teamCatalog: TeamResponse[];
