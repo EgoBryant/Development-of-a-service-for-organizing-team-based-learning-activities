@@ -97,6 +97,10 @@ import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
+    mergeSessionTeamIntoRatingTeams,
+    mergeSessionUserIntoRatingUsers
+} from "./services/ratingSessionData";
+import {
     createCheckIn,
     createHelpRequest,
     createTeam as createTeamApi,
@@ -118,6 +122,7 @@ import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
+import { isSameUserId } from "./utils/ratingAvatars";
 
 /** Событие открытия модалки «Спасение» с любого места UI. */
 export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
@@ -719,6 +724,15 @@ async function bootstrap(): Promise<void> {
         getTeamInviteCode: () => getEffectiveInviteCode(),
         getTeamHistory: getTeamHistoryItems,
         getJoinableTeams: getJoinableTeams,
+        getCurrentUserAvatarUrl: () => getAvatarDisplay(),
+        getCurrentUserId: () => String(appState.profile?.id ?? ""),
+        isCurrentUser: (userId: string) => {
+            const currentId = appState.profile?.id;
+            if (currentId == null) {
+                return false;
+            }
+            return isSameUserId(userId, currentId);
+        },
         joinTeamByInviteCode,
         requestTeamJoin,
         createTeam: createTeamFromBridge,
@@ -729,17 +743,7 @@ async function bootstrap(): Promise<void> {
         openTeamOverlayModal: (kind, memberIndex) => openTeamModal(kind, memberIndex),
         openTeamOnboardingModal: openTeamOnboardingModal,
         openTeamRescue: openRescueModal,
-        navigateToRating: () => {
-            appState.dashboardSection = "rating";
-            persistDashboardSectionToStorage();
-            clearStatus();
-            void refreshRatingWorkspace().then(() => {
-                if (appState.dashboardSection === "rating") {
-                    render();
-                }
-            });
-            render();
-        },
+        navigateToRating: openRatingDashboard,
         navigateToEvents: () => {
             appState.dashboardSection = "events";
             persistDashboardSectionToStorage();
@@ -2246,6 +2250,18 @@ async function refreshCurrentUserProfile(): Promise<void> {
     hydrateProfileClientStateFromStorage();
 }
 
+function openRatingDashboard(): void {
+    appState.dashboardSection = "rating";
+    persistDashboardSectionToStorage();
+    clearStatus();
+    void refreshRatingWorkspace().then(() => {
+        if (appState.dashboardSection === "rating") {
+            render();
+        }
+    });
+    render();
+}
+
 async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> {
     if (!token) {
         clearRatingData();
@@ -2257,7 +2273,10 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         fetchRatingUsers(token).catch(() => [])
     ]);
 
-    setRatingData(teams, users);
+    setRatingData(
+        mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam),
+        mergeSessionUserIntoRatingUsers(users, appState.profile)
+    );
 }
 
 async function refreshTeamWorkspace(): Promise<void> {
@@ -2383,7 +2402,10 @@ function getTeamRoster(): TeamMemberRow[] {
             id: String(member.id),
             displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
-            avatarUrl: member.avatarUrl,
+            avatarUrl:
+                isSameUserId(member.id, appState.profile?.id ?? "")
+                    ? getAvatarDisplay() || member.avatarUrl || ""
+                    : member.avatarUrl || "",
             isCaptain: member.isCaptain
         }));
     }
@@ -2416,9 +2438,12 @@ function getTeamMembersForView(): TeamMemberView[] {
             id: String(member.id),
             displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
-            avatarUrl: member.avatarUrl,
+            avatarUrl:
+                isSameUserId(member.id, currentUserId ?? "")
+                    ? getAvatarDisplay() || member.avatarUrl || ""
+                    : member.avatarUrl || "",
             userPoints: member.userPoints,
-            canVote: member.id !== currentUserId && !voteByTarget.has(member.id),
+            canVote: !isSameUserId(member.id, currentUserId ?? "") && !voteByTarget.has(member.id),
             voteScore: voteByTarget.get(member.id) ?? null
         }));
     }
@@ -3476,7 +3501,7 @@ function renderProfileMainHtml(): string {
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
-                            <div class="profile-photo">${photoContent}</div>
+                            <div class="profile-photo" id="profileOwnPhoto">${photoContent}</div>
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
@@ -3964,15 +3989,21 @@ function wireProfileViewEvents(): void {
 
     wireMobileProfileMenu();
 
-    const photoEl = profileMount.querySelector(".profile-photo");
-    if (photoEl instanceof HTMLElement) {
-        const src = getAvatarDisplay();
-        if (src) {
-            photoEl.classList.add("has-image");
-            photoEl.style.backgroundImage = `url(${JSON.stringify(src)})`;
-        } else {
-            photoEl.classList.remove("has-image");
-            photoEl.style.removeProperty("background-image");
+    if (appState.dashboardSection === "profile") {
+        const photoEl = profileMount.querySelector("#profileOwnPhoto");
+        if (photoEl instanceof HTMLElement) {
+            const src = getAvatarDisplay();
+            const img = photoEl.querySelector(".profile-photo-image");
+            if (src) {
+                photoEl.classList.add("has-image");
+                photoEl.style.removeProperty("background-image");
+                if (img instanceof HTMLImageElement) {
+                    img.src = src;
+                }
+            } else {
+                photoEl.classList.remove("has-image");
+                photoEl.style.removeProperty("background-image");
+            }
         }
     }
     profileAchievementScrollResizeObserver?.disconnect();
@@ -4028,10 +4059,7 @@ function wireProfileViewEvents(): void {
     const ratingTrackButton = profileMount.querySelector("#profileRatingTrackButton");
     if (isHTMLButtonElement(ratingTrackButton)) {
         ratingTrackButton.addEventListener("click", () => {
-            appState.dashboardSection = "rating";
-            persistDashboardSectionToStorage();
-            clearStatus();
-            render();
+            openRatingDashboard();
         });
     }
 
@@ -4049,6 +4077,11 @@ function wireProfileViewEvents(): void {
             if (getActiveTeamRequestApplicant()) {
                 clearTeamRequestApplicantReview();
                 appState.teamModal = "none";
+            }
+
+            if (section === "rating") {
+                openRatingDashboard();
+                return;
             }
 
             appState.dashboardSection = section;

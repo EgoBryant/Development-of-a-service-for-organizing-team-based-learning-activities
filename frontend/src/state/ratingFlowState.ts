@@ -1,7 +1,8 @@
-import type { RatingSortKey, RatingView, RescueDraft, UserProfileTab } from "../types/rating";
+import type { RatingLeaderboardTab, RatingSortKey, RatingView, RescueDraft, UserProfileTab } from "../types/rating";
 
 export interface RatingFlowState {
     view: RatingView;
+    leaderboardTab: RatingLeaderboardTab;
     selectedUserId: string | null;
     selectedTeamId: string | null;
     usersSearch: string;
@@ -20,12 +21,13 @@ export interface RatingFlowState {
 
 export const ratingFlowState: RatingFlowState = {
     view: "leaderboard",
+    leaderboardTab: "users",
     selectedUserId: null,
     selectedTeamId: null,
     usersSearch: "",
     teamsSearch: "",
-    usersSort: "rank-asc",
-    teamsSort: "rank-asc",
+    usersSort: "points-desc",
+    teamsSort: "points-desc",
     usersFilterOpen: false,
     teamsFilterOpen: false,
     userProfileTab: "rating",
@@ -48,12 +50,13 @@ export function createEmptyRescueDraft(): RescueDraft {
 
 export function resetRatingFlowState(): void {
     ratingFlowState.view = "leaderboard";
+    ratingFlowState.leaderboardTab = "users";
     ratingFlowState.selectedUserId = null;
     ratingFlowState.selectedTeamId = null;
     ratingFlowState.usersSearch = "";
     ratingFlowState.teamsSearch = "";
-    ratingFlowState.usersSort = "rank-asc";
-    ratingFlowState.teamsSort = "rank-asc";
+    ratingFlowState.usersSort = "points-desc";
+    ratingFlowState.teamsSort = "points-desc";
     ratingFlowState.usersFilterOpen = false;
     ratingFlowState.teamsFilterOpen = false;
     ratingFlowState.userProfileTab = "rating";
