@@ -594,6 +594,21 @@
     color: rgb(164, 106, 32);
 }
 
+.profile-achievement-item--locked .profile-achievement-circle {
+    opacity: 0.48;
+    filter: grayscale(0.75);
+    box-shadow: 0 8px 18px rgba(60, 60, 60, 0.1);
+}
+
+.profile-achievement-item--locked .profile-achievement-caption {
+    color: rgba(118, 132, 170, 0.72);
+}
+
+.profile-achievement-item--locked .profile-achievement-progress {
+    background: rgba(232, 236, 246, 0.92);
+    color: rgba(118, 132, 170, 0.82);
+}
+
 /* Profile modals */
 .profile-modal {
     position: fixed;

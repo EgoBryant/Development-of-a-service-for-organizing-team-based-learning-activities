@@ -113,8 +113,8 @@ import { renderProfileModalShell } from "./components/profile/ProfileModalShell"
 import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
 import { renderTeamCheckInModal, wireTeamCheckInModal } from "./components/modals/TeamCheckInModal";
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
-import { renderPublicAchievementsStrip } from "./components/rating/PublicUserProfile";
 import { getProfileAchievementById } from "./data/profileAchievements";
+import { fetchAchievementsCatalog, fetchMyAchievements, fetchUserAchievements } from "./services/achievementsApi";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
@@ -145,6 +145,14 @@ import { queueRescueAssignmentTask } from "./services/rescueAssignmentsQueue";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
+import {
+    clearAchievementsData,
+    getMyProfileAchievements,
+    getUserProfileAchievements,
+    setAchievementsCatalog,
+    setMyAchievements,
+    setUserAchievements
+} from "./state/achievementsState";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
 import { isSameUserId, resolveUserAvatarUrl } from "./utils/ratingAvatars";
 import { getRescueCalendarMonthKey } from "./utils/rescueFormUi";
@@ -661,6 +669,19 @@ function openExternalUserProfile(view: ExternalProfileView): void {
         .catch(() => {
             // Профиль отображается по данным команды или заявки.
         });
+
+    void fetchUserAchievements(token, view.userId)
+        .then((items) => {
+            if (appState.externalProfileView?.userId !== view.userId) {
+                return;
+            }
+
+            setUserAchievements(view.userId, items);
+            render();
+        })
+        .catch(() => {
+            setUserAchievements(view.userId, []);
+        });
 }
 
 function openTeamRequestApplicantProfile(requestId: number): void {
@@ -908,6 +929,7 @@ async function bootstrap(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshMyAchievementsWorkspace(session.token);
         await refreshTeamWorkspace();
         await refreshRatingWorkspace();
         appState.view = "account";
@@ -1548,6 +1570,7 @@ function resetProfileUi(): void {
     appState.teamWeeklyStats = null;
     appState.teamJoinRequests = [];
     appState.teamMyVotes = [];
+    clearAchievementsData();
     clearRatingData();
 }
 
@@ -2740,6 +2763,46 @@ function getSessionToken(): string | null {
     return loadSession()?.token ?? null;
 }
 
+async function refreshMyAchievementsWorkspace(token = getSessionToken()): Promise<void> {
+    if (!token) {
+        clearAchievementsData();
+        return;
+    }
+
+    const [catalog, earned] = await Promise.all([
+        fetchAchievementsCatalog(token).catch(() => null),
+        fetchMyAchievements(token).catch(() => [])
+    ]);
+
+    if (catalog) {
+        setAchievementsCatalog(catalog);
+    }
+    setMyAchievements(earned, appState.profile?.id);
+}
+
+async function refreshAchievementsForUsers(token: string, userIds: readonly string[]): Promise<void> {
+    const numericUserIds = Array.from(new Set(userIds))
+        .map((userId) => Number(userId))
+        .filter((userId) => Number.isInteger(userId) && userId > 0);
+
+    if (numericUserIds.length === 0) {
+        return;
+    }
+
+    const catalog = await fetchAchievementsCatalog(token).catch(() => null);
+    if (catalog) {
+        setAchievementsCatalog(catalog);
+    }
+
+    await Promise.all(
+        numericUserIds.map((userId) =>
+            fetchUserAchievements(token, userId)
+                .then((items) => setUserAchievements(userId, items))
+                .catch(() => setUserAchievements(userId, []))
+        )
+    );
+}
+
 async function refreshCurrentUserProfile(): Promise<void> {
     const token = getSessionToken();
     if (!token) {
@@ -2748,6 +2811,7 @@ async function refreshCurrentUserProfile(): Promise<void> {
 
     appState.profile = await fetchCurrentUser(token);
     hydrateProfileClientStateFromStorage();
+    await refreshMyAchievementsWorkspace(token);
 }
 
 function openRatingDashboard(): void {
@@ -2773,10 +2837,16 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         fetchRatingUsers(token).catch(() => [])
     ]);
 
-    setRatingData(
-        mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam),
-        mergeSessionUserIntoRatingUsers(users, appState.profile)
-    );
+    const mergedTeams = mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam);
+    const mergedUsers = mergeSessionUserIntoRatingUsers(users, appState.profile);
+
+    setRatingData(mergedTeams, mergedUsers);
+
+    const userIds = [
+        ...mergedUsers.map((user) => user.id),
+        ...mergedTeams.flatMap((team) => team.members.map((member) => member.id))
+    ];
+    await refreshAchievementsForUsers(token, userIds);
 }
 
 async function refreshTeamWorkspace(): Promise<void> {
@@ -4350,7 +4420,10 @@ function renderProfileModal(): string {
         case "teamSuccess":
             return renderProfileTeamSuccessModal();
         case "achievement":
-            return renderProfileAchievementModal(getProfileAchievementById(appState.profileAchievementId));
+            return renderProfileAchievementModal(getProfileAchievementById(
+                appState.profileAchievementId,
+                getMyProfileAchievements()
+            ));
         default:
             return "";
     }
@@ -4515,14 +4588,15 @@ function renderProfileMainHtml(): string {
             joinRequest?.avatarUrl?.trim() ||
             externalView.fallbackAvatarUrl?.trim() ||
             "";
+        const externalAchievements = getUserProfileAchievements(externalView.userId);
         achievementsContent =
-            externalRating && externalRating.achievementsCount > 0
+            externalAchievements.length > 0
                 ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderPublicAchievementsStrip(externalRating.achievementsCount)}
+                            ${renderProfileAchievementStrip(externalAchievements, { interactive: false })}
                         </div>
                     </div>`
                 : `
@@ -4543,13 +4617,14 @@ function renderProfileMainHtml(): string {
         group = getGroupDisplay();
         teamPillText = getEffectiveTeamName() || "КОМАНДА";
         avatarSrc = getAvatarDisplay();
+        const ownAchievements = getMyProfileAchievements();
         achievementsContent = hasProfileAchievements(profile)
             ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderProfileAchievementStrip()}
+                            ${renderProfileAchievementStrip(ownAchievements)}
                         </div>
                         <div class="profile-achievements-bar" id="profileAchievementsBar" aria-hidden="true">
                             <div class="profile-achievements-thumb" id="profileAchievementsThumb"></div>
@@ -5433,7 +5508,7 @@ function wireProfileViewEvents(): void {
     profileMount.querySelectorAll<HTMLButtonElement>(".profile-achievement-item").forEach((button) => {
         button.addEventListener("click", () => {
             const achievementId = button.dataset.achievementId ?? "";
-            appState.profileAchievementId = getProfileAchievementById(achievementId).id;
+            appState.profileAchievementId = getProfileAchievementById(achievementId, getMyProfileAchievements()).id;
             openProfileModal("achievement");
         });
     });
@@ -5685,11 +5760,13 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.signIn.password = "";
@@ -5745,11 +5822,13 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.view = "account";
@@ -5779,6 +5858,7 @@ async function refreshProfile(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshMyAchievementsWorkspace(session.token);
         await refreshTeamWorkspace();
         setStatus("Данные обновлены.");
     } catch (error) {
@@ -5803,6 +5883,7 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             }
             appState.profile = p;
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(bearerToken);
             await refreshTeamWorkspace();
             render();
         } catch {

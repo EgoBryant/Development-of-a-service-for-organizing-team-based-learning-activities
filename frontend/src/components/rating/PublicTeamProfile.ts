@@ -35,7 +35,6 @@ export function renderPublicTeamProfile(teamId: string): string {
 
     const history = team.activityHistory ?? [];
     const isHistoryEmpty = history.length === 0;
-
     const historyRows = isHistoryEmpty
         ? ""
         : history
