@@ -1,7 +1,25 @@
 import scrollLeftIconUrl from "../../assets/icons/Scroll_button_left.svg";
 import scrollRightIconUrl from "../../assets/icons/Scroll_button_right.svg";
+import scoreIconUrl from "../../assets/icons/Score_mobile.svg";
 import { getAppBridge } from "../../app/bridge";
 import { escapeHtml } from "../../utils/html";
+
+function renderTeamHistoryPointsBadge(pointsLabel?: string): string {
+    if (!pointsLabel) {
+        return "";
+    }
+
+    const value = pointsLabel.replace(/^\+/, "").trim();
+    if (!value) {
+        return "";
+    }
+
+    return `
+        <span class="team-history-row-points">
+            <span class="team-history-row-points-value">${escapeHtml(value)}</span>
+            <img src="${escapeHtml(scoreIconUrl)}" alt="" class="team-history-row-points-icon" aria-hidden="true">
+        </span>`;
+}
 
 export function renderActiveTeamBlock(): string {
     const bridge = getAppBridge();
@@ -19,9 +37,7 @@ export function renderActiveTeamBlock(): string {
 
             const actionLabel = member.voteScore
                 ? `${member.voteScore}/5`
-                : member.canVote === false
-                  ? "ВЫ"
-                  : "ГОЛОСОВАТЬ";
+                : "ГОЛОСОВАТЬ";
 
             return `
             <div class="team-member-card">
@@ -46,8 +62,8 @@ export function renderActiveTeamBlock(): string {
               .map(
                   (item) => `
             <div class="team-history-row">
-                <span class="team-history-row-text">${escapeHtml(item.title)}${item.meta ? ` · <small>${escapeHtml(item.meta)}</small>` : ""}</span>
-                ${item.pointsLabel ? `<span class="team-history-row-points">${escapeHtml(item.pointsLabel)}</span>` : ""}
+                <span class="team-history-row-text">${escapeHtml(item.title)}</span>
+                ${renderTeamHistoryPointsBadge(item.pointsLabel)}
             </div>`
               )
               .join("");
@@ -95,7 +111,7 @@ export function renderActiveTeamBlock(): string {
 
                     <div class="team-history-actions">
                         <button type="button" class="team-action-btn team-action-btn--blue" id="teamGoToEventsButton">К СОБЫТИЯМ</button>
-                        <button type="button" class="team-action-btn team-action-btn--pink" id="teamRescueButton">СПАСЕНИЕ</button>
+                        <button type="button" class="team-action-btn team-action-btn--pink" data-team-rescue-button>СПАСЕНИЕ</button>
                     </div>
                 </div>
             </div>

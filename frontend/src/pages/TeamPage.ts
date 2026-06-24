@@ -30,13 +30,18 @@ function buildTeamEventShareLink(): string {
 
 export function renderTeamPageMain(statusHtml: string): string {
     const bridge = getAppBridge();
-    const body = bridge.hasTeamAccess() ? renderActiveTeamBlock() : renderNoTeamBlock();
+    const hasTeamAccess = bridge.hasTeamAccess();
+    const body = hasTeamAccess ? renderActiveTeamBlock() : renderNoTeamBlock();
+    const rescueButton = hasTeamAccess
+        ? `<button type="button" class="team-action-btn team-action-btn--pink team-rescue-mobile-action" id="teamRescueButton" data-team-rescue-button>СПАСЕНИЕ</button>`
+        : "";
 
     return `
         <section class="profile-main team-dashboard-main team-page">
             ${statusHtml}
             ${body}
-        </section>`;
+        </section>
+        ${rescueButton}`;
 }
 
 export function renderTeamPageModals(): string {
@@ -245,12 +250,15 @@ export function wireTeamPageEvents(root: HTMLElement): void {
         });
     }
 
-    const teamRescue = root.querySelector("#teamRescueButton");
-    if (isHTMLButtonElement(teamRescue)) {
+    root.querySelectorAll("[data-team-rescue-button]").forEach((teamRescue) => {
+        if (!isHTMLButtonElement(teamRescue)) {
+            return;
+        }
+
         teamRescue.addEventListener("click", () => {
             bridge.openTeamRescue();
         });
-    }
+    });
 
     const teamOpenRequests = root.querySelector("#teamOpenRequestsHeaderButton");
     if (isHTMLButtonElement(teamOpenRequests)) {

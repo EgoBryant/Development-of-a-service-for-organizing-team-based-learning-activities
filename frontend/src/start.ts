@@ -2177,33 +2177,107 @@ function formatShortDate(value: string | null | undefined): string {
     return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }
 
+function getTempTeamHistoryPreview(): TeamHistoryItem[] {
+    return [
+        {
+            label: "WORKSHOP",
+            title: "Команда «организаторы» провела воркшоп по проектированию API.",
+            meta: "",
+            pointsLabel: "50"
+        },
+        {
+            label: "ACHIEVEMENT",
+            title: "Егор Габов получил ачивку «Свой вклад».",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "CHECK-IN",
+            title: "Команда «Кодеры» завершила check-in 6 недели.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "TRAINING",
+            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "RESCUE",
+            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "WORKSHOP",
+            title: "Команда «организаторы» провела воркшоп по проектированию API.",
+            meta: "",
+            pointsLabel: "50"
+        },
+        {
+            label: "ACHIEVEMENT",
+            title: "Егор Габов получил ачивку «Свой вклад».",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "CHECK-IN",
+            title: "Команда «Кодеры» завершила check-in 6 недели.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "TRAINING",
+            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
+            meta: "",
+            pointsLabel: "15"
+        },
+        {
+            label: "RESCUE",
+            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
+            meta: "",
+            pointsLabel: "15"
+        }
+    ];
+}
+
 function getTeamHistoryItems(): TeamHistoryItem[] {
     const checkIns = appState.teamCheckIns.map<TeamHistoryItem>((checkIn) => ({
         label: "CHECK-IN",
-        title: `${checkIn.weekNumber} неделя · ${checkIn.status || "Submitted"}`,
-        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc)
+        title: `Команда завершила check-in ${checkIn.weekNumber} недели.`,
+        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc),
+        pointsLabel: "15"
     }));
 
     const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
         label: "СПАСЕНИЕ",
-        title: `${request.topic || "Запрос помощи"} · ${request.status}`,
+        title: request.fromTeamName
+            ? `Команда «${request.fromTeamName}» отправила запрос на помощь по теме «${request.topic || "Спасение"}».`
+            : `Запрос на помощь по теме «${request.topic || "Спасение"}».`,
         meta: `${request.fromTeamName} → ${request.toTeamName}`,
-        pointsLabel: request.bonusPoints > 0 ? `+${request.bonusPoints}` : undefined
+        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined
     }));
 
     const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
         label: "ЗАЯВКА",
-        title: `${request.displayName || request.userName || "Участник"} · ${request.status}`,
+        title: `${request.displayName || request.userName || "Участник"} подал заявку на вступление в команду.`,
         meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
     }));
 
     const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
         label: "ГОЛОС",
-        title: `${vote.toUserName || "Участник"} · ${vote.score}/5`,
+        title: `Вы оценили вклад участника ${vote.toUserName || "участника"} на ${vote.score}/5.`,
         meta: formatShortDate(vote.createdAtUtc)
     }));
 
     const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
+    // TEMP: переключить на false после проверки вёрстки истории
+    const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
+    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
+        return getTempTeamHistoryPreview();
+    }
+
     return items.length > 0
         ? items
         : [
@@ -2585,39 +2659,38 @@ function renderTeamModal(): string {
         return `
                 <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
                     <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
-                    <div class="profile-modal-card team-rescue-card">
+                    <div class="profile-modal-card team-rescue-card team-rescue-card--team-page">
                         <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
-                        <h2 class="team-rescue-title">СПАСЕНИЕ</h2>
-                        <form id="teamRescueForm" class="team-rescue-form" novalidate>
-                            <select id="teamRescueTargetInput" class="team-rescue-field" aria-label="Команда для помощи">
+                        <p class="team-rescue-dots" aria-hidden="true">...</p>
+                        <h2 class="team-rescue-title team-rescue-title--sr">Спасение</h2>
+                        <form id="teamRescueForm" class="team-rescue-form team-rescue-form--team-page" novalidate>
+                            <select id="teamRescueTargetInput" class="team-rescue-field team-rescue-field--team team-rescue-select" aria-label="Команда для помощи">
                                 <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
                                 ${targetOptions}
                             </select>
-                            <div class="team-rescue-topic-row">
-                                <input
-                                    id="teamRescueTopicInput"
-                                    class="team-rescue-field team-rescue-field--topic"
-                                    type="text"
-                                    placeholder="ТЕМА"
-                                    value="${escapeHtml(draft.topic)}"
-                                    autocomplete="off"
-                                >
-                                <input
-                                    id="teamRescueTagInput"
-                                    class="team-rescue-field team-rescue-field--tag"
-                                    type="text"
-                                    placeholder="ТЕГ"
-                                    value="${escapeHtml(draft.tag)}"
-                                    autocomplete="off"
-                                >
-                            </div>
+                            <input
+                                id="teamRescueTopicInput"
+                                class="team-rescue-field team-rescue-field--name"
+                                type="text"
+                                placeholder="НАЗВАНИЕ"
+                                value="${escapeHtml(draft.topic)}"
+                                autocomplete="off"
+                            >
+                            <input
+                                id="teamRescueTagInput"
+                                class="team-rescue-field team-rescue-field--tag"
+                                type="text"
+                                placeholder="ТЕГ"
+                                value="${escapeHtml(draft.tag)}"
+                                autocomplete="off"
+                            >
                             <textarea
                                 id="teamRescueDescriptionInput"
                                 class="team-rescue-textarea"
-                                placeholder=" "
+                                placeholder="..."
                                 aria-label="Описание ситуации"
                             >${escapeHtml(draft.description)}</textarea>
-                            <div class="team-rescue-photo-row">
+                            <div class="team-rescue-photo-row team-rescue-photo-row--mockup">
                                 <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
                                 <label class="team-rescue-photo-btn">
                                     ВЫБРАТЬ

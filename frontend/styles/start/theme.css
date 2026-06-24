@@ -310,7 +310,6 @@
 
 .profile-info-pill,
 .profile-stat-track,
-.team-history-row,
 .rating-list-row,
 .rating-list-row--clickable,
 .rating-profile-stat-row,
@@ -504,8 +503,15 @@
 .team-rescue-field--duo,
 .team-rescue-select.team-rescue-field--tag,
 .team-rescue-select.team-rescue-field--duo {
-    background: #dfeaff;
-    color: var(--exam-text);
+    background: rgba(237, 242, 255, 1);
+    color: rgba(23, 45, 157, 1);
+}
+
+.team-rescue-field--duo,
+.team-rescue-select.team-rescue-field--duo {
+    background: linear-gradient(180deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
+    color: rgba(255, 255, 255, 1);
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
 }
 
 .team-validation-error,
