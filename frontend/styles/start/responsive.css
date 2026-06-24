@@ -98,7 +98,7 @@
     }
 
     .events-feed-block {
-        --events-feed-block-height: 380px;
+        --events-feed-block-height: clamp(220px, 34vh, 360px);
     }
 
     .events-calendar-grid {

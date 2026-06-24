@@ -48,15 +48,15 @@ import { renderCalendarEventCard } from "./components/events/CalendarEventCard";
 import {
     addUserCalendarEventFromDraft,
     clampCalendarStartIndex,
-    EVENTS_CALENDAR_VISIBLE_DAYS,
     getCalendarStartIndexForDateTime,
     getDemoEventsCalendarStartIndex,
+    getEventsCalendarVisibleDaysCount,
     getEventsCalendarYearDates,
     getUserEventsForDateKey,
     loadPersistedUserEvents
 } from "./state/eventsCalendarState";
 import { normalizePersonalLeague } from "./utils/personalLeague";
-import { loadPersistedActivityFeed, pushActivityFeedItem, getActivityFeedItems } from "./state/activityFeedState";
+import { loadPersistedActivityFeed, getActivityFeedItems } from "./state/activityFeedState";
 import {
     computeCheckInWeeklyStats,
     mapApiWeeklyStats,
@@ -378,7 +378,12 @@ function openRescueModal(): void {
 }
 
 function pushUserActivity(input: ActivityFeedPushInput): void {
-    pushActivityFeedItem(input);
+    pushNewsPost({
+        title: input.title,
+        body: input.description,
+        authorName: "Система",
+        pointsLabel: input.badge
+    });
 }
 
 async function submitTeamCheckIn(weekNumber: number, reportText: string): Promise<void> {
@@ -1911,7 +1916,8 @@ function resetEventsCalendarToToday(): void {
 }
 
 function getEventsCalendarMaxStartIndex(): number {
-    return Math.max(0, getEventsCalendarYearDates().length - EVENTS_CALENDAR_VISIBLE_DAYS);
+    const visibleDays = getEventsCalendarVisibleDaysCount();
+    return Math.max(0, getEventsCalendarYearDates().length - visibleDays);
 }
 
 function getEventsCalendarSlideDates(): Date[] | null {
@@ -1921,12 +1927,13 @@ function getEventsCalendarSlideDates(): Date[] | null {
 
     const startIndex = appState.eventsCalendarStartIndex;
     const yearDates = getEventsCalendarYearDates();
+    const visibleDays = getEventsCalendarVisibleDaysCount();
 
     if (eventsCalendarSlideDirection === "next") {
-        return yearDates.slice(startIndex, startIndex + EVENTS_CALENDAR_VISIBLE_DAYS + 1);
+        return yearDates.slice(startIndex, startIndex + visibleDays + 1);
     }
 
-    return yearDates.slice(startIndex - 1, startIndex + EVENTS_CALENDAR_VISIBLE_DAYS);
+    return yearDates.slice(startIndex - 1, startIndex + visibleDays);
 }
 
 function getVisibleEventsCalendarDates(): Date[] {
@@ -1936,7 +1943,7 @@ function getVisibleEventsCalendarDates(): Date[] {
     }
 
     const startIndex = clampCalendarStartIndex(appState.eventsCalendarStartIndex);
-    return getEventsCalendarYearDates().slice(startIndex, startIndex + EVENTS_CALENDAR_VISIBLE_DAYS);
+    return getEventsCalendarYearDates().slice(startIndex, startIndex + getEventsCalendarVisibleDaysCount());
 }
 
 function formatEventsMonthLabel(date: Date): string {
@@ -2070,7 +2077,7 @@ function renderEventsFeedBlock(): string {
                     aria-selected="${newsActive}"
                     aria-controls="eventsFeedPanelNews"
                     data-events-feed-tab="news"
-                >ЛЕНТА НОВОСТЕЙ</button>
+                >ЛЕНТА СОБЫТИЙ</button>
             </div>
             <div class="events-feed-panels">
                 ${renderActivityFeedPanel(appState.eventsFeedTab === "activity")}
@@ -2142,36 +2149,36 @@ function applyEventsCalendarSlideLayout(grid: HTMLElement, metrics: EventsCalend
     grid.style.setProperty("--events-calendar-slide-gap", `${metrics.columnGap}px`);
 }
 
+function getEventsCalendarColumnStep(grid: HTMLElement): number {
+    const columns = grid.querySelectorAll<HTMLElement>(".events-calendar-col");
+    if (columns.length >= 2) {
+        const step = Math.round(columns[1].offsetLeft - columns[0].offsetLeft);
+        if (Number.isFinite(step) && step > 0) {
+            return step;
+        }
+    }
+
+    if (eventsCalendarSlideMetrics && eventsCalendarSlideMetrics.step > 0) {
+        return eventsCalendarSlideMetrics.step;
+    }
+
+    const styles = window.getComputedStyle(grid);
+    const cardWidth = Number.parseFloat(styles.getPropertyValue("--events-calendar-card-width")) || 160;
+    const gap = Number.parseFloat(styles.getPropertyValue("--events-calendar-gap")) || 32;
+    return cardWidth + gap;
+}
+
 function resolveEventsCalendarSlideOffsets(
     grid: HTMLElement,
-    direction: EventsCalendarSlideDirection,
-    metrics: EventsCalendarSlideMetrics | null
+    direction: EventsCalendarSlideDirection
 ): { start: number; end: number } {
-    const columns = grid.querySelectorAll<HTMLElement>(".events-calendar-col");
-    const fallbackStep =
-        columns.length >= 2
-            ? columns[1].getBoundingClientRect().left - columns[0].getBoundingClientRect().left
-            : metrics?.step ?? 240;
-
-    if (!metrics || columns.length < EVENTS_CALENDAR_VISIBLE_DAYS + 1) {
-        return direction === "next" ? { start: 0, end: -fallbackStep } : { start: -fallbackStep, end: 0 };
-    }
-
-    const leadingColumn = columns[1];
-    const trailingColumn = columns[EVENTS_CALENDAR_VISIBLE_DAYS];
-    const leadingLeft = leadingColumn.getBoundingClientRect().left;
-    const trailingRight = trailingColumn.getBoundingClientRect().right;
-    const leftOffset = metrics.anchorLeft - leadingLeft;
-    const rightOffset = metrics.anchorRight - trailingRight;
+    const step = getEventsCalendarColumnStep(grid);
 
     if (direction === "next") {
-        return { start: 0, end: (leftOffset + rightOffset) / 2 };
+        return { start: 0, end: -step };
     }
 
-    return {
-        start: (leftOffset + rightOffset) / 2,
-        end: metrics.anchorLeft - columns[0].getBoundingClientRect().left
-    };
+    return { start: -step, end: 0 };
 }
 
 function commitEventsCalendarSlide(direction: EventsCalendarSlideDirection): void {
@@ -2192,9 +2199,6 @@ function shiftEventsCalendar(direction: EventsCalendarSlideDirection): void {
     }
 
     eventsCalendarSlideDirection = direction;
-    if (isHTMLElement(profileMount)) {
-        captureEventsCalendarSlideMetrics(profileMount);
-    }
     clearStatus();
     render();
 }
@@ -2242,13 +2246,14 @@ function playEventsCalendarSlideAnimation(root: HTMLElement): void {
     carouselWrap?.classList.add("events-calendar-carousel-wrap--animating");
     syncEventsCalendarArrows(root);
 
+    captureEventsCalendarSlideMetrics(root);
     if (eventsCalendarSlideMetrics) {
         applyEventsCalendarSlideLayout(grid, eventsCalendarSlideMetrics);
     }
 
     void grid.offsetHeight;
 
-    const { start, end } = resolveEventsCalendarSlideOffsets(grid, direction, eventsCalendarSlideMetrics);
+    const { start, end } = resolveEventsCalendarSlideOffsets(grid, direction);
 
     window.requestAnimationFrame(() => {
         grid.style.transition = "none";
@@ -2260,7 +2265,15 @@ function playEventsCalendarSlideAnimation(root: HTMLElement): void {
             grid.style.transition = "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)";
             grid.style.transform = `translate3d(${end}px, 0, 0)`;
 
-            grid.addEventListener("transitionend", finish, { once: true });
+            grid.addEventListener(
+                "transitionend",
+                (event) => {
+                    if (event.propertyName === "transform") {
+                        finish();
+                    }
+                },
+                { once: true }
+            );
             window.setTimeout(finish, 360);
         });
     });
@@ -2295,6 +2308,17 @@ function syncEventsCalendarArrows(root: HTMLElement): void {
 }
 
 let eventsFeedTabsResizeBound = false;
+let eventsCalendarLayoutResizeBound = false;
+
+function syncEventsCalendarLayoutForViewport(): void {
+    const reclamped = clampCalendarStartIndex(appState.eventsCalendarStartIndex);
+    if (reclamped !== appState.eventsCalendarStartIndex) {
+        appState.eventsCalendarStartIndex = reclamped;
+        if (appState.dashboardSection === "events") {
+            render();
+        }
+    }
+}
 
 function syncEventsFeedTabsIndicator(options?: { instant?: boolean }): void {
     if (!isHTMLElement(profileMount) || appState.dashboardSection !== "events") {
@@ -2417,6 +2441,13 @@ function wireEventsDashboardEvents(): void {
         });
     }
 
+    if (!eventsCalendarLayoutResizeBound) {
+        eventsCalendarLayoutResizeBound = true;
+        window.addEventListener("resize", () => {
+            syncEventsCalendarLayoutForViewport();
+        });
+    }
+
     const openCreate = profileMount.querySelector("#eventsOpenCreateButton");
     if (isHTMLButtonElement(openCreate)) {
         openCreate.addEventListener("click", () => {
@@ -2503,7 +2534,7 @@ function appendCreatedEventToCalendar(draft: EventCreateDraft): boolean {
     const topic = draft.topic.trim() || "Событие";
     pushUserActivity({
         kind: "event_created",
-        title: "СОБЫТИЕ СОЗДАНО",
+        title: "Событие в календаре",
         description: `«${topic}» добавлено в календарь.`
     });
 
@@ -6275,7 +6306,7 @@ async function submitPersonalProfileSave(options: PersonalProfileSaveOptions = {
     if (!silent) {
         pushUserActivity({
             kind: "profile_updated",
-            title: "ПРОФИЛЬ ОБНОВЛЁН",
+            title: "Профиль",
             description: "Личные данные сохранены."
         });
     }

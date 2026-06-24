@@ -19,7 +19,7 @@
 }
 
 .events-panels-stack {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -165,7 +165,7 @@
     min-width: 0;
     min-height: 0;
     height: 100%;
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -178,7 +178,7 @@
     flex: 0 0 auto;
     display: grid;
     grid-template-columns: repeat(var(--events-calendar-visible-cols), minmax(136px, var(--events-calendar-card-width)));
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: var(--events-calendar-gap);
     width: 100%;
     min-width: 0;
@@ -213,11 +213,12 @@
 
 .events-calendar-arrow {
     position: static;
-    flex: 0 0 38px;
+    flex: 0 0 44px;
     align-self: center;
     transform: none;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+    touch-action: manipulation;
     border: none;
     border-radius: 0;
     background: transparent;
@@ -465,12 +466,12 @@
 }
 
 .events-feed-block {
-    flex: 0 0 auto;
-    height: clamp(300px, 38vh, 390px);
-    min-height: clamp(300px, 38vh, 390px);
-    max-height: clamp(300px, 38vh, 390px);
+    flex: 1 1 auto;
+    height: auto;
+    min-height: clamp(280px, 32vh, 390px);
+    max-height: none;
     align-self: stretch;
-    margin-top: 0;
+    margin-top: auto;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -650,6 +651,15 @@
     text-transform: none;
     box-shadow: 0 7px 16px rgba(19, 60, 150, 0.1);
     border: none;
+}
+
+.events-feed-list--activity-mobile {
+    display: none;
+}
+
+.events-feed-panel--news .events-feed-list {
+    gap: 8px;
+    padding: 0;
 }
 
 .events-feed-panel[hidden] {
@@ -877,13 +887,286 @@
     .events-feed-panel--activity .events-feed-feature-card {
         padding: 18px;
     }
+}
+
+/* Телефон: месяц → одна карточка дня → вкладки лент → контент */
+@media (max-width: 767px) {
+    .events-shell {
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 12px 10px 16px;
+    }
+
+    .events-panels-stack {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow: visible;
+    }
+
+    .events-calendar-block {
+        flex: 0 0 auto;
+        gap: 14px;
+    }
+
+    .events-calendar-toolbar {
+        display: block;
+        gap: 0;
+    }
+
+    .events-calendar-scope {
+        display: none;
+    }
+
+    .events-calendar-toolbar-start {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+        min-height: 52px;
+        padding: 4px;
+        border-radius: 999px;
+        background: var(--events-surface-muted);
+        box-shadow:
+            inset 0 0 0 1px rgba(210, 222, 248, 0.64),
+            0 8px 18px rgba(19, 60, 150, 0.1);
+    }
+
+    .events-calendar-month-label {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: clamp(14px, 4vw, 17px);
+        letter-spacing: 0.06em;
+    }
+
+    .events-calendar-create-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 52%;
+        min-height: 44px;
+        font-size: clamp(12px, 3.2vw, 15px);
+    }
+
+    .events-calendar-carousel-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 0;
+        padding: 0 2px;
+    }
+
+    .events-calendar-viewport {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .events-calendar-grid {
+        --events-calendar-visible-cols: 1;
+        --events-calendar-gap: 0;
+        --events-calendar-card-width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 0;
+        padding: 0;
+    }
+
+    .events-calendar-grid:not(.events-calendar-grid--slide-track) {
+        display: flex;
+    }
+
+    .events-calendar-col {
+        flex: 0 0 100%;
+        min-width: 100%;
+        max-width: 100%;
+        scroll-snap-align: center;
+    }
+
+    .events-calendar-day-card {
+        min-height: clamp(220px, 36vh, 320px);
+        max-height: clamp(220px, 36vh, 320px);
+        border-radius: 40px;
+        padding-top: 54px;
+    }
+
+    .events-calendar-col-head {
+        min-height: 48px;
+        font-size: 16px;
+    }
+
+    .events-calendar-col-head .gradient-text {
+        font-size: 16px;
+    }
+
+    .events-calendar-col-body {
+        min-height: 0;
+        max-height: none;
+        flex: 1 1 auto;
+    }
+
+    .events-calendar-arrow {
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        margin: 0;
+    }
+
+    .events-calendar-arrow img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .events-calendar-arrow--prev {
+        margin-right: 0;
+    }
+
+    .events-calendar-arrow--next {
+        margin-left: 0;
+    }
+
+    .events-feed-block {
+        flex: 1 1 auto;
+        min-height: clamp(260px, 44vh, 460px);
+        max-height: none;
+        height: auto;
+        margin-top: 0;
+        padding: 14px;
+        border-radius: 32px;
+        gap: 12px;
+    }
+
+    .events-feed-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0;
+        padding: 4px;
+        border-radius: 999px;
+        background: var(--events-surface-soft);
+    }
+
+    .events-feed-tab {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 8px;
+        font-size: clamp(9px, 2.6vw, 11px);
+        letter-spacing: 0.03em;
+        line-height: 1.15;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .events-feed-panels {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .events-feed-panel:not([hidden]) {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .events-feed-panel--activity .events-feed-feature-card {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 14px 12px;
+        border-radius: 22px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .events-feed-feature-head {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .events-feed-feature-media {
+        aspect-ratio: 16 / 9;
+        max-height: 110px;
+        border-radius: 14px;
+    }
+
+    .events-feed-feature-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .events-feed-feature-title {
+        font-size: 14px;
+        letter-spacing: 0.03em;
+    }
+
+    .events-feed-feature-intro,
+    .events-feed-feature-text {
+        font-size: 11px;
+        line-height: 1.4;
+        text-align: left;
+    }
+
+    .events-feed-feature-body {
+        gap: 8px;
+    }
+
+    .events-feed-panel--news .events-feed-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        gap: 8px;
+        padding: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 
     .events-feed-list-item {
-        flex-direction: column;
-        align-items: flex-start;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        height: auto;
+        min-height: 46px;
+        max-height: none;
+        padding: 8px 10px 8px 14px;
+        border-radius: 999px;
     }
 
     .events-feed-list-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 11px;
+        line-height: 1.35;
         white-space: normal;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        text-overflow: ellipsis;
+    }
+
+    .events-feed-list-badge {
+        flex: 0 0 auto;
+        align-self: center;
+        min-width: 0;
+        width: auto;
+        max-width: 38%;
+        min-height: 30px;
+        padding: 4px 10px;
+        font-size: 10px;
+        line-height: 1.2;
+        letter-spacing: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-shadow: 0 4px 10px rgba(19, 60, 150, 0.08);
     }
 }

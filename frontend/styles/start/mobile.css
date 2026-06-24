@@ -649,18 +649,12 @@
     }
 
     .events-feed-block {
-        flex: 0 0 var(--events-feed-block-height, 360px);
-        min-height: var(--events-feed-block-height, 360px);
-        max-height: var(--events-feed-block-height, 360px);
-        overflow: hidden;
-    }
-
-    .events-feed-block {
-        --events-feed-block-height: 360px;
-        flex: 0 0 var(--events-feed-block-height);
-        height: var(--events-feed-block-height);
+        --events-feed-block-height: clamp(220px, 30dvh, 360px);
+        flex: 1 1 auto;
+        height: auto;
         min-height: var(--events-feed-block-height);
-        max-height: var(--events-feed-block-height);
+        max-height: none;
+        margin-top: auto;
         padding: 14px;
         border-radius: 22px;
         overflow: hidden;
@@ -750,11 +744,6 @@
 
     .events-feed-feature-head {
         grid-template-columns: 1fr;
-    }
-
-    .events-feed-list-item {
-        flex-direction: column;
-        align-items: flex-start;
     }
 
     .events-feed-list-text,
@@ -5785,5 +5774,267 @@
         font-size: 22px !important;
         font-weight: 800 !important;
         line-height: 1 !important;
+    }
+}
+
+/* Адаптив 360×780 — 1920×1080: телефоны и узкие экраны */
+@media (max-width: 1024px) {
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-dashboard-main,
+    .profile-app:not(.profile-app--dashboard-profile) .events-dashboard-main {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-dashboard-main {
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-shell,
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-panels-stack {
+        flex: 0 0 auto;
+        min-height: 0;
+        overflow: visible;
+        gap: 12px;
+    }
+
+    .events-feed-block {
+        --events-feed-block-height: clamp(200px, 30dvh, 320px);
+        flex: 1 1 auto;
+        height: auto;
+        min-height: clamp(180px, 28dvh, 320px);
+        max-height: none;
+        margin-top: auto;
+        border-radius: 28px;
+        padding: 12px 14px 14px;
+    }
+
+    .events-shell {
+        padding: clamp(10px, 2.8vw, 16px);
+    }
+
+    .event-create-modal .team-rescue-card {
+        width: min(calc(100vw - 24px), 560px);
+        max-width: calc(100vw - 24px);
+        max-height: min(calc(100dvh - 24px), 680px);
+        padding: 22px 16px 20px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        box-sizing: border-box;
+    }
+
+    .event-create-modal .profile-shell-title {
+        margin-top: 36px;
+        font-size: clamp(15px, 4.2vw, 18px);
+    }
+
+    .event-create-modal .event-create-datetime-panel {
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+    }
+
+    .event-create-modal .event-create-submit-row {
+        width: 100%;
+    }
+
+    .event-create-modal .event-create-submit-btn {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .profile-top,
+    .profile-app--dashboard-profile .profile-top {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .profile-photo,
+    .profile-app--dashboard-profile .profile-photo {
+        max-height: clamp(148px, 40vw, 200px);
+        aspect-ratio: 1.05;
+    }
+
+    .profile-stat-track,
+    .profile-app--dashboard-profile .profile-stat-track {
+        grid-template-columns: 28px minmax(0, 1fr);
+        min-height: 32px;
+    }
+
+    .events-calendar-day-card {
+        min-height: clamp(168px, 46vw, 220px);
+        max-height: clamp(168px, 46vw, 220px);
+    }
+
+    .events-calendar-col-body {
+        min-height: 150px;
+        max-height: 260px;
+    }
+
+    .events-feed-block {
+        --events-feed-block-height: clamp(180px, 28dvh, 260px);
+        min-height: clamp(160px, 26dvh, 260px);
+        margin-top: auto;
+        border-radius: 22px;
+    }
+
+    .events-feed-tab {
+        font-size: 9px;
+        letter-spacing: 0.02em;
+        padding: 10px 6px;
+        min-height: 40px;
+    }
+
+    .events-calendar-month-label,
+    .events-calendar-create-btn,
+    .events-calendar-scope-btn {
+        font-size: 10px;
+        letter-spacing: 0.04em;
+    }
+}
+
+@media (max-width: 400px) {
+    .profile-app,
+    .profile-app:not(.profile-app--dashboard-profile),
+    .profile-app--dashboard-profile {
+        width: 100%;
+        max-width: 100%;
+        padding-left: max(10px, env(safe-area-inset-left, 0px));
+        padding-right: max(10px, env(safe-area-inset-right, 0px));
+        padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .profile-app--dashboard-profile::before,
+    .profile-app::before {
+        inset:
+            14px
+            max(10px, env(safe-area-inset-right, 0px))
+            calc(118px + env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-left, 0px));
+    }
+
+    .profile-modal--achievement {
+        width: 100%;
+        padding-left: max(10px, env(safe-area-inset-left, 0px));
+        padding-right: max(10px, env(safe-area-inset-right, 0px));
+        padding-bottom: calc(126px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .profile-modal--achievement .profile-modal-backdrop {
+        inset:
+            14px
+            max(10px, env(safe-area-inset-right, 0px))
+            calc(118px + env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-left, 0px));
+    }
+
+    .event-create-modal .team-rescue-card {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        padding: 18px 14px 16px;
+    }
+
+    .event-create-modal .profile-shell-title {
+        margin-top: 28px;
+    }
+
+    .profile-hero-card,
+    .profile-app--dashboard-profile .profile-hero-card {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .profile-pills-row,
+    .profile-app--dashboard-profile .profile-pills-row {
+        gap: 8px;
+    }
+
+    .profile-info-pill,
+    .profile-app--dashboard-profile .profile-info-pill {
+        min-height: 40px;
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 767px) {
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-panels-stack {
+        flex: 1 1 auto;
+        gap: 16px;
+    }
+
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-block {
+        margin-top: 0;
+        min-height: clamp(260px, 44vh, 460px);
+    }
+
+    .events-calendar-scope {
+        display: none;
+    }
+
+    .events-calendar-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        --events-calendar-gap: 0;
+        gap: 0;
+    }
+
+    .events-calendar-col {
+        flex: 0 0 100%;
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .events-feed-block {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-panel--news .events-feed-list-item {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 46px;
+        height: auto;
+        max-height: none;
+        padding: 8px 10px 8px 14px;
+    }
+
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-panel--news .events-feed-list-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: normal;
+    }
+
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-panel--news .events-feed-list-badge {
+        flex: 0 0 auto;
+        min-width: 0;
+        max-width: 38%;
+        min-height: 30px;
+        padding: 4px 10px;
+        font-size: 10px;
+    }
+
+    .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-panel--activity .events-feed-feature-card {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
     }
 }
