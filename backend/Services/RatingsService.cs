@@ -11,15 +11,18 @@ public class RatingsService : IRatingsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IKrkCalculationService _krkCalculationService;
+    private readonly IAchievementsService _achievementsService;
     private readonly LeagueOptions _leagueOptions;
 
     public RatingsService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
+        IAchievementsService achievementsService,
         IOptions<LeagueOptions> leagueOptions)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
+        _achievementsService = achievementsService;
         _leagueOptions = leagueOptions.Value;
     }
 
@@ -40,10 +43,15 @@ public class RatingsService : IRatingsService
         var completedRescuesByTeam = await GetCompletedRescuesCountByTeamAsync(teamIds, cancellationToken);
         var activityByTeam = await GetActivityHistoryByTeamAsync(teamIds, cancellationToken);
 
-        var ranked = teams
+        var rankedTeams = teams
             .OrderByDescending(team => team.KrkCached)
             .ThenByDescending(team => team.Score)
             .ThenBy(team => team.Name)
+            .ToList();
+
+        await GrantTop3TeamAchievementsAsync(rankedTeams, cancellationToken);
+
+        var ranked = rankedTeams
             .Select((team, index) => MapTeam(
                 team,
                 index + 1,
@@ -173,6 +181,21 @@ public class RatingsService : IRatingsService
         if (hasMissingKrk)
         {
             await _krkCalculationService.RecalculateAllAsync(cancellationToken);
+        }
+    }
+
+    private async Task GrantTop3TeamAchievementsAsync(IReadOnlyCollection<Team> rankedTeams, CancellationToken cancellationToken)
+    {
+        var topMembers = rankedTeams
+            .Take(3)
+            .SelectMany(team => team.Members)
+            .Select(member => member.Id)
+            .Distinct()
+            .ToList();
+
+        foreach (var userId in topMembers)
+        {
+            await _achievementsService.GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
         }
     }
 

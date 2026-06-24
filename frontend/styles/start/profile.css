@@ -594,6 +594,21 @@
     color: rgb(164, 106, 32);
 }
 
+.profile-achievement-item--locked .profile-achievement-circle {
+    opacity: 0.48;
+    filter: grayscale(0.75);
+    box-shadow: 0 8px 18px rgba(60, 60, 60, 0.1);
+}
+
+.profile-achievement-item--locked .profile-achievement-caption {
+    color: rgba(118, 132, 170, 0.72);
+}
+
+.profile-achievement-item--locked .profile-achievement-progress {
+    background: rgba(232, 236, 246, 0.92);
+    color: rgba(118, 132, 170, 0.82);
+}
+
 /* Profile modals */
 .profile-modal {
     position: fixed;
@@ -783,6 +798,23 @@
 .profile-modal-card-body--find {
     align-items: center;
     overflow: hidden;
+}
+
+.profile-modal-card.profile-modal-card--shell.profile-modal-card--find-team {
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.profile-modal-card--find-team .profile-modal-card-body--find {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+}
+
+.profile-modal-card--find-team .profile-team-flow-input,
+.profile-modal-card--find-team .profile-team-flow-stack {
+    flex-shrink: 0;
 }
 
 .profile-modal-card--scroll {
@@ -1865,6 +1897,12 @@
     padding: 4px 2px;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
+}
+
+.profile-modal-card--find-team .profile-team-find-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
 }
 
 .profile-team-find-item {

@@ -327,6 +327,46 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Покидает команду текущего участника (не капитана).
+    /// </summary>
+    [HttpPost("me/leave")]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LeaveMyTeam()
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.LeaveAsync(userId.Value, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            LeaveTeamResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            LeaveTeamResultType.NotInTeam => NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not in a team.",
+                statusCode: StatusCodes.Status404NotFound)),
+            LeaveTeamResultType.IsCaptain => BadRequest(Problem(
+                title: "Captain cannot leave",
+                detail: "The team captain cannot leave the team. Disband the team or transfer captaincy.",
+                statusCode: StatusCodes.Status400BadRequest)),
+            LeaveTeamResultType.Left => NoContent(),
+            _ => Problem(
+                title: "Leave team failed",
+                detail: "Unable to leave the team.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    /// <summary>
     /// Расформировывает команду текущего капитана (временный сценарий для MVP).
     /// </summary>
     [HttpPost("me/disband")]

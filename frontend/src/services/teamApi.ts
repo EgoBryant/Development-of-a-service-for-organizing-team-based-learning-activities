@@ -201,3 +201,11 @@ export function updateVote(
         body: JSON.stringify({ toUserId, score })
     });
 }
+
+export function leaveMyTeam(token: string): Promise<void> {
+    return request<void>("/api/teams/me/leave", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({})
+    });
+}

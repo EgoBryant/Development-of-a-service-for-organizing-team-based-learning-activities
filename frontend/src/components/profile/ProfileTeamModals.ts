@@ -47,7 +47,7 @@ export function renderProfileFindTeamModal(
     return renderProfileModalShell({
         ariaLabel: "Поиск команды",
         closeButtonId: "profileCloseTeamFlowButton",
-        extraCardClass: "profile-modal-card--scroll",
+        extraCardClass: "profile-modal-card--scroll profile-modal-card--find-team",
         bodyHtml: `
             <div class="profile-modal-card-body profile-modal-card-body--find">
                 <input
@@ -76,6 +76,8 @@ export function renderProfileFindTeamModal(
 }
 
 export function renderProfileCreateTeamModal(teamName: string): string {
+    const canCreate = teamName.trim().length >= 3;
+
     return renderProfileModalShell({
         ariaLabel: "Создание команды",
         closeButtonId: "profileCloseTeamFlowButton",
@@ -89,7 +91,7 @@ export function renderProfileCreateTeamModal(teamName: string): string {
                     value="${escapeHtml(teamName)}"
                     autocomplete="off"
                 >
-                <button type="button" class="profile-team-flow-btn profile-team-flow-btn--create" id="profileConfirmCreateTeamButton">СОЗДАТЬ</button>
+                <button type="button" class="profile-team-flow-btn profile-team-flow-btn--create" id="profileConfirmCreateTeamButton"${canCreate ? "" : " disabled"}>СОЗДАТЬ</button>
                 <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileOpenFindTeamFromCreateButton">К ПОИСКУ</button>
             </div>
         `

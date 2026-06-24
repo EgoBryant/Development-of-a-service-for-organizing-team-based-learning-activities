@@ -506,6 +506,15 @@
         font-weight: 500;
     }
 
+    .auth-signup-password-hint {
+        margin: clamp(-8px, -0.42vw, -4px) 0 clamp(16px, 1.56vw, 30px) clamp(24px, 2.24vw, 43px);
+        font-family: 'Montserrat', sans-serif;
+        color: #DF2E80;
+        font-size: clamp(12px, 1.04vw, 18px);
+        font-weight: 500;
+        line-height: 1.35;
+    }
+
     @keyframes slideOutLeft {
         0% {
             opacity: 1;
@@ -914,6 +923,11 @@
         margin-top: -8px;
         margin-bottom: 18px;
         font-size: 12px;
+    }
+
+    .auth-signup-password-hint {
+        margin: -4px 0 12px 18px;
+        font-size: 11px;
     }
 }
 
@@ -1437,6 +1451,15 @@
         font-family: 'Montserrat', sans-serif;
         font-size: 9px;
         font-weight: 500;
+    }
+
+    .auth-signup-password-hint {
+        margin: -2px 0 10px 18px;
+        color: #DF2E80;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 9px;
+        font-weight: 500;
+        line-height: 1.35;
     }
 
     .auth-reveal-field.hidden,

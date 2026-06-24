@@ -405,11 +405,24 @@
     color: var(--exam-text);
 }
 
-.profile-achievement-progress,
-.profile-achievement-item--earned .profile-achievement-progress,
-.profile-achievement-item--progress .profile-achievement-progress {
+.profile-achievement-progress {
     background: rgba(230, 240, 255, 0.96);
     color: var(--exam-muted);
+}
+
+.profile-achievement-item--earned .profile-achievement-progress {
+    background: rgba(218, 242, 255, 0.96);
+    color: rgba(34, 118, 228, 1);
+}
+
+.profile-achievement-item--progress .profile-achievement-progress {
+    background: rgba(255, 246, 224, 0.96);
+    color: rgba(176, 112, 32, 1);
+}
+
+.profile-achievement-item--locked .profile-achievement-progress {
+    background: rgba(232, 236, 246, 0.92);
+    color: rgba(118, 132, 170, 0.82);
 }
 
 .team-no-team-input,
@@ -1304,7 +1317,7 @@
 .profile-app--dashboard-profile .profile-stat-orb--accent,
 .profile-stat-orb--accent,
 .team-top-pill,
-.team-topbar-tab--active,
+.team-topbar-tab--active:not(.team-topbar-tab--leave),
 .team-member-action,
 .team-check-in-pill,
 .team-checkin-btn,
@@ -1341,6 +1354,7 @@
 .profile-sidebar.profile-sidebar--dashboard #profileLogoutButton,
 .profile-app--dashboard-profile #profileLogoutButton,
 .team-action-btn--pink,
+.team-topbar-tab--leave,
 .team-requests-btn--reject,
 .profile-requests-dock-btn--reject,
 .team-rescue-pill,

@@ -1,7 +1,7 @@
 import type { EventCreateDraft } from "./event";
 
 export type TeamEventModalKind = "none" | "create" | "success";
-export type TeamModalKind = "none" | "vote" | "requests" | "rescue" | "checkIn";
+export type TeamModalKind = "none" | "vote" | "requests" | "rescue" | "checkIn" | "leaveTeam";
 export type NoTeamView = "landing" | "create-form" | "search";
 
 export type TeamEventCreateDraft = EventCreateDraft;

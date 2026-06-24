@@ -1,4 +1,5 @@
 import type { AuthResponse, UserProfileResponse } from "../types/auth";
+import { normalizePersonalLeague } from "../utils/personalLeague";
 
 export function buildUserProfileFromAuthResponse(auth: AuthResponse & { id: number }): UserProfileResponse {
     return {
@@ -27,6 +28,6 @@ export function buildUserProfileFromAuthResponse(auth: AuthResponse & { id: numb
         personalRating: auth.personalRating ?? auth.userPoints ?? 0,
         personalRank: auth.personalRank ?? 0,
         personalContribution: auth.personalContribution ?? 0,
-        personalLeague: auth.personalLeague ?? "БАЗОВАЯ"
+        personalLeague: normalizePersonalLeague(auth.personalLeague)
     };
 }

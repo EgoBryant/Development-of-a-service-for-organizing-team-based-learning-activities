@@ -834,6 +834,33 @@
         overflow: hidden;
     }
 
+    .profile-modal-card.profile-modal-card--shell.profile-modal-card--find-team {
+        width: min(calc(100vw - 24px), 500px);
+        height: min(calc(100dvh - 24px), 640px);
+        min-width: 0;
+        min-height: 0;
+        max-width: min(calc(100vw - 24px), 500px);
+        max-height: min(calc(100dvh - 24px), 640px);
+        aspect-ratio: auto;
+        align-items: stretch;
+        justify-content: flex-start;
+        overflow: hidden;
+        padding: 44px 18px 20px;
+    }
+
+    .profile-modal-card--find-team .profile-modal-card-body--find {
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .profile-modal-card--find-team .profile-team-find-list {
+        flex: 1 1 auto;
+        min-height: 200px;
+        max-height: none;
+    }
+
     .team-vote-card.profile-modal-card.profile-modal-card--shell,
     .profile-modal-card.profile-modal-card--shell.team-vote-card {
         width: min(calc(100vw - 24px), 340px);
@@ -2724,6 +2751,16 @@
         height: var(--team-topbar-action);
         background: url("../../src/assets/icons/Applications_button.svg") center / contain no-repeat;
         display: block;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) button.team-topbar-tab--leave.team-topbar-tab--active {
+        background: linear-gradient(180deg, #df2e80 0%, #787cfe 100%);
+        box-shadow: 0 12px 22px rgba(223, 46, 128, 0.28);
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) button.team-topbar-tab--leave.team-topbar-tab--active::before {
+        background: url("../../src/assets/icons/Menu_Icons/Log_Out.svg") center / var(--team-topbar-icon) no-repeat;
+        filter: brightness(0) invert(1);
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-topbar-krk {

@@ -20,4 +20,5 @@ public interface ITeamService
     Task<TeamJoinRequestResult> UpdateJoinRequestStatusAsync(int userId, int requestId, UpdateTeamJoinRequestStatusDto request, CancellationToken cancellationToken = default);
     Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default);
     Task<DisbandTeamResult> DisbandAsync(int userId, CancellationToken cancellationToken = default);
+    Task<LeaveTeamResult> LeaveAsync(int userId, CancellationToken cancellationToken = default);
 }
