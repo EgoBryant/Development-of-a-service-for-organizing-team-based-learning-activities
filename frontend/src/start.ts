@@ -31,6 +31,7 @@ import {
     renderSettingsPageMain
 } from "./pages/SettingsPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
+import { ratingFlowState } from "./state/ratingFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
 import {
     bindEventCreateFormSubmit,
@@ -53,7 +54,12 @@ import {
     getUserEventsForDateKey,
     loadPersistedUserEvents
 } from "./state/eventsCalendarState";
-import { loadPersistedActivityFeed, pushActivityFeedItem } from "./state/activityFeedState";
+import { loadPersistedActivityFeed, pushActivityFeedItem, getActivityFeedItems } from "./state/activityFeedState";
+import {
+    computeCheckInWeeklyStats,
+    mapApiWeeklyStats,
+    type CheckInWeeklyStats
+} from "./utils/checkInWeeklyStats";
 import { loadPersistedNewsFeed, pushNewsPost } from "./state/newsFeedState";
 import type { ActivityFeedPushInput } from "./types/activity";
 import type {
@@ -103,6 +109,7 @@ import {
 } from "./components/profile/ProfileTeamModals";
 import { renderProfileModalShell } from "./components/profile/ProfileModalShell";
 import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
+import { renderTeamCheckInModal, wireTeamCheckInModal } from "./components/modals/TeamCheckInModal";
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
 import { renderPublicAchievementsStrip } from "./components/rating/PublicUserProfile";
 import { getProfileAchievementById } from "./data/profileAchievements";
@@ -122,6 +129,8 @@ import {
     fetchHelpRequests,
     fetchMyTeam,
     fetchMyVotes,
+    fetchTeamActivity,
+    fetchTeamWeeklyStats,
     fetchTeams,
     fetchTeamJoinRequests,
     joinTeam as joinTeamApi,
@@ -194,6 +203,8 @@ const appState: AppState = {
     teamCatalog: [],
     teamCheckIns: [],
     teamHelpRequests: [],
+    teamActivityFeed: [],
+    teamWeeklyStats: null,
     teamJoinRequests: [],
     teamMyVotes: [],
     statusMessage: "",
@@ -340,7 +351,7 @@ function ensureTeamRescueDraft(): TeamRescueDraft {
 }
 
 function openRescueModal(): void {
-    if (appState.view !== "account") {
+    if (appState.view !== "account" || !isTeamCaptain()) {
         return;
     }
     appState.dashboardSection = "team";
@@ -418,6 +429,10 @@ async function submitTeamRescueDraftToAssignments(draft: TeamRescueDraft): Promi
 }
 
 async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
+    if (!isTeamCaptain()) {
+        throw new Error("Запрос спасения может отправить только капитан команды.");
+    }
+
     const token = getSessionToken();
     const toTeamId = Number(draft.targetTeamId);
     if (!token || !Number.isFinite(toTeamId) || toTeamId <= 0) {
@@ -1526,6 +1541,8 @@ function resetProfileUi(): void {
     appState.teamCatalog = [];
     appState.teamCheckIns = [];
     appState.teamHelpRequests = [];
+    appState.teamActivityFeed = [];
+    appState.teamWeeklyStats = null;
     appState.teamJoinRequests = [];
     appState.teamMyVotes = [];
     clearRatingData();
@@ -1591,6 +1608,12 @@ function getEffectiveTeamScore(): string {
     }
 
     return appState.profile?.teamScore ? String(appState.profile.teamScore) : "—";
+}
+
+function getEffectiveTeamScoreNumber(): number {
+    const raw = getEffectiveTeamScore();
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function buildTeamInviteLink(): string {
@@ -2814,6 +2837,37 @@ async function refreshTeamWorkspace(): Promise<void> {
             appState.currentTeam = null;
         }
     }
+
+    if (appState.currentTeam || appState.profile?.teamId) {
+        try {
+            appState.teamCheckIns = await fetchCheckIns(token);
+        } catch {
+            appState.teamCheckIns = [];
+        }
+
+        try {
+            appState.teamHelpRequests = await fetchHelpRequests(token);
+        } catch {
+            appState.teamHelpRequests = [];
+        }
+
+        try {
+            appState.teamActivityFeed = await fetchTeamActivity(token);
+        } catch {
+            appState.teamActivityFeed = [];
+        }
+
+        try {
+            appState.teamWeeklyStats = await fetchTeamWeeklyStats(token);
+        } catch {
+            appState.teamWeeklyStats = null;
+        }
+    } else {
+        appState.teamCheckIns = [];
+        appState.teamHelpRequests = [];
+        appState.teamActivityFeed = [];
+        appState.teamWeeklyStats = null;
+    }
 }
 
 function isTeamCaptain(): boolean {
@@ -3018,7 +3072,8 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
         label: "CHECK-IN",
         title: `Команда завершила check-in ${checkIn.weekNumber} недели.`,
         meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc),
-        pointsLabel: "15"
+        pointsLabel: "15",
+        occurredAtUtc: checkIn.submittedAtUtc ?? checkIn.createdAtUtc
     }));
 
     const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
@@ -3027,24 +3082,25 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
             ? `Команда «${request.fromTeamName}» отправила запрос на помощь по теме «${request.topic || "Спасение"}».`
             : `Запрос на помощь по теме «${request.topic || "Спасение"}».`,
         meta: `${request.fromTeamName} → ${request.toTeamName}`,
-        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined
+        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined,
+        occurredAtUtc: request.createdAtUtc
     }));
 
     const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
         label: "ЗАЯВКА",
         title: `${request.displayName || request.userName || "Участник"} подал заявку на вступление в команду.`,
-        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
+        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc),
+        occurredAtUtc: request.decidedAtUtc ?? request.createdAtUtc
     }));
 
     const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
         label: "ГОЛОС",
         title: `Вы оценили вклад участника ${vote.toUserName || "участника"} на ${vote.score}/5.`,
-        meta: formatShortDate(vote.createdAtUtc)
+        meta: formatShortDate(vote.createdAtUtc),
+        occurredAtUtc: vote.createdAtUtc
     }));
 
     const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
-    // TEMP: переключить на false после проверки вёрстки истории
-    const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
     if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
         return getTempTeamHistoryPreview();
     }
@@ -3058,6 +3114,28 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
                   meta: "MVP"
               }
           ];
+}
+
+const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
+
+function resolveCheckInWeeklyStats(): CheckInWeeklyStats {
+    const computed = computeCheckInWeeklyStats({
+        history: getTeamHistoryItems(),
+        helpRequests: appState.teamHelpRequests,
+        activityItems: [...appState.teamActivityFeed, ...getActivityFeedItems()],
+        currentTeamId: appState.currentTeam?.id ?? appState.profile?.teamId ?? null,
+        includeUndatedHistory: USE_TEMP_TEAM_HISTORY_PREVIEW
+    });
+
+    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
+        return computed;
+    }
+
+    if (appState.teamWeeklyStats) {
+        return mapApiWeeklyStats(appState.teamWeeklyStats);
+    }
+
+    return computed;
 }
 
 function getJoinableTeams(searchQuery?: string): TeamSearchItem[] {
@@ -3227,6 +3305,12 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     }
 
     if (kind === "rescue") {
+        if (!isTeamCaptain()) {
+            appState.teamModal = "none";
+            render();
+            return;
+        }
+
         ensureTeamRescueDraft();
         teamFlowState.rescueLeagueDropdownOpen = false;
         teamFlowState.rescueTagDropdownOpen = false;
@@ -3237,6 +3321,9 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     if (kind === "checkIn") {
         teamFlowState.checkInWeek = teamFlowState.checkInWeek || String(Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
         teamFlowState.checkInError = "";
+        teamFlowState.checkInProductivity = 0;
+        teamFlowState.checkInCommunication = 0;
+        teamFlowState.checkInSatisfaction = 0;
     }
 
     if (kind === "vote") {
@@ -3260,6 +3347,16 @@ function closeTeamModal(): void {
     teamFlowState.rescueTagDropdownOpen = false;
     teamFlowState.rescueDeadlineCalendarOpen = false;
     render();
+}
+
+function isDashboardNavigationBlocked(): boolean {
+    return (
+        appState.profileModal !== "none" ||
+        appState.teamModal !== "none" ||
+        appState.eventsModal !== "none" ||
+        teamFlowState.eventModal !== "none" ||
+        ratingFlowState.rescueOpen
+    );
 }
 
 function syncTeamRescueDraftFromForm(): void {
@@ -3354,6 +3451,38 @@ function wireTeamVoteModalEvents(): void {
     }
 }
 
+function wireTeamCheckInModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "checkIn") {
+        return;
+    }
+
+    wireTeamCheckInModal(profileMount, {
+        onClose: () => {
+            closeTeamModal();
+        },
+        onRender: () => {
+            render();
+        },
+        onSubmit: ({ weekNumber, reportText }) => {
+            void submitTeamCheckIn(weekNumber, reportText)
+                .then(() => {
+                    teamFlowState.checkInWeek = "";
+                    teamFlowState.checkInReport = "";
+                    teamFlowState.checkInError = "";
+                    teamFlowState.checkInProductivity = 0;
+                    teamFlowState.checkInCommunication = 0;
+                    teamFlowState.checkInSatisfaction = 0;
+                    setStatus("Check-in отправлен.");
+                    closeTeamModal();
+                })
+                .catch((error: unknown) => {
+                    teamFlowState.checkInError = getErrorMessage(error);
+                    render();
+                });
+        }
+    });
+}
+
 function wireTeamRescueModalEvents(): void {
     if (!isHTMLElement(profileMount) || appState.teamModal !== "rescue") {
         return;
@@ -3366,6 +3495,12 @@ function wireTeamRescueModalEvents(): void {
         onClose: closeTeamModal,
         onRender: render,
         onSubmit: (nextDraft) => {
+            if (!isTeamCaptain()) {
+                setStatus("Запрос спасения может отправить только капитан команды.", "error");
+                render();
+                return;
+            }
+
             if (!nextDraft.topic.trim()) {
                 setStatus("Укажите название спасения.", "error");
                 render();
@@ -3494,39 +3629,15 @@ function renderTeamModal(): string {
     }
 
     if (appState.teamModal === "checkIn") {
-        const nextWeek = String(teamFlowState.checkInWeek || Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
+        const nextWeek = Number(teamFlowState.checkInWeek || Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
         const errorHtml = teamFlowState.checkInError
-            ? `<p class="team-validation-error team-validation-error--modal">${escapeHtml(teamFlowState.checkInError)}</p>`
+            ? `<p class="team-validation-error team-validation-error--modal team-checkin-field-error" role="alert">${escapeHtml(teamFlowState.checkInError)}</p>`
             : "";
 
-        return renderProfileModalShell({
-            ariaLabel: "Check-in команды",
-            closeButtonId: "teamCloseCheckInButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal team-rescue-modal",
-            extraCardClass: "profile-modal-card--form",
-            bodyHtml: `
-                <h2 class="profile-shell-title">CHECK-IN</h2>
-                ${errorHtml}
-                <form id="teamCheckInForm" class="team-rescue-form profile-modal-card-body" novalidate>
-                    <input
-                        id="teamCheckInWeekInput"
-                        class="team-rescue-field"
-                        type="number"
-                        min="1"
-                        max="52"
-                        placeholder="НЕДЕЛЯ"
-                        value="${escapeHtml(nextWeek)}"
-                    >
-                    <textarea
-                        id="teamCheckInReportInput"
-                        class="team-rescue-textarea"
-                        placeholder="Кратко опишите прогресс, риски и договоренности команды"
-                        aria-label="Отчет команды"
-                    >${escapeHtml(teamFlowState.checkInReport)}</textarea>
-                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
-                </form>
-            `
+        return renderTeamCheckInModal({
+            weekNumber: nextWeek,
+            weeklyStats: resolveCheckInWeeklyStats(),
+            errorHtml
         });
     }
 
@@ -4537,7 +4648,7 @@ function renderProfileView(): void {
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
     const navSettingsActive = appState.dashboardSection === "settings" ? " is-active" : "";
-    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
+    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}${isDashboardNavigationBlocked() ? " is-dashboard-modal-open" : ""}`;
     const extraNavHtml = `
                     <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
                     <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
@@ -4906,7 +5017,7 @@ function wireMobileProfileMenu(): void {
             return;
         }
 
-        if (appState.profileModal !== "none" || appState.teamModal !== "none" || appState.eventsModal !== "none") {
+        if (isDashboardNavigationBlocked()) {
             return;
         }
 
@@ -5023,6 +5134,10 @@ function wireProfileViewEvents(): void {
     const logoutButton = profileMount.querySelector("#profileLogoutButton");
     if (isHTMLButtonElement(logoutButton)) {
         logoutButton.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             clearSession();
             appState.profile = null;
             resetProfileUi();
@@ -5035,6 +5150,10 @@ function wireProfileViewEvents(): void {
     const settingsButton = profileMount.querySelector("#profileSettingsButton");
     if (isHTMLButtonElement(settingsButton)) {
         settingsButton.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             openSettingsView();
         });
     }
@@ -5042,6 +5161,10 @@ function wireProfileViewEvents(): void {
     const teamPill = profileMount.querySelector("#profileTeamPillButton");
     if (isHTMLButtonElement(teamPill)) {
         teamPill.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             if (tryOpenNoTeamModal()) {
                 return;
             }
@@ -5056,12 +5179,20 @@ function wireProfileViewEvents(): void {
     const ratingTrackButton = profileMount.querySelector("#profileRatingTrackButton");
     if (isHTMLButtonElement(ratingTrackButton)) {
         ratingTrackButton.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             openRatingDashboard();
         });
     }
 
     profileMount.querySelectorAll<HTMLButtonElement>("[data-dashboard]").forEach((button) => {
         button.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             const section = button.dataset.dashboard as DashboardSection | undefined;
             if (!section) {
                 return;
@@ -5094,6 +5225,10 @@ function wireProfileViewEvents(): void {
 
     profileMount.querySelectorAll<HTMLButtonElement>("[data-dashboard-placeholder]").forEach((button) => {
         button.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             setStatus("Раздел скоро будет доступен.");
             render();
         });
@@ -5112,6 +5247,7 @@ function wireProfileViewEvents(): void {
     wireEventsModalEvents();
 
     wireTeamRescueModalEvents();
+    wireTeamCheckInModalEvents();
 
     wireTeamVoteModalEvents();
 
@@ -5125,65 +5261,6 @@ function wireProfileViewEvents(): void {
     if (isHTMLButtonElement(teamCloseVote)) {
         teamCloseVote.addEventListener("click", () => {
             closeTeamModal();
-        });
-    }
-
-    const teamCloseCheckIn = profileMount.querySelector("#teamCloseCheckInButton");
-    if (isHTMLButtonElement(teamCloseCheckIn)) {
-        teamCloseCheckIn.addEventListener("click", () => {
-            closeTeamModal();
-        });
-    }
-
-    const checkInWeek = profileMount.querySelector("#teamCheckInWeekInput");
-    if (isHTMLInputElement(checkInWeek)) {
-        checkInWeek.addEventListener("input", () => {
-            teamFlowState.checkInWeek = checkInWeek.value;
-            teamFlowState.checkInError = "";
-        });
-    }
-
-    const checkInReport = profileMount.querySelector("#teamCheckInReportInput");
-    if (checkInReport instanceof HTMLTextAreaElement) {
-        checkInReport.addEventListener("input", () => {
-            teamFlowState.checkInReport = checkInReport.value;
-            teamFlowState.checkInError = "";
-        });
-    }
-
-    const checkInForm = profileMount.querySelector("#teamCheckInForm");
-    if (isHTMLFormElement(checkInForm)) {
-        checkInForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const week = Number(isHTMLInputElement(checkInWeek) ? checkInWeek.value : teamFlowState.checkInWeek);
-            const report = checkInReport instanceof HTMLTextAreaElement
-                ? checkInReport.value.trim()
-                : teamFlowState.checkInReport.trim();
-
-            if (!Number.isInteger(week) || week < 1 || week > 52) {
-                teamFlowState.checkInError = "Укажите неделю от 1 до 52.";
-                render();
-                return;
-            }
-
-            if (!report) {
-                teamFlowState.checkInError = "Заполните текст отчета.";
-                render();
-                return;
-            }
-
-            void submitTeamCheckIn(week, report)
-                .then(() => {
-                    teamFlowState.checkInWeek = "";
-                    teamFlowState.checkInReport = "";
-                    teamFlowState.checkInError = "";
-                    setStatus("Check-in отправлен.");
-                    closeTeamModal();
-                })
-                .catch((error: unknown) => {
-                    teamFlowState.checkInError = getErrorMessage(error);
-                    render();
-                });
         });
     }
 

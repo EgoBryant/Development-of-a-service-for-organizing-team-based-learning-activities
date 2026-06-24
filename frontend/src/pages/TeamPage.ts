@@ -81,9 +81,10 @@ function syncTeamCarouselArrows(root: HTMLElement): void {
 export function renderTeamPageMain(statusHtml: string): string {
     const bridge = getAppBridge();
     const hasTeamAccess = bridge.hasTeamAccess();
+    const isCaptain = bridge.isCurrentUserCaptain();
     const body = hasTeamAccess ? renderActiveTeamBlock() : renderNoTeamBlock();
     const rescueButton = hasTeamAccess
-        ? `<button type="button" class="team-action-btn team-action-btn--pink team-rescue-mobile-action" id="teamRescueButton" data-team-rescue-button>СПАСЕНИЕ</button>`
+        ? `<button type="button" class="team-action-btn team-action-btn--pink team-rescue-mobile-action" id="teamRescueButton" data-team-rescue-button ${isCaptain ? "" : "disabled"}>СПАСЕНИЕ</button>`
         : "";
 
     return `

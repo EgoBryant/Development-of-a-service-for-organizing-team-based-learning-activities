@@ -14,6 +14,9 @@ export interface TeamFlowState {
     checkInWeek: string;
     checkInReport: string;
     checkInError: string;
+    checkInProductivity: number;
+    checkInCommunication: number;
+    checkInSatisfaction: number;
     voteDraftScore: number | null;
     voteDropdownOpen: boolean;
     rescueLeagueDropdownOpen: boolean;
@@ -52,6 +55,9 @@ export const teamFlowState: TeamFlowState = {
     checkInWeek: "",
     checkInReport: "",
     checkInError: "",
+    checkInProductivity: 0,
+    checkInCommunication: 0,
+    checkInSatisfaction: 0,
     voteDraftScore: null,
     voteDropdownOpen: false,
     rescueLeagueDropdownOpen: false,

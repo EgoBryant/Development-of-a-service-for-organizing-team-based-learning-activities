@@ -139,6 +139,26 @@ export interface TeamHistoryItem {
     title: string;
     meta: string;
     pointsLabel?: string;
+    occurredAtUtc?: string;
+}
+
+export interface TeamActivityFeedItem {
+    id: number;
+    type: string;
+    message: string;
+    teamId: number | null;
+    teamName: string;
+    userId: number | null;
+    userName: string;
+    createdAtUtc: string;
+}
+
+export interface TeamWeeklyStats {
+    pointsEarned: number;
+    teamsRescued: number;
+    eventsHeld: number;
+    weekStartUtc: string;
+    weekEndUtc: string;
 }
 
 export interface TeamSearchItem {

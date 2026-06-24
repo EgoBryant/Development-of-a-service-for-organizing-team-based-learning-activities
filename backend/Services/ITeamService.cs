@@ -11,6 +11,7 @@ public interface ITeamService
     Task<TeamResponse?> GetByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default);
     Task<TeamResponse?> GetForUserAsync(int userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<ActivityFeedItemResponse>> GetActivityForUserTeamAsync(int userId, int limit, CancellationToken cancellationToken = default);
+    Task<TeamWeeklyStatsResponse?> GetWeeklyStatsForUserTeamAsync(int userId, CancellationToken cancellationToken = default);
     Task<int?> GetTeamIdForUserAsync(int userId, CancellationToken cancellationToken = default);
     Task<CreateTeamResult> CreateAsync(int userId, CreateTeamDto request, CancellationToken cancellationToken = default);
     Task<JoinTeamResult> JoinAsync(int userId, JoinTeamRequest request, CancellationToken cancellationToken = default);

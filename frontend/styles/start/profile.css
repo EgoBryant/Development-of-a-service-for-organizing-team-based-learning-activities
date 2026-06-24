@@ -1368,6 +1368,15 @@
     transform: none;
 }
 
+.profile-app.is-dashboard-modal-open .profile-sidebar {
+    pointer-events: none;
+}
+
+.profile-app.is-dashboard-modal-open .profile-sidebar .profile-nav-button:not(.profile-nav-button--disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .profile-app--dashboard-profile #profileLogoutButton {
     background: var(--exam-button-gradient-red);
 }
