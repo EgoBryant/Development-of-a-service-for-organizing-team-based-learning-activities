@@ -47,6 +47,13 @@ export function getTodayCalendarStartIndex(): number {
     return todayIndex >= 0 ? todayIndex : 0;
 }
 
+/** Индекс начала демо-недели (1–4 июня) для макета вкладки «События». */
+export function getDemoEventsCalendarStartIndex(): number {
+    const demoStart = new Date(EVENTS_CALENDAR_YEAR, 5, 1);
+    const dayIndex = getCalendarDayIndexForDate(demoStart);
+    return clampCalendarStartIndex(dayIndex >= 0 ? dayIndex : 0);
+}
+
 export function clampCalendarStartIndex(index: number): number {
     const maxStart = Math.max(0, getEventsCalendarYearDates().length - EVENTS_CALENDAR_VISIBLE_DAYS);
     return Math.min(Math.max(0, index), maxStart);

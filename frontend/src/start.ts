@@ -1,4 +1,4 @@
-﻿import "../styles/start.css";
+import "../styles/start.css";
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
@@ -48,8 +48,8 @@ import {
     clampCalendarStartIndex,
     EVENTS_CALENDAR_VISIBLE_DAYS,
     getCalendarStartIndexForDateTime,
+    getDemoEventsCalendarStartIndex,
     getEventsCalendarYearDates,
-    getTodayCalendarStartIndex,
     getUserEventsForDateKey,
     loadPersistedUserEvents
 } from "./state/eventsCalendarState";
@@ -177,7 +177,7 @@ const appState: AppState = {
     teamRescueDraft: null,
     eventsCalendarScope: "all",
     eventsFeedTab: "activity",
-    eventsCalendarStartIndex: getTodayCalendarStartIndex(),
+    eventsCalendarStartIndex: getDemoEventsCalendarStartIndex(),
     eventsModal: "none",
     eventsCreateDraft: null,
     eventsShowValidationError: false,
@@ -1786,7 +1786,8 @@ function applyProfileEditsToInMemoryProfile(): void {
 }
 
 function resetEventsCalendarToToday(): void {
-    appState.eventsCalendarStartIndex = clampCalendarStartIndex(getTodayCalendarStartIndex());
+    appState.eventsCalendarStartIndex = getDemoEventsCalendarStartIndex();
+    appState.eventsFeedTab = "activity";
 }
 
 function getEventsCalendarMaxStartIndex(): number {
@@ -2186,19 +2187,19 @@ function syncEventsFeedTabsIndicator(options?: { instant?: boolean }): void {
     }
 
     const indicator = tabsRoot.querySelector<HTMLElement>(".events-feed-tabs-indicator");
-    const highlightedTab = tabsRoot.querySelector<HTMLElement>(".events-feed-tab:not(.is-active)");
-    if (!indicator || !highlightedTab) {
+    const activeTab = tabsRoot.querySelector<HTMLElement>(".events-feed-tab.is-active");
+    if (!indicator || !activeTab) {
         return;
     }
 
     const applyPosition = (): void => {
         const tabsRect = tabsRoot.getBoundingClientRect();
-        const highlightedRect = highlightedTab.getBoundingClientRect();
-        const x = highlightedRect.left - tabsRect.left;
-        const y = highlightedRect.top - tabsRect.top;
+        const activeRect = activeTab.getBoundingClientRect();
+        const x = activeRect.left - tabsRect.left;
+        const y = activeRect.top - tabsRect.top;
 
-        indicator.style.width = `${highlightedRect.width}px`;
-        indicator.style.height = `${highlightedRect.height}px`;
+        indicator.style.width = `${activeRect.width}px`;
+        indicator.style.height = `${activeRect.height}px`;
         indicator.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     };
 

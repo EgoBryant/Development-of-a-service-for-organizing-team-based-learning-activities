@@ -1155,7 +1155,8 @@
     .event-create-modal .team-rescue-field--duo,
     .event-create-modal .team-rescue-select.team-rescue-field--tag,
     .event-create-modal .team-rescue-select.team-rescue-field--duo,
-    .event-create-modal .team-rescue-field--datetime {
+    .event-create-modal .event-create-datetime-trigger,
+    .event-create-modal .event-create-format-trigger {
         min-height: 44px;
         padding: 12px 16px;
         font-size: 12px;
