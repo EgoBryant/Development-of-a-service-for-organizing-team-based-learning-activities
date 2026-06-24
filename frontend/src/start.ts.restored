@@ -2,10 +2,8 @@
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
-import ligaMobileIconUrl from "./assets/icons/Liga_mobile.svg";
 import profileMenuIconUrl from "./assets/icons/Menu_Icons/Profile.svg";
 import ratingMenuIconUrl from "./assets/icons/Menu_Icons/Rating.svg";
-import scoreMobileIconUrl from "./assets/icons/Score_mobile.svg";
 import settingsMenuIconUrl from "./assets/icons/Menu_Icons/Settings.svg";
 import tasksMenuIconUrl from "./assets/icons/Menu_Icons/Tasks.svg";
 import teamMenuIconUrl from "./assets/icons/Menu_Icons/Team.svg";
@@ -119,7 +117,7 @@ import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/pro
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
 
-/** Событие открытия модалки «Спасение» с любого места UI. */
+/** ╨б╨╛╨▒╤Л╤В╨╕╨╡ ╨╛╤В╨║╤А╤Л╤В╨╕╤П ╨╝╨╛╨┤╨░╨╗╨║╨╕ ┬л╨б╨┐╨░╤Б╨╡╨╜╨╕╨╡┬╗ ╤Б ╨╗╤О╨▒╨╛╨│╨╛ ╨╝╨╡╤Б╤В╨░ UI. */
 export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
 
 const LOCAL_TEAM_STORAGE_PREFIX = "team-exam-local-team:";
@@ -186,7 +184,7 @@ const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
-const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
+const INVALID_CREDENTIALS_MESSAGE = "╨Э╨╡╨▓╨╡╤А╨╜╨░╤П ╨┐╨╛╤З╤В╨░ ╨╕╨╗╨╕ ╨┐╨░╤А╨╛╨╗╤М.";
 
 void bootstrap();
 
@@ -324,7 +322,7 @@ async function submitTeamCheckIn(weekNumber: number, reportText: string): Promis
         pushUserActivity({
             kind: "check_in",
             title: "CHECK-IN",
-            description: `Отчет за ${weekNumber} неделю сохранен локально.`
+            description: `╨Ю╤В╤З╨╡╤В ╨╖╨░ ${weekNumber} ╨╜╨╡╨┤╨╡╨╗╤О ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜ ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛.`
         });
         return;
     }
@@ -340,8 +338,8 @@ async function submitTeamVote(memberId: string, score: number): Promise<void> {
     if (!token || !Number.isFinite(numericMemberId) || numericMemberId <= 0) {
         pushUserActivity({
             kind: "team_achievement",
-            title: "ГОЛОС КОМАНДЫ",
-            description: `Оценка ${score}/5 сохранена локально.`
+            title: "╨У╨Ю╨Ы╨Ю╨б ╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨л",
+            description: `╨Ю╤Ж╨╡╨╜╨║╨░ ${score}/5 ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨░ ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛.`
         });
         return;
     }
@@ -367,8 +365,8 @@ async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
     if (!token || !Number.isFinite(toTeamId) || toTeamId <= 0) {
         pushUserActivity({
             kind: "rescue_sent",
-            title: "ЗАПРОС СПАСЕНИЯ",
-            description: `Тема: «${draft.topic.trim()}». Запрос сохранен локально.`
+            title: "╨Ч╨Р╨Я╨а╨Ю╨б ╨б╨Я╨Р╨б╨Х╨Э╨Ш╨п",
+            description: `╨в╨╡╨╝╨░: ┬л${draft.topic.trim()}┬╗. ╨Ч╨░╨┐╤А╨╛╤Б ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜ ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛.`
         });
         return;
     }
@@ -378,7 +376,7 @@ async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
         topic: draft.topic.trim(),
         tag: draft.tag.trim(),
         description: draft.description.trim(),
-        format: "Воркшоп",
+        format: "╨Т╨╛╤А╨║╤И╨╛╨┐",
         scheduledAtUtc: parseLocalDateTimeToUtc(draft.deadline),
         leagueLabel: draft.league.trim(),
         bonusPoints: 10
@@ -401,10 +399,10 @@ async function submitHelpRequestStatus(id: number, status: string): Promise<void
 async function requestTeamJoin(teamId: number): Promise<void> {
     const token = getSessionToken();
     if (!token) {
-        throw new Error("Войдите в аккаунт, чтобы отправить заявку в команду.");
+        throw new Error("╨Т╨╛╨╣╨┤╨╕╤В╨╡ ╨▓ ╨░╨║╨║╨░╤Г╨╜╤В, ╤З╤В╨╛╨▒╤Л ╨╛╤В╨┐╤А╨░╨▓╨╕╤В╤М ╨╖╨░╤П╨▓╨║╤Г ╨▓ ╨║╨╛╨╝╨░╨╜╨┤╤Г.");
     }
 
-    const created = await createTeamJoinRequest(token, teamId, "Хочу присоединиться к команде.");
+    const created = await createTeamJoinRequest(token, teamId, "╨е╨╛╤З╤Г ╨┐╤А╨╕╤Б╨╛╨╡╨┤╨╕╨╜╨╕╤В╤М╤Б╤П ╨║ ╨║╨╛╨╝╨░╨╜╨┤╨╡.");
     appState.teamJoinRequests = [
         created,
         ...appState.teamJoinRequests.filter((item) => item.id !== created.id)
@@ -452,7 +450,7 @@ async function submitProfileTeamCreate(button?: HTMLButtonElement): Promise<void
     const nameInputEl = isHTMLElement(profileMount) ? profileMount.querySelector("#profileTeamNameInput") : null;
     const name = (
         isHTMLInputElement(nameInputEl) ? nameInputEl.value : appState.profileCreateTeamName
-    ).trim() || "КОМАНДА";
+    ).trim() || "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р";
     const direction = appState.profileCreateTeamDirection.trim();
 
     appState.profileCreateTeamName = name;
@@ -553,7 +551,7 @@ function openTeamRequestApplicantProfile(requestId: number): void {
             render();
         })
         .catch(() => {
-            // Профиль отображается по данным заявки.
+            // ╨Я╤А╨╛╤Д╨╕╨╗╤М ╨╛╤В╨╛╨▒╤А╨░╨╢╨░╨╡╤В╤Б╤П ╨┐╨╛ ╨┤╨░╨╜╨╜╤Л╨╝ ╨╖╨░╤П╨▓╨║╨╕.
         });
 }
 
@@ -567,8 +565,8 @@ function handleTeamJoinRequestDecision(id: number, status: string): void {
             );
             setStatus(
                 status === "Accepted"
-                    ? "Заявка на вступление принята."
-                    : "Заявка на вступление отклонена."
+                    ? "╨Ч╨░╤П╨▓╨║╨░ ╨╜╨░ ╨▓╤Б╤В╤Г╨┐╨╗╨╡╨╜╨╕╨╡ ╨┐╤А╨╕╨╜╤П╤В╨░."
+                    : "╨Ч╨░╤П╨▓╨║╨░ ╨╜╨░ ╨▓╤Б╤В╤Г╨┐╨╗╨╡╨╜╨╕╨╡ ╨╛╤В╨║╨╗╨╛╨╜╨╡╨╜╨░."
             );
             returnToTeamRequests();
         })
@@ -588,8 +586,8 @@ async function joinTeamByInviteCode(code: string): Promise<JoinTeamResult> {
             await refreshTeamWorkspace();
             pushUserActivity({
                 kind: "team_joined",
-                title: "ВСТУПЛЕНИЕ В КОМАНДУ",
-                description: `Вы присоединились к команде «${team.name}».`
+                title: "╨Т╨б╨в╨г╨Я╨Ы╨Х╨Э╨Ш╨Х ╨Т ╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨г",
+                description: `╨Т╤Л ╨┐╤А╨╕╤Б╨╛╨╡╨┤╨╕╨╜╨╕╨╗╨╕╤Б╤М ╨║ ╨║╨╛╨╝╨░╨╜╨┤╨╡ ┬л${team.name}┬╗.`
             });
             return { ok: true, errorMessage: "" };
         } catch (error) {
@@ -598,16 +596,16 @@ async function joinTeamByInviteCode(code: string): Promise<JoinTeamResult> {
     }
 
     if (!isDemoInviteCodeValid(code)) {
-        return { ok: false, errorMessage: "НЕВЕРНЫЙ КОД ПРИГЛАШЕНИЯ" };
+        return { ok: false, errorMessage: "╨Э╨Х╨Т╨Х╨а╨Э╨л╨Щ ╨Ъ╨Ю╨Ф ╨Я╨а╨Ш╨У╨Ы╨Р╨и╨Х╨Э╨Ш╨п" };
     }
 
     const normalized = normalizeInviteCode(code);
     const captain = buildLocalCaptainMemberRow();
     const members = captain ? [captain] : [];
     appState.localCreatedTeam = {
-        name: "КОМАНДА ДЕМО",
+        name: "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р ╨Ф╨Х╨Ь╨Ю",
         inviteCode: normalized,
-        direction: "ВСТУПЛЕНИЕ ПО КОДУ",
+        direction: "╨Т╨б╨в╨г╨Я╨Ы╨Х╨Э╨Ш╨Х ╨Я╨Ю ╨Ъ╨Ю╨Ф╨г",
         members
     };
     persistLocalTeam();
@@ -622,15 +620,15 @@ async function joinTeamByInviteCode(code: string): Promise<JoinTeamResult> {
 
     pushUserActivity({
         kind: "team_joined",
-        title: "ВСТУПЛЕНИЕ В КОМАНДУ",
-        description: `Вы присоединились к команде «${appState.localCreatedTeam.name}».`
+        title: "╨Т╨б╨в╨г╨Я╨Ы╨Х╨Э╨Ш╨Х ╨Т ╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨г",
+        description: `╨Т╤Л ╨┐╤А╨╕╤Б╨╛╨╡╨┤╨╕╨╜╨╕╨╗╨╕╤Б╤М ╨║ ╨║╨╛╨╝╨░╨╜╨┤╨╡ ┬л${appState.localCreatedTeam.name}┬╗.`
     });
 
     return { ok: true, errorMessage: "" };
 }
 
 async function createTeamFromBridge(name: string, direction: string): Promise<void> {
-    const teamName = name.trim() || "КОМАНДА";
+    const teamName = name.trim() || "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р";
     const token = getSessionToken();
     if (token) {
         const team = await createTeamApi(token, {
@@ -653,8 +651,8 @@ async function createTeamFromBridge(name: string, direction: string): Promise<vo
 
         pushUserActivity({
             kind: "team_created",
-            title: "КОМАНДА СОЗДАНА",
-            description: `Создана команда «${team.name}»${team.description ? ` · ${team.description}` : ""}.`
+            title: "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р ╨б╨Ю╨Ч╨Ф╨Р╨Э╨Р",
+            description: `╨б╨╛╨╖╨┤╨░╨╜╨░ ╨║╨╛╨╝╨░╨╜╨┤╨░ ┬л${team.name}┬╗${team.description ? ` ┬╖ ${team.description}` : ""}.`
         });
         return;
     }
@@ -683,8 +681,8 @@ async function createTeamFromBridge(name: string, direction: string): Promise<vo
 
     pushUserActivity({
         kind: "team_created",
-        title: "КОМАНДА СОЗДАНА",
-        description: `Создана команда «${teamName}»${direction ? ` · ${direction}` : ""}.`
+        title: "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р ╨б╨Ю╨Ч╨Ф╨Р╨Э╨Р",
+        description: `╨б╨╛╨╖╨┤╨░╨╜╨░ ╨║╨╛╨╝╨░╨╜╨┤╨░ ┬л${teamName}┬╗${direction ? ` ┬╖ ${direction}` : ""}.`
     });
 }
 
@@ -703,7 +701,7 @@ async function bootstrap(): Promise<void> {
         clearStatus,
         isCurrentUserCaptain: isTeamCaptain,
         hasTeamAccess,
-        getTeamTitle: () => getEffectiveTeamName() || "НАЗВАНИЕ",
+        getTeamTitle: () => getEffectiveTeamName() || "╨Э╨Р╨Ч╨Т╨Р╨Э╨Ш╨Х",
         getTeamSubtitle: () => getEffectiveTeamDescription(),
         getTeamMembers: getTeamMembersForView,
         getTeamKrk: () => getEffectiveTeamKrk(),
@@ -762,7 +760,7 @@ async function bootstrap(): Promise<void> {
 
     appState.isSubmitting = true;
     appState.view = "sign-in";
-    setStatus("Восстанавливаем сессию...");
+    setStatus("╨Т╨╛╤Б╤Б╤В╨░╨╜╨░╨▓╨╗╨╕╨▓╨░╨╡╨╝ ╤Б╨╡╤Б╤Б╨╕╤О...");
     render();
 
     try {
@@ -771,7 +769,7 @@ async function bootstrap(): Promise<void> {
         await refreshTeamWorkspace();
         await refreshRatingWorkspace();
         appState.view = "account";
-        setStatus("Сессия восстановлена.");
+        setStatus("╨б╨╡╤Б╤Б╨╕╤П ╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨░.");
     } catch (error) {
         clearSession();
         setStatus(getErrorMessage(error), "error");
@@ -982,17 +980,17 @@ function renderAuthView(): void {
 
         formContent.innerHTML = `
             <form id="signInForm" class="auth-form auth-form-modal" novalidate>
-                <h1 class="auth-modal-heading">Уже с нами?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
+                <h1 class="auth-modal-heading">╨г╨╢╨╡ ╤Б ╨╜╨░╨╝╨╕?</h1>
+                <input class="auth-modal-field" name="email" type="email" placeholder="╨н╨Ы╨Х╨Ъ╨в╨а╨Ю╨Э╨Э╨Р╨п ╨Я╨Ю╨з╨в╨Р" value="${escapeHtml(appState.signIn.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-login-password-row">
-                    <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
-                    <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signin-password-peek>
+                    <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="╨Я╨Р╨а╨Ю╨Ы╨м" value="${escapeHtml(appState.signIn.password)}" autocomplete="current-password" required>
+                    <button class="auth-password-peek-button" type="button" aria-label="╨Я╨╛╨║╨░╨╖╨░╤В╤М ╨┐╨░╤А╨╛╨╗╤М, ╨┐╨╛╨║╨░ ╨║╨╜╨╛╨┐╨║╨░ ╨╖╨░╨╢╨░╤В╨░" data-signin-password-peek>
                         <span class="auth-password-peek-icon" aria-hidden="true"></span>
                     </button>
                 </div>
                 ${renderSignInFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
-                    ${appState.isSubmitting ? "ПОДКЛЮЧЕНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
+                    ${appState.isSubmitting ? "╨Я╨Ю╨Ф╨Ъ╨Ы╨о╨з╨Х╨Э╨Ш╨Х..." : "╨Я╨а╨Ш╨б╨Ю╨Х╨Ф╨Ш╨Э╨Ш╨в╨м╨б╨п"}
                 </button>
             </form>
         `;
@@ -1059,22 +1057,22 @@ function renderAuthView(): void {
 
         formContent.innerHTML = `
             <form id="signUpForm" class="auth-form auth-form-modal" novalidate>
-                <h1 class="auth-modal-heading">Новый игрок?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
+                <h1 class="auth-modal-heading">╨Э╨╛╨▓╤Л╨╣ ╨╕╨│╤А╨╛╨║?</h1>
+                <input class="auth-modal-field" name="email" type="email" placeholder="╨н╨Ы╨Х╨Ъ╨в╨а╨Ю╨Э╨Э╨Р╨п ╨Я╨Ю╨з╨в╨Р" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
                     <div class="auth-password-row">
-                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
-                        <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
+                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="╨Я╨Р╨а╨Ю╨Ы╨м" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                        <button class="auth-password-peek-button" type="button" aria-label="╨Я╨╛╨║╨░╨╖╨░╤В╤М ╨┐╨░╤А╨╛╨╗╤М, ╨┐╨╛╨║╨░ ╨║╨╜╨╛╨┐╨║╨░ ╨╖╨░╨╢╨░╤В╨░" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
                             <span class="auth-password-peek-icon" aria-hidden="true"></span>
                         </button>
                     </div>
                 </div>
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
-                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
+                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="╨Я╨Ю╨Ф╨в╨Т╨Х╨а╨Ц╨Ф╨Х╨Э╨Ш╨Х ╨Я╨Р╨а╨Ю╨Ы╨п" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
                 ${renderStatusBlock()}
                 <button class="auth-submit-pill" type="submit" ${signUpSubmitDisabled ? "disabled" : ""}>
-                    ${appState.isSubmitting ? "СОЗДАНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
+                    ${appState.isSubmitting ? "╨б╨Ю╨Ч╨Ф╨Р╨Э╨Ш╨Х..." : "╨Я╨а╨Ш╨б╨Ю╨Х╨Ф╨Ш╨Э╨Ш╨в╨м╨б╨п"}
                 </button>
             </form>
         `;
@@ -1085,23 +1083,23 @@ function renderAuthView(): void {
     if (appState.view === "password-recovery") {
         authSwitchColumn.innerHTML = `
             ${renderAuthSwitchPanel(
-                "Уже с нами?",
-                "Вернись ко входу, если пароль вспомнился.",
-                "ВХОД",
+                "╨г╨╢╨╡ ╤Б ╨╜╨░╨╝╨╕?",
+                "╨Т╨╡╤А╨╜╨╕╤Б╤М ╨║╨╛ ╨▓╤Е╨╛╨┤╤Г, ╨╡╤Б╨╗╨╕ ╨┐╨░╤А╨╛╨╗╤М ╨▓╤Б╨┐╨╛╨╝╨╜╨╕╨╗╤Б╤П.",
+                "╨Т╨е╨Ю╨Ф",
                 "sign-in"
             )}
         `;
 
         formContent.innerHTML = `
             <form id="recoveryForm" class="auth-form auth-form-modal">
-                <h1 class="auth-modal-heading">Новый игрок?</h1>
-                <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signIn.email)}" autocomplete="email">
+                <h1 class="auth-modal-heading">╨Э╨╛╨▓╤Л╨╣ ╨╕╨│╤А╨╛╨║?</h1>
+                <input class="auth-modal-field" name="email" type="email" placeholder="╨н╨Ы╨Х╨Ъ╨в╨а╨Ю╨Э╨Э╨Р╨п ╨Я╨Ю╨з╨в╨Р" value="${escapeHtml(appState.signIn.email)}" autocomplete="email">
                 <div class="auth-login-password-row auth-code-row">
-                    <input class="auth-modal-field auth-modal-field-password" name="code" type="text" placeholder="КОД" inputmode="numeric">
-                    <button class="auth-inline-pill" type="button" id="repeatRecoveryCode">ПОВТОРИТЬ</button>
+                    <input class="auth-modal-field auth-modal-field-password" name="code" type="text" placeholder="╨Ъ╨Ю╨Ф" inputmode="numeric">
+                    <button class="auth-inline-pill" type="button" id="repeatRecoveryCode">╨Я╨Ю╨Т╨в╨Ю╨а╨Ш╨в╨м</button>
                 </div>
                 ${renderStatusBlock()}
-                <button class="auth-submit-pill" type="button" disabled>ПРИСОЕДИНИТЬСЯ</button>
+                <button class="auth-submit-pill" type="button" disabled>╨Я╨а╨Ш╨б╨Ю╨Х╨Ф╨Ш╨Э╨Ш╨в╨м╨б╨п</button>
             </form>
         `;
 
@@ -1116,7 +1114,7 @@ function renderAuthView(): void {
         const repeatButton = recoveryForm.querySelector("#repeatRecoveryCode");
         if (isHTMLButtonElement(repeatButton)) {
             repeatButton.addEventListener("click", () => {
-                setStatus("Код отправлен повторно.");
+                setStatus("╨Ъ╨╛╨┤ ╨╛╤В╨┐╤А╨░╨▓╨╗╨╡╨╜ ╨┐╨╛╨▓╤В╨╛╤А╨╜╨╛.");
                 updateStatusBlock();
             });
         }
@@ -1148,16 +1146,16 @@ function renderAuthSwitchStage(): string {
         <div class="auth-switch-stage">
             ${renderAuthSwitchCopy(
                 "auth-switch-copy auth-switch-copy-sign-up",
-                "Уже с нами?",
-                "Войди в свой аккаунт, чтобы проверить свежий рейтинг команд!",
-                "ВХОД",
+                "╨г╨╢╨╡ ╤Б ╨╜╨░╨╝╨╕?",
+                "╨Т╨╛╨╣╨┤╨╕ ╨▓ ╤Б╨▓╨╛╨╣ ╨░╨║╨║╨░╤Г╨╜╤В, ╤З╤В╨╛╨▒╤Л ╨┐╤А╨╛╨▓╨╡╤А╨╕╤В╤М ╤Б╨▓╨╡╨╢╨╕╨╣ ╤А╨╡╨╣╤В╨╕╨╜╨│ ╨║╨╛╨╝╨░╨╜╨┤!",
+                "╨Т╨е╨Ю╨Ф",
                 "sign-in"
             )}
             ${renderAuthSwitchCopy(
                 "auth-switch-copy auth-switch-copy-sign-in",
-                "Новый игрок?",
-                "Твоей будущей команде не хватает именно тебя. Создай аккаунт, зарабатывай ачивки и прокачивай КРК!",
-                "РЕГИСТРАЦИЯ",
+                "╨Э╨╛╨▓╤Л╨╣ ╨╕╨│╤А╨╛╨║?",
+                "╨в╨▓╨╛╨╡╨╣ ╨▒╤Г╨┤╤Г╤Й╨╡╨╣ ╨║╨╛╨╝╨░╨╜╨┤╨╡ ╨╜╨╡ ╤Е╨▓╨░╤В╨░╨╡╤В ╨╕╨╝╨╡╨╜╨╜╨╛ ╤В╨╡╨▒╤П. ╨б╨╛╨╖╨┤╨░╨╣ ╨░╨║╨║╨░╤Г╨╜╤В, ╨╖╨░╤А╨░╨▒╨░╤В╤Л╨▓╨░╨╣ ╨░╤З╨╕╨▓╨║╨╕ ╨╕ ╨┐╤А╨╛╨║╨░╤З╨╕╨▓╨░╨╣ ╨Ъ╨а╨Ъ!",
+                "╨а╨Х╨У╨Ш╨б╨в╨а╨Р╨ж╨Ш╨п",
                 "sign-up"
             )}
         </div>
@@ -1413,11 +1411,11 @@ function renderVoteModalRowsHtml(): string {
     return `
         <div class="team-history-row" aria-hidden="true"></div>
         <div class="team-history-row">
-            <span class="team-history-points-pill">БАЛЛЫ</span>
+            <span class="team-history-points-pill">╨С╨Р╨Ы╨Ы╨л</span>
         </div>
         <div class="team-history-row" aria-hidden="true"></div>
         <div class="team-history-row team-history-row--points-leading">
-            <span class="team-history-points-pill">БАЛЛЫ</span>
+            <span class="team-history-points-pill">╨С╨Р╨Ы╨Ы╨л</span>
         </div>`;
 }
 
@@ -1468,11 +1466,11 @@ function getEffectiveTeamScore(): string {
         return String(appState.currentTeam.score);
     }
 
-    return appState.profile?.teamScore ? String(appState.profile.teamScore) : "—";
+    return appState.profile?.teamScore ? String(appState.profile.teamScore) : "тАФ";
 }
 
 function buildTeamInviteLink(): string {
-    const name = getEffectiveTeamName().trim() || "КОМАНДА";
+    const name = getEffectiveTeamName().trim() || "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р";
     const invite =
         getEffectiveInviteCode() ||
         "DEMO-INVITE";
@@ -1486,7 +1484,7 @@ function renderTeamJoinRequestPhotoHtml(
     const avatarUrl = request?.avatarUrl?.trim();
     const photoInner = avatarUrl
         ? `<img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy">`
-        : `<span class="team-requests-placeholder">Фото</span>`;
+        : `<span class="team-requests-placeholder">╨д╨╛╤В╨╛</span>`;
 
     if (openProfile && request) {
         return `
@@ -1494,7 +1492,7 @@ function renderTeamJoinRequestPhotoHtml(
                 type="button"
                 class="team-requests-photo team-requests-photo-btn"
                 data-team-request-open-profile="${escapeHtml(String(request.id))}"
-                aria-label="Открыть профиль ${escapeHtml(request.displayName || request.userName || "участника")}"
+                aria-label="╨Ю╤В╨║╤А╤Л╤В╤М ╨┐╤А╨╛╤Д╨╕╨╗╤М ${escapeHtml(request.displayName || request.userName || "╤Г╤З╨░╤Б╤В╨╜╨╕╨║╨░")}"
             >
                 ${photoInner}
             </button>`;
@@ -1514,7 +1512,7 @@ function renderTeamRequestsCarouselHtml(
     if (pendingJoinRequests.length === 0) {
         return `
             <div class="team-requests-empty-state">
-                <p class="team-requests-empty">Никто не подал заявку? Отправь QR или ссылку друзьям</p>
+                <p class="team-requests-empty">╨Э╨╕╨║╤В╨╛ ╨╜╨╡ ╨┐╨╛╨┤╨░╨╗ ╨╖╨░╤П╨▓╨║╤Г? ╨Ю╤В╨┐╤А╨░╨▓╤М QR ╨╕╨╗╨╕ ╤Б╤Б╤Л╨╗╨║╤Г ╨┤╤А╤Г╨╖╤М╤П╨╝</p>
             </div>`;
     }
 
@@ -1522,10 +1520,10 @@ function renderTeamRequestsCarouselHtml(
     const actionsHtml = canAct
         ? `
             <div class="team-requests-actions">
-                <button type="button" class="team-requests-btn team-requests-btn--reject" data-team-join-request-status="Rejected" data-team-join-request-id="${escapeHtml(String(currentRequest.id))}" aria-label="Отклонить">
+                <button type="button" class="team-requests-btn team-requests-btn--reject" data-team-join-request-status="Rejected" data-team-join-request-id="${escapeHtml(String(currentRequest.id))}" aria-label="╨Ю╤В╨║╨╗╨╛╨╜╨╕╤В╤М">
                     <img src="${escapeHtml(rejectIconUrl)}" alt="" aria-hidden="true">
                 </button>
-                <button type="button" class="team-requests-btn team-requests-btn--accept" data-team-join-request-status="Accepted" data-team-join-request-id="${escapeHtml(String(currentRequest.id))}" aria-label="Принять">
+                <button type="button" class="team-requests-btn team-requests-btn--accept" data-team-join-request-status="Accepted" data-team-join-request-id="${escapeHtml(String(currentRequest.id))}" aria-label="╨Я╤А╨╕╨╜╤П╤В╤М">
                     <img src="${escapeHtml(acceptIconUrl)}" alt="" aria-hidden="true">
                 </button>
             </div>`
@@ -1533,14 +1531,14 @@ function renderTeamRequestsCarouselHtml(
 
     return `
         <div class="team-requests-carousel-wrap">
-            <button type="button" class="team-requests-nav" id="teamRequestsPrev" ${currentIndex <= 0 ? "disabled" : ""} aria-label="Предыдущий">
+            <button type="button" class="team-requests-nav" id="teamRequestsPrev" ${currentIndex <= 0 ? "disabled" : ""} aria-label="╨Я╤А╨╡╨┤╤Л╨┤╤Г╤Й╨╕╨╣">
                 <img src="${escapeHtml(scrollLeftIconUrl)}" alt="" aria-hidden="true">
             </button>
             <div class="team-requests-candidate-card" data-request-id="${escapeHtml(String(currentRequest.id))}">
                 ${renderTeamJoinRequestPhotoHtml(currentRequest, Boolean(currentRequest))}
                 ${actionsHtml}
             </div>
-            <button type="button" class="team-requests-nav" id="teamRequestsNext" ${currentIndex >= pendingJoinRequests.length - 1 ? "disabled" : ""} aria-label="Следующий">
+            <button type="button" class="team-requests-nav" id="teamRequestsNext" ${currentIndex >= pendingJoinRequests.length - 1 ? "disabled" : ""} aria-label="╨б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣">
                 <img src="${escapeHtml(scrollRightIconUrl)}" alt="" aria-hidden="true">
             </button>
         </div>`;
@@ -1651,8 +1649,8 @@ function getEventsWeekStart(): Date {
 }
 
 function formatEventsMonthLabel(weekStart: Date): string {
-    const month = EVENTS_MONTH_LABELS[weekStart.getMonth()] ?? "МЕСЯЦ";
-    return `${month} ${weekStart.getFullYear()} г.`;
+    const month = EVENTS_MONTH_LABELS[weekStart.getMonth()] ?? "╨Ь╨Х╨б╨п╨ж";
+    return `${month} ${weekStart.getFullYear()} ╨│.`;
 }
 
 function getDemoEventsForDay(dayIndex: number): CalendarEventItem[] {
@@ -1695,12 +1693,12 @@ function renderEventsCalendarColumn(dayIndex: number): string {
     const weekStart = getEventsWeekStart();
     const dayDate = new Date(weekStart);
     dayDate.setDate(weekStart.getDate() + dayIndex);
-    const weekday = EVENTS_WEEKDAY_LABELS[dayIndex] ?? "ПН";
+    const weekday = EVENTS_WEEKDAY_LABELS[dayIndex] ?? "╨Я╨Э";
     const dayNumber = dayDate.getDate();
     const events = getFilteredCalendarEvents(dayIndex);
     const cardsHtml = events.length
         ? events.map((event) => renderEventsCalendarEventCard(event)).join("")
-        : `<p class="events-calendar-empty">Событий нет</p>`;
+        : `<p class="events-calendar-empty">╨б╨╛╨▒╤Л╤В╨╕╨╣ ╨╜╨╡╤В</p>`;
 
     return `
         <div class="events-calendar-col" role="listitem">
@@ -1722,28 +1720,28 @@ function renderEventsCalendarBlock(): string {
     const columnsHtml = visibleDayIndexes.map((index) => renderEventsCalendarColumn(index)).join("");
 
     return `
-        <section class="events-calendar-block" aria-label="Календарь недели">
+        <section class="events-calendar-block" aria-label="╨Ъ╨░╨╗╨╡╨╜╨┤╨░╤А╤М ╨╜╨╡╨┤╨╡╨╗╨╕">
             <header class="events-calendar-toolbar">
                 <div class="events-calendar-toolbar-start">
                     <span class="events-calendar-month-label">${escapeHtml(monthLabel)}</span>
-                    <button type="button" class="events-calendar-create-btn" id="eventsOpenCreateButton">СОБЫТИЕ</button>
+                    <button type="button" class="events-calendar-create-btn" id="eventsOpenCreateButton">╨б╨Ю╨С╨л╨в╨Ш╨Х</button>
                 </div>
-                <div class="events-calendar-scope" role="group" aria-label="Фильтр событий">
+                <div class="events-calendar-scope" role="group" aria-label="╨д╨╕╨╗╤М╤В╤А ╤Б╨╛╨▒╤Л╤В╨╕╨╣">
                     <button
                         type="button"
                         class="events-calendar-scope-btn${scopeMineActive ? " is-active" : ""}"
                         data-events-calendar-scope="mine"
                         aria-pressed="${scopeMineActive}"
-                    >МОИ</button>
+                    >╨Ь╨Ю╨Ш</button>
                     <button
                         type="button"
                         class="events-calendar-scope-btn${scopeAllActive ? " is-active" : ""}"
                         data-events-calendar-scope="all"
                         aria-pressed="${scopeAllActive}"
-                    >ВСЕ</button>
+                    >╨Т╨б╨Х</button>
                 </div>
             </header>
-            <div class="events-calendar-grid" role="list" aria-label="Дни недели">
+            <div class="events-calendar-grid" role="list" aria-label="╨Ф╨╜╨╕ ╨╜╨╡╨┤╨╡╨╗╨╕">
                 ${columnsHtml}
             </div>
         </section>`;
@@ -1754,8 +1752,8 @@ function renderEventsFeedBlock(): string {
     const newsActive = appState.eventsFeedTab === "news";
 
     return `
-        <section class="events-feed-block" aria-label="Информационные ленты">
-            <div class="events-feed-tabs" role="tablist" aria-label="Ленты">
+        <section class="events-feed-block" aria-label="╨Ш╨╜╤Д╨╛╤А╨╝╨░╤Ж╨╕╨╛╨╜╨╜╤Л╨╡ ╨╗╨╡╨╜╤В╤Л">
+            <div class="events-feed-tabs" role="tablist" aria-label="╨Ы╨╡╨╜╤В╤Л">
                 <button
                     type="button"
                     class="events-feed-tab${activityActive ? " is-active" : ""}"
@@ -1764,7 +1762,7 @@ function renderEventsFeedBlock(): string {
                     aria-selected="${activityActive}"
                     aria-controls="eventsFeedPanelActivity"
                     data-events-feed-tab="activity"
-                >ЛЕНТА АКТИВНОСТЕЙ</button>
+                >╨Ы╨Х╨Э╨в╨Р ╨Р╨Ъ╨в╨Ш╨Т╨Э╨Ю╨б╨в╨Х╨Щ</button>
                 <button
                     type="button"
                     class="events-feed-tab${newsActive ? " is-active" : ""}"
@@ -1773,7 +1771,7 @@ function renderEventsFeedBlock(): string {
                     aria-selected="${newsActive}"
                     aria-controls="eventsFeedPanelNews"
                     data-events-feed-tab="news"
-                >ЛЕНТА НОВОСТЕЙ</button>
+                >╨Ы╨Х╨Э╨в╨Р ╨Э╨Ю╨Т╨Ю╨б╨в╨Х╨Щ</button>
             </div>
             <div class="events-feed-panels">
                 ${renderActivityFeedPanel(appState.eventsFeedTab === "activity")}
@@ -1893,11 +1891,11 @@ function appendCreatedEventToCalendar(draft: EventCreateDraft): boolean {
         appState.eventsWeekOffset = weekOffset;
     }
 
-    const topic = draft.topic.trim() || "Событие";
+    const topic = draft.topic.trim() || "╨б╨╛╨▒╤Л╤В╨╕╨╡";
     pushUserActivity({
         kind: "event_created",
-        title: "СОБЫТИЕ СОЗДАНО",
-        description: `«${topic}» добавлено в календарь.`
+        title: "╨б╨Ю╨С╨л╨в╨Ш╨Х ╨б╨Ю╨Ч╨Ф╨Р╨Э╨Ю",
+        description: `┬л${topic}┬╗ ╨┤╨╛╨▒╨░╨▓╨╗╨╡╨╜╨╛ ╨▓ ╨║╨░╨╗╨╡╨╜╨┤╨░╤А╤М.`
     });
 
     return true;
@@ -1923,10 +1921,10 @@ async function paintEventSuccessQr(): Promise<void> {
                 light: "#ffffff"
             }
         });
-        img.alt = "QR-код ссылки на событие";
+        img.alt = "QR-╨║╨╛╨┤ ╤Б╤Б╤Л╨╗╨║╨╕ ╨╜╨░ ╤Б╨╛╨▒╤Л╤В╨╕╨╡";
     } catch {
         img.removeAttribute("src");
-        img.alt = "Не удалось сформировать QR";
+        img.alt = "╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╤Б╤Д╨╛╤А╨╝╨╕╤А╨╛╨▓╨░╤В╤М QR";
     }
 }
 
@@ -1970,7 +1968,7 @@ function syncNewsCreateDraftFromForm(): void {
 function getNewsAuthorDisplayName(): string {
     const profile = appState.profile;
     if (!profile) {
-        return "Организатор";
+        return "╨Ю╤А╨│╨░╨╜╨╕╨╖╨░╤В╨╛╤А";
     }
 
     const parts = [profile.firstName, profile.lastName].filter(Boolean);
@@ -1978,7 +1976,7 @@ function getNewsAuthorDisplayName(): string {
         return parts.join(" ").trim();
     }
 
-    return profile.nickname?.trim() || profile.userName?.trim() || "Организатор";
+    return profile.nickname?.trim() || profile.userName?.trim() || "╨Ю╤А╨│╨░╨╜╨╕╨╖╨░╤В╨╛╤А";
 }
 
 function openNewsCreateModal(): void {
@@ -2006,20 +2004,20 @@ function renderEventsModal(): string {
 
     if (appState.eventsModal === "success") {
         return renderProfileModalShell({
-            ariaLabel: "Событие создано",
+            ariaLabel: "╨б╨╛╨▒╤Л╤В╨╕╨╡ ╤Б╨╛╨╖╨┤╨░╨╜╨╛",
             closeButtonId: "eventsCloseSuccessButton",
             backdropCloseAttr: 'data-close-events-modal="1"',
             extraModalClass: "team-overlay-modal event-success-modal",
             bodyHtml: `
-                <h2 class="profile-shell-title">УСПЕШНО!</h2>
+                <h2 class="profile-shell-title">╨г╨б╨Я╨Х╨и╨Э╨Ю!</h2>
                 <div class="event-success-link-row">
-                    <div class="event-success-link-field">ССЫЛКА</div>
-                    <button type="button" class="event-success-link-copy" id="eventsCopyLinkButton">СКОПИРОВАТЬ</button>
+                    <div class="event-success-link-field">╨б╨б╨л╨Ы╨Ъ╨Р</div>
+                    <button type="button" class="event-success-link-copy" id="eventsCopyLinkButton">╨б╨Ъ╨Ю╨Я╨Ш╨а╨Ю╨Т╨Р╨в╨м</button>
                 </div>
                 <div class="event-success-qr-wrap">
                     <img id="eventsSuccessQrImg" class="event-success-qr" width="200" height="200" alt="">
                 </div>
-                <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search event-success-done" id="eventsSuccessDoneButton">ГОТОВО</button>
+                <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search event-success-done" id="eventsSuccessDoneButton">╨У╨Ю╨в╨Ю╨Т╨Ю</button>
             `
         });
     }
@@ -2095,7 +2093,7 @@ function wireEventsModalEvents(): void {
                 });
                 appState.eventsFeedTab = "news";
                 closeNewsCreateModal();
-                setStatus("Новость опубликована.");
+                setStatus("╨Э╨╛╨▓╨╛╤Б╤В╤М ╨╛╨┐╤Г╨▒╨╗╨╕╨║╨╛╨▓╨░╨╜╨░.");
                 render();
             });
         }
@@ -2126,7 +2124,7 @@ function wireEventsModalEvents(): void {
                 const draft = ensureEventCreateDraft();
                 if (!appendCreatedEventToCalendar(draft)) {
                     appState.eventsShowValidationError = true;
-                    setStatus("Не удалось добавить событие в календарь. Проверьте дату и время.", "error");
+                    setStatus("╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╨┤╨╛╨▒╨░╨▓╨╕╤В╤М ╤Б╨╛╨▒╤Л╤В╨╕╨╡ ╨▓ ╨║╨░╨╗╨╡╨╜╨┤╨░╤А╤М. ╨Я╤А╨╛╨▓╨╡╤А╤М╤В╨╡ ╨┤╨░╤В╤Г ╨╕ ╨▓╤А╨╡╨╝╤П.", "error");
                     render();
                     return;
                 }
@@ -2150,7 +2148,7 @@ function wireEventsModalEvents(): void {
                 appState.eventsCreateDraft = createEmptyEventCreateDraftState();
                 appState.eventsShowValidationError = false;
                 closeEventsModal();
-                setStatus("Событие создано.");
+                setStatus("╨б╨╛╨▒╤Л╤В╨╕╨╡ ╤Б╨╛╨╖╨┤╨░╨╜╨╛.");
                 render();
             });
         }
@@ -2161,9 +2159,9 @@ function wireEventsModalEvents(): void {
                 const link = appState.eventsShareLink || buildEventShareLink();
                 try {
                     await navigator.clipboard.writeText(link);
-                    setStatus("Ссылка на событие скопирована.");
+                    setStatus("╨б╤Б╤Л╨╗╨║╨░ ╨╜╨░ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╨╜╨░.");
                 } catch {
-                    setStatus("Не удалось скопировать ссылку.", "error");
+                    setStatus("╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╤В╤М ╤Б╤Б╤Л╨╗╨║╤Г.", "error");
                 }
                 render();
             });
@@ -2175,7 +2173,7 @@ function wireEventsModalEvents(): void {
                 appState.eventsCreateDraft = createEmptyEventCreateDraftState();
                 appState.eventsShowValidationError = false;
                 closeEventsModal();
-                setStatus("Событие создано.");
+                setStatus("╨б╨╛╨▒╤Л╤В╨╕╨╡ ╤Б╨╛╨╖╨┤╨░╨╜╨╛.");
                 render();
             });
         }
@@ -2274,7 +2272,7 @@ async function refreshTeamWorkspace(): Promise<void> {
         const teamData = await fetchMyTeam(token);
         
         if (teamData) {
-            // Если команда успешно вернулась
+            // ╨Х╤Б╨╗╨╕ ╨║╨╛╨╝╨░╨╜╨┤╨░ ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨▓╨╡╤А╨╜╤Г╨╗╨░╤Б╤М
             appState.currentTeam = teamData;
             appState.localCreatedTeam = null;
             if (appState.profile) {
@@ -2334,8 +2332,8 @@ function buildSelfTeamMemberRow(): TeamMemberRow | null {
 
     return {
         id: `user-${p.id}`,
-        displayName: getFullNameDisplay() || buildFullNameFromProfile(p) || "УЧАСТНИК",
-        roleLabel: p.isCaptain ? "КАПИТАН" : "УЧАСТНИК",
+        displayName: getFullNameDisplay() || buildFullNameFromProfile(p) || "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
+        roleLabel: p.isCaptain ? "╨Ъ╨Р╨Я╨Ш╨в╨Р╨Э" : "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
         avatarUrl: getAvatarDisplay() || p.avatarUrl || "",
         isCaptain: p.isCaptain
     };
@@ -2347,7 +2345,7 @@ function buildLocalCaptainMemberRow(): TeamMemberRow | null {
         return null;
     }
 
-    return { ...base, roleLabel: "КАПИТАН", isCaptain: true };
+    return { ...base, roleLabel: "╨Ъ╨Р╨Я╨Ш╨в╨Р╨Э", isCaptain: true };
 }
 
 function parseTeamMemberRow(raw: unknown): TeamMemberRow | null {
@@ -2363,7 +2361,7 @@ function parseTeamMemberRow(raw: unknown): TeamMemberRow | null {
     return {
         id: o.id,
         displayName: o.displayName,
-        roleLabel: typeof o.roleLabel === "string" ? o.roleLabel : "УЧАСТНИК",
+        roleLabel: typeof o.roleLabel === "string" ? o.roleLabel : "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
         avatarUrl: typeof o.avatarUrl === "string" ? o.avatarUrl : "",
         isCaptain: Boolean(o.isCaptain)
     };
@@ -2373,8 +2371,8 @@ function getTeamRoster(): TeamMemberRow[] {
     if (appState.currentTeam) {
         return appState.currentTeam.members.map((member) => ({
             id: String(member.id),
-            displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
-            roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
+            displayName: member.displayName || member.userName || member.email || "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
+            roleLabel: member.roleLabel || (member.isCaptain ? "╨Ъ╨Р╨Я╨Ш╨в╨Р╨Э" : "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ"),
             avatarUrl: member.avatarUrl,
             isCaptain: member.isCaptain
         }));
@@ -2406,8 +2404,8 @@ function getTeamMembersForView(): TeamMemberView[] {
     if (appState.currentTeam) {
         return appState.currentTeam.members.map((member) => ({
             id: String(member.id),
-            displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
-            roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
+            displayName: member.displayName || member.userName || member.email || "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
+            roleLabel: member.roleLabel || (member.isCaptain ? "╨Ъ╨Р╨Я╨Ш╨в╨Р╨Э" : "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ"),
             avatarUrl: member.avatarUrl,
             userPoints: member.userPoints,
             canVote: member.id !== currentUserId && !voteByTarget.has(member.id),
@@ -2438,116 +2436,34 @@ function formatShortDate(value: string | null | undefined): string {
     return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }
 
-function getTempTeamHistoryPreview(): TeamHistoryItem[] {
-    return [
-        {
-            label: "WORKSHOP",
-            title: "Команда «организаторы» провела воркшоп по проектированию API.",
-            meta: "",
-            pointsLabel: "50"
-        },
-        {
-            label: "ACHIEVEMENT",
-            title: "Егор Габов получил ачивку «Свой вклад».",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "CHECK-IN",
-            title: "Команда «Кодеры» завершила check-in 6 недели.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "TRAINING",
-            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "RESCUE",
-            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "WORKSHOP",
-            title: "Команда «организаторы» провела воркшоп по проектированию API.",
-            meta: "",
-            pointsLabel: "50"
-        },
-        {
-            label: "ACHIEVEMENT",
-            title: "Егор Габов получил ачивку «Свой вклад».",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "CHECK-IN",
-            title: "Команда «Кодеры» завершила check-in 6 недели.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "TRAINING",
-            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "RESCUE",
-            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
-            meta: "",
-            pointsLabel: "15"
-        }
-    ];
-}
-
 function getTeamHistoryItems(): TeamHistoryItem[] {
     const checkIns = appState.teamCheckIns.map<TeamHistoryItem>((checkIn) => ({
         label: "CHECK-IN",
-        title: `Команда завершила check-in ${checkIn.weekNumber} недели.`,
-        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc),
-        pointsLabel: "15"
+        title: `${checkIn.weekNumber} ╨╜╨╡╨┤╨╡╨╗╤П ┬╖ ${checkIn.status || "Submitted"}`,
+        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc)
     }));
 
     const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
-        label: "СПАСЕНИЕ",
-        title: request.fromTeamName
-            ? `Команда «${request.fromTeamName}» отправила запрос на помощь по теме «${request.topic || "Спасение"}».`
-            : `Запрос на помощь по теме «${request.topic || "Спасение"}».`,
-        meta: `${request.fromTeamName} → ${request.toTeamName}`,
-        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined
+        label: "╨б╨Я╨Р╨б╨Х╨Э╨Ш╨Х",
+        title: `${request.topic || "╨Ч╨░╨┐╤А╨╛╤Б ╨┐╨╛╨╝╨╛╤Й╨╕"} ┬╖ ${request.status}`,
+        meta: `${request.fromTeamName} тЖТ ${request.toTeamName}`,
+        pointsLabel: request.bonusPoints > 0 ? `${request.bonusPoints} ╨▒╨░╨╗╨╗╨╛╨▓` : undefined
     }));
 
     const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
-        label: "ЗАЯВКА",
-        title: `${request.displayName || request.userName || "Участник"} подал заявку на вступление в команду.`,
+        label: "╨Ч╨Р╨п╨Т╨Ъ╨Р",
+        title: `${request.displayName || request.userName || "╨г╤З╨░╤Б╤В╨╜╨╕╨║"} ┬╖ ${request.status}`,
         meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
     }));
 
     const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
-        label: "ГОЛОС",
-        title: `Вы оценили вклад участника ${vote.toUserName || "участника"} на ${vote.score}/5.`,
+        label: "╨У╨Ю╨Ы╨Ю╨б",
+        title: `${vote.toUserName || "╨г╤З╨░╤Б╤В╨╜╨╕╨║"} ┬╖ ${vote.score}/5`,
         meta: formatShortDate(vote.createdAtUtc)
     }));
 
     const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
-    // TEMP: переключить на false после проверки вёрстки истории
-    const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
-    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
-        return getTempTeamHistoryPreview();
-    }
-
-    return items.length > 0
-        ? items
-        : [
-              {
-                  label: "СТАРТ",
-                  title: "История активности появится после check-in, спасения или голосования.",
-                  meta: "MVP"
-              }
-          ];
+    return items;
 }
 
 function getJoinableTeams(searchQuery?: string): TeamSearchItem[] {
@@ -2667,10 +2583,10 @@ async function paintTeamSuccessQr(): Promise<void> {
                 light: "#f0f5ff"
             }
         });
-        img.alt = "QR-код ссылки-приглашения";
+        img.alt = "QR-╨║╨╛╨┤ ╤Б╤Б╤Л╨╗╨║╨╕-╨┐╤А╨╕╨│╨╗╨░╤И╨╡╨╜╨╕╤П";
     } catch {
         img.removeAttribute("src");
-        img.alt = "Не удалось сформировать QR";
+        img.alt = "╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╤Б╤Д╨╛╤А╨╝╨╕╤А╨╛╨▓╨░╤В╤М QR";
     }
 }
 
@@ -2694,9 +2610,9 @@ async function paintRequestsQr(): Promise<void> {
                 light: "#ffffff"
             }
         });
-        qrWrap.innerHTML = `<img src="${escapeHtml(dataUrl)}" alt="QR-код приглашения">`;
+        qrWrap.innerHTML = `<img src="${escapeHtml(dataUrl)}" alt="QR-╨║╨╛╨┤ ╨┐╤А╨╕╨│╨╗╨░╤И╨╡╨╜╨╕╤П">`;
     } catch {
-        qrWrap.innerHTML = `<span class="team-requests-placeholder">Не удалось загрузить QR</span>`;
+        qrWrap.innerHTML = `<span class="team-requests-placeholder">╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╨╖╨░╨│╤А╤Г╨╖╨╕╤В╤М QR</span>`;
     }
 }
 
@@ -2822,7 +2738,7 @@ function wireTeamRescueModalEvents(): void {
             const file = photoInput.files?.[0];
             draft.photoFileName = file?.name ?? "";
             if (photoLabel instanceof HTMLElement) {
-                photoLabel.textContent = draft.photoFileName.trim() || "ФОТО";
+                photoLabel.textContent = draft.photoFileName.trim() || "╨д╨Ю╨в╨Ю";
             }
         });
     }
@@ -2833,19 +2749,19 @@ function wireTeamRescueModalEvents(): void {
             syncTeamRescueDraftFromForm();
 
             if (!draft.targetTeamId.trim()) {
-                setStatus("Выберите команду для запроса спасения.", "error");
+                setStatus("╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╨║╨╛╨╝╨░╨╜╨┤╤Г ╨┤╨╗╤П ╨╖╨░╨┐╤А╨╛╤Б╨░ ╤Б╨┐╨░╤Б╨╡╨╜╨╕╤П.", "error");
                 render();
                 return;
             }
 
             if (!draft.topic.trim()) {
-                setStatus("Укажите тему запроса на спасение.", "error");
+                setStatus("╨г╨║╨░╨╢╨╕╤В╨╡ ╤В╨╡╨╝╤Г ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨╜╨░ ╤Б╨┐╨░╤Б╨╡╨╜╨╕╨╡.", "error");
                 render();
                 return;
             }
 
             if (!draft.description.trim()) {
-                setStatus("Опишите ситуацию для запроса спасения.", "error");
+                setStatus("╨Ю╨┐╨╕╤И╨╕╤В╨╡ ╤Б╨╕╤В╤Г╨░╤Ж╨╕╤О ╨┤╨╗╤П ╨╖╨░╨┐╤А╨╛╤Б╨░ ╤Б╨┐╨░╤Б╨╡╨╜╨╕╤П.", "error");
                 render();
                 return;
             }
@@ -2854,7 +2770,7 @@ function wireTeamRescueModalEvents(): void {
                 .then(() => {
                     appState.teamRescueDraft = createEmptyTeamRescueDraft();
                     closeTeamModal();
-                    setStatus("Спасение: запрос помощи отправлен.");
+                    setStatus("╨б╨┐╨░╤Б╨╡╨╜╨╕╨╡: ╨╖╨░╨┐╤А╨╛╤Б ╨┐╨╛╨╝╨╛╤Й╨╕ ╨╛╤В╨┐╤А╨░╨▓╨╗╨╡╨╜.");
                     render();
                 })
                 .catch((error: unknown) => {
@@ -2873,7 +2789,7 @@ function renderTeamModal(): string {
         const voteAvatarInner = member?.avatarUrl
             ? `<img src="${escapeHtml(member.avatarUrl)}" alt="" loading="lazy">`
             : "";
-        const voteRole = member?.roleLabel ?? "РОЛЬ";
+        const voteRole = member?.roleLabel ?? "╨а╨Ю╨Ы╨м";
         const avatarClass = voteAvatarInner ? "team-vote-avatar has-image" : "team-vote-avatar";
         const voteButtons = [1, 2, 3, 4, 5]
             .map((score) => `
@@ -2886,22 +2802,22 @@ function renderTeamModal(): string {
             .join("");
 
         return renderProfileModalShell({
-            ariaLabel: "Голосование",
+            ariaLabel: "╨У╨╛╨╗╨╛╤Б╨╛╨▓╨░╨╜╨╕╨╡",
             closeButtonId: "teamCloseVoteButton",
             backdropCloseAttr: 'data-close-team-modal="1"',
             extraModalClass: "team-overlay-modal",
             extraCardClass: "team-vote-card",
             bodyHtml: `
-                <h2 class="profile-shell-title">ГОЛОСОВАНИЕ</h2>
+                <h2 class="profile-shell-title">╨У╨Ю╨Ы╨Ю╨б╨Ю╨Т╨Р╨Э╨Ш╨Х</h2>
                 <div class="team-vote-hero">
                     <div class="${avatarClass}" aria-hidden="true">${voteAvatarInner}</div>
                     <div class="team-vote-role-pill">${escapeHtml(voteRole)}</div>
-                    <p class="team-vote-name">${escapeHtml(member?.displayName ?? "УЧАСТНИК")}</p>
+                    <p class="team-vote-name">${escapeHtml(member?.displayName ?? "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ")}</p>
                 </div>
-                <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
+                <div class="team-vote-score-row" aria-label="╨Ю╤Ж╨╡╨╜╨║╨░ ╨▓╨║╨╗╨░╨┤╨░ ╨┐╨╛ 5-╨▒╨░╨╗╨╗╤М╨╜╨╛╨╣ ╤И╨║╨░╨╗╨╡" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
                     ${voteButtons}
                 </div>
-                ${existingVote ? `<p class="team-vote-hint">Ваша оценка уже сохранена.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
+                ${existingVote ? `<p class="team-vote-hint">╨Т╨░╤И╨░ ╨╛╤Ж╨╡╨╜╨║╨░ ╤Г╨╢╨╡ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╨░.</p>` : `<p class="team-vote-hint">╨Ю╤Ж╨╡╨╜╨╕╤В╨╡ ╨▓╨║╨╗╨░╨┤ ╤Г╤З╨░╤Б╤В╨╜╨╕╨║╨░ ╨╛╤В 1 ╨┤╨╛ 5.</p>`}
             `
         });
     }
@@ -2913,7 +2829,7 @@ function renderTeamModal(): string {
             : "";
 
         return renderProfileModalShell({
-            ariaLabel: "Check-in команды",
+            ariaLabel: "Check-in ╨║╨╛╨╝╨░╨╜╨┤╤Л",
             closeButtonId: "teamCloseCheckInButton",
             backdropCloseAttr: 'data-close-team-modal="1"',
             extraModalClass: "team-overlay-modal team-rescue-modal",
@@ -2928,16 +2844,16 @@ function renderTeamModal(): string {
                         type="number"
                         min="1"
                         max="52"
-                        placeholder="НЕДЕЛЯ"
+                        placeholder="╨Э╨Х╨Ф╨Х╨Ы╨п"
                         value="${escapeHtml(nextWeek)}"
                     >
                     <textarea
                         id="teamCheckInReportInput"
                         class="team-rescue-textarea"
-                        placeholder="Кратко опишите прогресс, риски и договоренности команды"
-                        aria-label="Отчет команды"
+                        placeholder="╨Ъ╤А╨░╤В╨║╨╛ ╨╛╨┐╨╕╤И╨╕╤В╨╡ ╨┐╤А╨╛╨│╤А╨╡╤Б╤Б, ╤А╨╕╤Б╨║╨╕ ╨╕ ╨┤╨╛╨│╨╛╨▓╨╛╤А╨╡╨╜╨╜╨╛╤Б╤В╨╕ ╨║╨╛╨╝╨░╨╜╨┤╤Л"
+                        aria-label="╨Ю╤В╤З╨╡╤В ╨║╨╛╨╝╨░╨╜╨┤╤Л"
                     >${escapeHtml(teamFlowState.checkInReport)}</textarea>
-                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
+                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">╨Ю╨в╨Я╨а╨Р╨Т╨Ш╨в╨м</button>
                 </form>
             `
         });
@@ -2945,81 +2861,84 @@ function renderTeamModal(): string {
 
     if (appState.teamModal === "rescue") {
         const draft = ensureTeamRescueDraft();
-        const photoLabel = draft.photoFileName.trim() || "ФОТО";
+        const photoLabel = draft.photoFileName.trim() || "╨д╨Ю╨в╨Ю";
         const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId;
         const targetOptions = appState.teamCatalog
             .filter((team) => team.id !== currentTeamId)
             .map((team) => `<option value="${team.id}" ${draft.targetTeamId === String(team.id) ? "selected" : ""}>${escapeHtml(team.name)}</option>`)
             .join("");
-        return `
-                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
-                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
-                    <div class="profile-modal-card team-rescue-card team-rescue-card--team-page">
-                        <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
-                        <p class="team-rescue-dots" aria-hidden="true">...</p>
-                        <h2 class="team-rescue-title team-rescue-title--sr">Спасение</h2>
-                        <form id="teamRescueForm" class="team-rescue-form team-rescue-form--team-page" novalidate>
-                            <select id="teamRescueTargetInput" class="team-rescue-field team-rescue-field--team team-rescue-select" aria-label="Команда для помощи">
-                                <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
-                                ${targetOptions}
-                            </select>
-                            <input
-                                id="teamRescueTopicInput"
-                                class="team-rescue-field team-rescue-field--name"
-                                type="text"
-                                placeholder="НАЗВАНИЕ"
-                                value="${escapeHtml(draft.topic)}"
-                                autocomplete="off"
-                            >
-                            <input
-                                id="teamRescueTagInput"
-                                class="team-rescue-field team-rescue-field--tag"
-                                type="text"
-                                placeholder="ТЕГ"
-                                value="${escapeHtml(draft.tag)}"
-                                autocomplete="off"
-                            >
-                            <textarea
-                                id="teamRescueDescriptionInput"
-                                class="team-rescue-textarea"
-                                placeholder="..."
-                                aria-label="Описание ситуации"
-                            >${escapeHtml(draft.description)}</textarea>
-                            <div class="team-rescue-photo-row team-rescue-photo-row--mockup">
-                                <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
-                                <label class="team-rescue-photo-btn">
-                                    ВЫБРАТЬ
-                                    <input
-                                        type="file"
-                                        id="teamRescuePhotoInput"
-                                        class="team-rescue-file"
-                                        accept="image/*"
-                                        hidden
-                                    >
-                                </label>
-                            </div>
-                            <div class="team-rescue-duo-row">
-                                <input
-                                    id="teamRescueLeagueInput"
-                                    class="team-rescue-field team-rescue-field--duo"
-                                    type="text"
-                                    placeholder="ЛИГА"
-                                    value="${escapeHtml(draft.league)}"
-                                    autocomplete="off"
-                                >
-                                <input
-                                    id="teamRescueDeadlineInput"
-                                    class="team-rescue-field team-rescue-field--duo"
-                                    type="text"
-                                    placeholder="ДЕДЛАЙН"
-                                    value="${escapeHtml(draft.deadline)}"
-                                    autocomplete="off"
-                                >
-                            </div>
-                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
-                        </form>
+        return renderProfileModalShell({
+            ariaLabel: "╨б╨┐╨░╤Б╨╡╨╜╨╕╨╡",
+            closeButtonId: "teamCloseRescueButton",
+            backdropCloseAttr: 'data-close-team-modal="1"',
+            extraModalClass: "team-overlay-modal team-rescue-modal",
+            extraCardClass: "profile-modal-card--form",
+            bodyHtml: `
+                <h2 class="profile-shell-title">╨б╨Я╨Р╨б╨Х╨Э╨Ш╨Х</h2>
+                <form id="teamRescueForm" class="team-rescue-form profile-modal-card-body" novalidate>
+                    <select id="teamRescueTargetInput" class="team-rescue-field" aria-label="╨Ъ╨╛╨╝╨░╨╜╨┤╨░ ╨┤╨╗╤П ╨┐╨╛╨╝╨╛╤Й╨╕">
+                        <option value="">╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р-╨Я╨Ю╨Ы╨г╨з╨Р╨в╨Х╨Ы╨м</option>
+                        ${targetOptions}
+                    </select>
+                    <div class="team-rescue-topic-row">
+                        <input
+                            id="teamRescueTopicInput"
+                            class="team-rescue-field team-rescue-field--topic"
+                            type="text"
+                            placeholder="╨в╨Х╨Ь╨Р"
+                            value="${escapeHtml(draft.topic)}"
+                            autocomplete="off"
+                        >
+                        <input
+                            id="teamRescueTagInput"
+                            class="team-rescue-field team-rescue-field--tag"
+                            type="text"
+                            placeholder="╨в╨Х╨У"
+                            value="${escapeHtml(draft.tag)}"
+                            autocomplete="off"
+                        >
                     </div>
-                </div>`;
+                    <textarea
+                        id="teamRescueDescriptionInput"
+                        class="team-rescue-textarea"
+                        placeholder=" "
+                        aria-label="╨Ю╨┐╨╕╤Б╨░╨╜╨╕╨╡ ╤Б╨╕╤В╤Г╨░╤Ж╨╕╨╕"
+                    >${escapeHtml(draft.description)}</textarea>
+                    <div class="team-rescue-photo-row">
+                        <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
+                        <label class="team-rescue-photo-btn">
+                            ╨Т╨л╨С╨а╨Р╨в╨м
+                            <input
+                                type="file"
+                                id="teamRescuePhotoInput"
+                                class="team-rescue-file"
+                                accept="image/*"
+                                hidden
+                            >
+                        </label>
+                    </div>
+                    <div class="team-rescue-duo-row">
+                        <input
+                            id="teamRescueLeagueInput"
+                            class="team-rescue-field team-rescue-field--duo"
+                            type="text"
+                            placeholder="╨Ы╨Ш╨У╨Р"
+                            value="${escapeHtml(draft.league)}"
+                            autocomplete="off"
+                        >
+                        <input
+                            id="teamRescueDeadlineInput"
+                            class="team-rescue-field team-rescue-field--duo"
+                            type="text"
+                            placeholder="╨Ф╨Х╨Ф╨Ы╨Р╨Щ╨Э"
+                            value="${escapeHtml(draft.deadline)}"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">╨Ю╨в╨Я╨а╨Р╨Т╨Ш╨в╨м</button>
+                </form>
+            `
+        });
     }
 
     if (appState.teamModal === "requests") {
@@ -3039,7 +2958,7 @@ function renderTeamModal(): string {
         const carouselHtml = renderTeamRequestsCarouselHtml(pendingJoinRequests, currentIndex, canAct);
 
         return renderProfileModalShell({
-            ariaLabel: "Заявки",
+            ariaLabel: "╨Ч╨░╤П╨▓╨║╨╕",
             closeButtonId: "teamCloseRequestsButton",
             backdropCloseAttr: 'data-close-team-modal="1"',
             extraModalClass: "team-overlay-modal",
@@ -3047,14 +2966,14 @@ function renderTeamModal(): string {
             bodyHtml: `
                 <div class="team-requests-shell ${totalCount > 0 ? "team-requests-shell--filled" : "team-requests-shell--empty"}">
                     <h2 class="team-requests-modal-title">
-                        ЗАЯВКИ
+                        ╨Ч╨Р╨п╨Т╨Ъ╨Ш
                         <span class="team-requests-count">${escapeHtml(String(totalCount))}</span>
                     </h2>
                     ${carouselHtml}
                     <div class="team-requests-qrcode" id="teamRequestsQrWrap">
-                        <span class="team-requests-placeholder">QR-код загружается...</span>
+                        <span class="team-requests-placeholder">QR-╨║╨╛╨┤ ╨╖╨░╨│╤А╤Г╨╢╨░╨╡╤В╤Б╤П...</span>
                     </div>
-                    <button type="button" class="team-requests-copy-btn" id="teamRequestsCopyLinkButton">СКОПИРОВАТЬ</button>
+                    <button type="button" class="team-requests-copy-btn" id="teamRequestsCopyLinkButton">╨б╨Ъ╨Ю╨Я╨Ш╨а╨Ю╨Т╨Р╨в╨м</button>
                 </div>
             `
         });
@@ -3119,11 +3038,11 @@ function closeProfileModal(): void {
     render();
 }
 
-const ACADEMIC_GROUP_PATTERN = /^[A-ZА-ЯЁ]{2}-\d{6}$/u;
+const ACADEMIC_GROUP_PATTERN = /^[A-Z╨Р-╨п╨Б]{2}-\d{6}$/u;
 const MAX_PROFILE_AVATAR_FILE_BYTES = 2 * 1024 * 1024;
 
 function getProfileAvatarSizeLimitMessage(): string {
-    return "Фото профиля не должно превышать 2 МБ.";
+    return "╨д╨╛╤В╨╛ ╨┐╤А╨╛╤Д╨╕╨╗╤П ╨╜╨╡ ╨┤╨╛╨╗╨╢╨╜╨╛ ╨┐╤А╨╡╨▓╤Л╤И╨░╤В╤М 2 ╨Ь╨С.";
 }
 
 function isProfileAvatarFileWithinLimit(file: File): boolean {
@@ -3148,7 +3067,7 @@ function isProfileAvatarDataUrlWithinLimit(dataUrl: string | null | undefined): 
 
 function normalizeAcademicGroupInput(value: string): string {
     const uppercased = value.toUpperCase();
-    const letters = Array.from(uppercased.matchAll(/[A-ZА-ЯЁ]/gu), (match) => match[0]).slice(0, 2).join("");
+    const letters = Array.from(uppercased.matchAll(/[A-Z╨Р-╨п╨Б]/gu), (match) => match[0]).slice(0, 2).join("");
     const digits = Array.from(uppercased.matchAll(/\d/g), (match) => match[0]).slice(0, 6).join("");
 
     if (!letters) {
@@ -3177,47 +3096,47 @@ function renderProfileModal(): string {
             }
 
             return renderProfileModalShell({
-                ariaLabel: "Личные данные",
+                ariaLabel: "╨Ы╨╕╤З╨╜╤Л╨╡ ╨┤╨░╨╜╨╜╤Л╨╡",
                 closeButtonId: "profileClosePersonalButton",
                 extraCardClass: "profile-modal-card--form",
                 bodyHtml: `
-                    <h2 class="profile-shell-title">ЛИЧНЫЕ ДАННЫЕ</h2>
+                    <h2 class="profile-shell-title">╨Ы╨Ш╨з╨Э╨л╨Х ╨Ф╨Р╨Э╨Э╨л╨Х</h2>
                     <div class="profile-modal-card-body">
                         <div class="profile-modal-field profile-modal-photo-row">
-                            <span class="profile-modal-photo-label">ФОТО</span>
+                            <span class="profile-modal-photo-label">╨д╨Ю╨в╨Ю</span>
                             <label class="profile-modal-file">
                                 <input id="profileAvatarInput" type="file" accept="image/*" hidden>
-                                <span class="profile-pill-button">ВЫБРАТЬ</span>
+                                <span class="profile-pill-button">╨Т╨л╨С╨а╨Р╨в╨м</span>
                             </label>
                         </div>
-                        <p class="profile-modal-field-hint">Максимальный размер фото — 2 МБ.</p>
-                        <input id="profileNameInput" class="profile-modal-input" type="text" placeholder="ИМЯ ФАМИЛИЯ" value="${escapeHtml(draft.fullName)}">
+                        <p class="profile-modal-field-hint">╨Ь╨░╨║╤Б╨╕╨╝╨░╨╗╤М╨╜╤Л╨╣ ╤А╨░╨╖╨╝╨╡╤А ╤Д╨╛╤В╨╛ тАФ 2 ╨Ь╨С.</p>
+                        <input id="profileNameInput" class="profile-modal-input" type="text" placeholder="╨Ш╨Ь╨п ╨д╨Р╨Ь╨Ш╨Ы╨Ш╨п" value="${escapeHtml(draft.fullName)}">
                         <input
                             id="profileGroupInput"
                             class="profile-modal-input"
                             type="text"
-                            placeholder="АКАДЕМ. ГРУППА · РИ-150909"
+                            placeholder="╨Р╨Ъ╨Р╨Ф╨Х╨Ь. ╨У╨а╨г╨Я╨Я╨Р ┬╖ ╨а╨Ш-150909"
                             value="${escapeHtml(draft.group)}"
                             maxlength="9"
                             autocapitalize="characters"
                             spellcheck="false"
                         >
-                        <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePersonalButton">СОХРАНИТЬ</button>
-                        <button type="button" class="profile-modal-text" id="profileOpenPasswordButton">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</button>
+                        <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePersonalButton">╨б╨Ю╨е╨а╨Р╨Э╨Ш╨в╨м</button>
+                        <button type="button" class="profile-modal-text" id="profileOpenPasswordButton">╨Т╨Ю╨б╨б╨в╨Р╨Э╨Ю╨Т╨Ы╨Х╨Э╨Ш╨Х ╨Я╨Р╨а╨Ю╨Ы╨п</button>
                     </div>
                 `
             });
         case "password":
             return renderProfileModalShell({
-                ariaLabel: "Восстановление пароля",
+                ariaLabel: "╨Т╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╡ ╨┐╨░╤А╨╛╨╗╤П",
                 closeButtonId: "profileClosePasswordButton",
                 extraCardClass: "profile-modal-card--form",
                 bodyHtml: `
-                    <h2 class="profile-shell-title">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</h2>
+                    <h2 class="profile-shell-title">╨Т╨Ю╨б╨б╨в╨Р╨Э╨Ю╨Т╨Ы╨Х╨Э╨Ш╨Х ╨Я╨Р╨а╨Ю╨Ы╨п</h2>
                     <div class="profile-modal-card-body">
-                        <input id="profileNewPasswordInput" class="profile-modal-input" type="password" placeholder="НОВЫЙ ПАРОЛЬ">
-                        <input id="profileConfirmPasswordInput" class="profile-modal-input" type="password" placeholder="ПОДТВЕРЖДЕНИЕ">
-                        <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePasswordButton">СОХРАНИТЬ</button>
+                        <input id="profileNewPasswordInput" class="profile-modal-input" type="password" placeholder="╨Э╨Ю╨Т╨л╨Щ ╨Я╨Р╨а╨Ю╨Ы╨м">
+                        <input id="profileConfirmPasswordInput" class="profile-modal-input" type="password" placeholder="╨Я╨Ю╨Ф╨в╨Т╨Х╨а╨Ц╨Ф╨Х╨Э╨Ш╨Х">
+                        <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePasswordButton">╨б╨Ю╨е╨а╨Р╨Э╨Ш╨в╨м</button>
                     </div>
                 `
             });
@@ -3370,8 +3289,8 @@ function renderProfileMainHtml(): string {
     const applicantRating = appState.teamRequestsApplicantRating;
     const profile = appState.profile;
 
-    const leagueLabel = "ЛИГА";
-    const ratingLabel = "РЕЙТИНГ";
+    const leagueLabel = "╨Ы╨Ш╨У╨Р";
+    const ratingLabel = "╨а╨Х╨Щ╨в╨Ш╨Э╨У";
 
     let leagueValue: string;
     let pointsValue: string;
@@ -3387,31 +3306,31 @@ function renderProfileMainHtml(): string {
             applicantRating?.name?.trim() ||
             applicantRequest.displayName?.trim() ||
             applicantRequest.userName?.trim() ||
-            "Участник";
-        group = applicantRating?.groupTitle?.trim() || "—";
-        teamPillText = applicantRating?.teamName?.trim() || "КОМАНДА";
-        leagueValue = applicantRating?.league?.trim() || "Новичок";
-        pointsValue = applicantRating ? String(applicantRating.points) : "—";
+            "╨г╤З╨░╤Б╤В╨╜╨╕╨║";
+        group = applicantRating?.groupTitle?.trim() || "тАФ";
+        teamPillText = applicantRating?.teamName?.trim() || "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р";
+        leagueValue = applicantRating?.league?.trim() || "╨Э╨╛╨▓╨╕╤З╨╛╨║";
+        pointsValue = applicantRating ? String(applicantRating.points) : "тАФ";
         ratingValue =
-            applicantRating && applicantRating.rank > 0 ? `${applicantRating.rank} место` : "—";
+            applicantRating && applicantRating.rank > 0 ? `${applicantRating.rank} ╨╝╨╡╤Б╤В╨╛` : "тАФ";
         avatarSrc = applicantRequest.avatarUrl?.trim() || "";
         achievementsContent = `
                     <div class="profile-achievements-empty" aria-live="polite">
-                        <p class="profile-achievements-empty-text">Достижения участника появятся здесь после выполнения челленджей.</p>
+                        <p class="profile-achievements-empty-text">╨Ф╨╛╤Б╤В╨╕╨╢╨╡╨╜╨╕╤П ╤Г╤З╨░╤Б╤В╨╜╨╕╨║╨░ ╨┐╨╛╤П╨▓╤П╤В╤Б╤П ╨╖╨┤╨╡╤Б╤М ╨┐╨╛╤Б╨╗╨╡ ╨▓╤Л╨┐╨╛╨╗╨╜╨╡╨╜╨╕╤П ╤З╨╡╨╗╨╗╨╡╨╜╨┤╨╢╨╡╨╣.</p>
                     </div>`;
     } else {
         const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
         pointsValue = String(actualPoints);
         ratingValue =
             profile?.personalRating && profile.personalRating > 0
-                ? `${profile.personalRating} место`
-                : "—";
+                ? `${profile.personalRating} ╨╝╨╡╤Б╤В╨╛`
+                : "тАФ";
         const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
         leagueValue =
-            rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
+            rawLeagueValue && rawLeagueValue.toLowerCase() !== "╤Б╤В╨░╤А╤В" ? rawLeagueValue : "╨Э╨╛╨▓╨╕╤З╨╛╨║";
         fullName = getFullNameDisplay();
         group = getGroupDisplay();
-        teamPillText = getEffectiveTeamName() || "КОМАНДА";
+        teamPillText = getEffectiveTeamName() || "╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р";
         avatarSrc = getAvatarDisplay();
         achievementsContent = hasProfileAchievements(profile)
             ? `
@@ -3427,30 +3346,24 @@ function renderProfileMainHtml(): string {
                     </div>`
             : `
                     <div class="profile-achievements-empty" aria-live="polite">
-                        <p class="profile-achievements-empty-text">Каждое достижение — это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку!</p>
-                        <button type="button" class="profile-achievements-empty-button">К ЧЕЛЛЕНДЖАМ</button>
+                        <p class="profile-achievements-empty-text">╨Ъ╨░╨╢╨┤╨╛╨╡ ╨┤╨╛╤Б╤В╨╕╨╢╨╡╨╜╨╕╨╡ тАФ ╤Н╤В╨╛ ╤В╨▓╨╛╨╣ ╨╗╨╕╤З╨╜╤Л╨╣ ╨▓╨║╨╗╨░╨┤ ╨▓ ╨Ъ╨а╨Ъ. ╨Т╤Л╨┐╨╛╨╗╨╜╨╕ ╤З╨╡╨╗╨╗╨╡╨╜╨┤╨╢, ╤З╤В╨╛╨▒╤Л ╨┐╨╛╨╗╤Г╤З╨╕╤В╤М ╤Б╨▓╨╛╤О ╨┐╨╡╤А╨▓╤Г╤О ╨░╤З╨╕╨▓╨║╤Г!</p>
+                        <button type="button" class="profile-achievements-empty-button">╨Ъ ╨з╨Х╨Ы╨Ы╨Х╨Э╨Ф╨Ц╨Р╨Ь</button>
                     </div>`;
     }
 
     const photoContent = avatarSrc
-        ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
-        : `<span class="profile-photo-placeholder">Фото</span>`;
+        ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="╨д╨╛╤В╨╛ ╨┐╤А╨╛╤Д╨╕╨╗╤П" loading="lazy">`
+        : `<span class="profile-photo-placeholder">╨д╨╛╤В╨╛</span>`;
 
     const ratingTrackHtml = viewingApplicant
         ? `
                             <div class="profile-stat-track profile-stat-track--rating">
-                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
-                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
-                                    <span class="profile-stat-label">${ratingLabel}</span>
-                                </span>
+                                <span class="profile-stat-orb profile-stat-orb--accent" aria-hidden="true">${ratingLabel}</span>
                                 <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
                             </div>`
         : `
                             <button type="button" class="profile-stat-track profile-stat-track--rating" id="profileRatingTrackButton">
-                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
-                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
-                                    <span class="profile-stat-label">${ratingLabel}</span>
-                                </span>
+                                <span class="profile-stat-orb profile-stat-orb--accent" aria-hidden="true">${ratingLabel}</span>
                                 <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
                             </button>`;
 
@@ -3470,32 +3383,26 @@ function renderProfileMainHtml(): string {
                         <div class="profile-photo-col">
                             <div class="profile-photo">${photoContent}</div>
                         </div>
-                        <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
+                        <div class="profile-stats-col" aria-label="╨б╨▓╨╛╨┤╨║╨░: ╨╗╨╕╨│╨░, ╨▒╨░╨╗╨╗╤Л, ╤А╨╡╨╣╤В╨╕╨╜╨│">
                             <div class="profile-stat-track">
-                                <span class="profile-stat-orb profile-stat-orb--muted profile-stat-orb--league" aria-hidden="true">
-                                    <img class="profile-stat-icon" src="${ligaMobileIconUrl}" alt="" aria-hidden="true">
-                                    <span class="profile-stat-label">${leagueLabel}</span>
-                                </span>
+                                <span class="profile-stat-orb profile-stat-orb--muted" aria-hidden="true">${leagueLabel}</span>
                                 <span class="profile-stat-value">${escapeHtml(leagueValue)}</span>
                             </div>
                             <div class="profile-stat-track">
-                                <span class="profile-stat-orb profile-stat-orb--muted profile-stat-orb--score" aria-hidden="true">
-                                    <img class="profile-stat-icon" src="${scoreMobileIconUrl}" alt="" aria-hidden="true">
-                                    <span class="profile-stat-label">БАЛЛЫ</span>
-                                </span>
+                                <span class="profile-stat-orb profile-stat-orb--muted" aria-hidden="true">╨С╨Р╨Ы╨Ы╨л</span>
                                 <span class="profile-stat-value profile-stat-value--num">${escapeHtml(pointsValue)}</span>
                             </div>
                             ${ratingTrackHtml}
                         </div>
                     </div>
                     <div class="profile-pills-row">
-                        <div class="profile-info-pill profile-info-pill--name">${escapeHtml(fullName || "ИМЯ ФАМИЛИЯ")}</div>
-                        <div class="profile-info-pill profile-info-pill--group">${escapeHtml(group || "РИ-XXXXXX")}</div>
+                        <div class="profile-info-pill profile-info-pill--name">${escapeHtml(fullName || "╨Ш╨Ь╨п ╨д╨Р╨Ь╨Ш╨Ы╨Ш╨п")}</div>
+                        <div class="profile-info-pill profile-info-pill--group">${escapeHtml(group || "╨а╨Ш-XXXXXX")}</div>
                         ${teamPillHtml}
                     </div>
                 </div>
                 <div class="profile-achievements">
-                    <h3 class="profile-achievements-title">ДОСТИЖЕНИЯ</h3>
+                    <h3 class="profile-achievements-title">╨Ф╨Ю╨б╨в╨Ш╨Ц╨Х╨Э╨Ш╨п</h3>
                     ${achievementsContent}
                 </div>
                 ${dockHtml}
@@ -3513,10 +3420,10 @@ function renderProfileView(): void {
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
-    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
+    const profileAppModeClass = " profile-app--dashboard-profile";
     const extraNavHtml = `
-                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
+                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨Ч╨Р╨Ф╨Р╨Э╨Ш╨п</span></button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨б╨Ю╨С╨л╨в╨Ш╨п</span></button>`;
 
     const mainColumn =
         appState.dashboardSection === "team"
@@ -3533,7 +3440,7 @@ function renderProfileView(): void {
                 type="button"
                 class="profile-menu-toggle"
                 id="profileMobileMenuButton"
-                aria-label="Открыть меню"
+                aria-label="╨Ю╤В╨║╤А╤Л╤В╤М ╨╝╨╡╨╜╤О"
                 aria-controls="profileDashboardMenu"
                 aria-expanded="false"
             >
@@ -3542,16 +3449,16 @@ function renderProfileView(): void {
                 <span aria-hidden="true"></span>
             </button>
             <div class="profile-menu-backdrop" data-profile-menu-close aria-hidden="true"></div>
-            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы">
+            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="╨а╨░╨╖╨┤╨╡╨╗╤Л">
                 <nav class="profile-nav-top">
-                    <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile"><img class="profile-nav-icon" src="${profileMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПРОФИЛЬ</span></button>
-                    <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team"><img class="profile-nav-icon" src="${teamMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">КОМАНДА</span></button>
-                    <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating"><img class="profile-nav-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">РЕЙТИНГ</span></button>
+                    <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile"><img class="profile-nav-icon" src="${profileMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨Я╨а╨Ю╨д╨Ш╨Ы╨м</span></button>
+                    <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team"><img class="profile-nav-icon" src="${teamMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨Ъ╨Ю╨Ь╨Р╨Э╨Ф╨Р</span></button>
+                    <button type="button" class="profile-nav-button${navRatingActive}" data-dashboard="rating"><img class="profile-nav-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨а╨Х╨Щ╨в╨Ш╨Э╨У</span></button>
                     ${extraNavHtml}
                 </nav>
                 <nav class="profile-nav-bottom">
-                    <button type="button" class="profile-nav-button" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">НАСТРОЙКИ</span></button>
-                    <button type="button" class="profile-nav-button" id="profileLogoutButton"><img class="profile-nav-icon" src="${logoutMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПОКИНУТЬ</span></button>
+                    <button type="button" class="profile-nav-button" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨Э╨Р╨б╨в╨а╨Ю╨Щ╨Ъ╨Ш</span></button>
+                    <button type="button" class="profile-nav-button" id="profileLogoutButton"><img class="profile-nav-icon" src="${logoutMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">╨Я╨Ю╨Ъ╨Ш╨Э╨г╨в╨м</span></button>
                 </nav>
             </aside>
             ${mainColumn}
@@ -3590,82 +3497,15 @@ function wireMobileProfileMenu(): void {
     const profileApp = profileMount.querySelector<HTMLElement>(".profile-app");
     const menuButton = profileMount.querySelector("#profileMobileMenuButton");
     const backdrop = profileMount.querySelector("[data-profile-menu-close]");
-    const sidebar = profileMount.querySelector<HTMLElement>("#profileDashboardMenu");
-    const navTop = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-top");
-    const navBottom = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-bottom");
 
-    if (!profileApp || !isHTMLButtonElement(menuButton) || !sidebar || !navTop || !navBottom) {
+    if (!profileApp || !isHTMLButtonElement(menuButton)) {
         return;
     }
 
-    let startY = 0;
-    let activePointerId: number | null = null;
-    let dragMode: "open" | "close" | null = null;
-    let dragHeights: { closed: number; open: number } | null = null;
-    let dragStartedOpen = false;
-    let isDragging = false;
-
-    const clearDragStyles = (): void => {
-        profileApp.classList.remove("is-mobile-menu-dragging");
-        sidebar.style.removeProperty("height");
-        sidebar.style.removeProperty("min-height");
-        sidebar.style.removeProperty("max-height");
-        sidebar.style.removeProperty("grid-template-rows");
-        sidebar.style.removeProperty("gap");
-        sidebar.style.removeProperty("transform");
-        navBottom.style.removeProperty("max-height");
-        navBottom.style.removeProperty("opacity");
-        navBottom.style.removeProperty("transform");
-        navBottom.style.removeProperty("pointer-events");
-        profileApp.style.removeProperty("touch-action");
-        sidebar.style.removeProperty("touch-action");
-    };
-
-    const applyMenuDragState = (height: number, heights: { closed: number; open: number }): void => {
-        const delta = Math.max(heights.open - heights.closed, 1);
-        const progress = Math.min(Math.max((height - heights.closed) / delta, 0), 1);
-        const topHeight = Math.max(Math.round(navTop.getBoundingClientRect().height), 38);
-        const bottomHeight = Math.max(Math.round(navBottom.scrollHeight), 38);
-        const bottomVisibleHeight = Math.round(bottomHeight * progress);
-
-        profileApp.classList.add("is-mobile-menu-dragging");
-        sidebar.style.height = `${height}px`;
-        sidebar.style.minHeight = `${height}px`;
-        sidebar.style.maxHeight = `${height}px`;
-        sidebar.style.gridTemplateRows = `${topHeight}px ${bottomVisibleHeight}px`;
-        sidebar.style.gap = `${12 * progress}px`;
-        sidebar.style.transform = `translateY(${18 * (1 - progress)}px)`;
-        navBottom.style.maxHeight = `${bottomVisibleHeight}px`;
-        navBottom.style.opacity = progress.toFixed(3);
-        navBottom.style.transform = `translateY(${8 * (1 - progress)}px)`;
-        navBottom.style.pointerEvents = progress > 0.98 ? "auto" : "none";
-        profileApp.style.touchAction = "none";
-    };
-
-    const getMenuHeights = (): { closed: number; open: number } => {
-        const wasOpen = profileApp.classList.contains("is-mobile-menu-open");
-        const currentHeight = Math.round(sidebar.getBoundingClientRect().height);
-
-        if (wasOpen) {
-            profileApp.classList.remove("is-mobile-menu-dragging");
-            clearDragStyles();
-            profileApp.classList.remove("is-mobile-menu-open");
-            const closedHeight = Math.round(sidebar.getBoundingClientRect().height);
-            profileApp.classList.add("is-mobile-menu-open");
-            return { closed: closedHeight, open: currentHeight };
-        }
-
-        profileApp.classList.add("is-mobile-menu-open");
-        const openHeight = Math.round(sidebar.getBoundingClientRect().height);
-        profileApp.classList.remove("is-mobile-menu-open");
-        return { closed: currentHeight, open: openHeight };
-    };
-
     const setMenuOpen = (isOpen: boolean): void => {
-        clearDragStyles();
         profileApp.classList.toggle("is-mobile-menu-open", isOpen);
         menuButton.setAttribute("aria-expanded", String(isOpen));
-        menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
+        menuButton.setAttribute("aria-label", isOpen ? "╨Ч╨░╨║╤А╤Л╤В╤М ╨╝╨╡╨╜╤О" : "╨Ю╤В╨║╤А╤Л╤В╤М ╨╝╨╡╨╜╤О");
     };
 
     menuButton.addEventListener("click", () => {
@@ -3682,117 +3522,6 @@ function wireMobileProfileMenu(): void {
         button.addEventListener("click", () => {
             setMenuOpen(false);
         });
-    });
-
-    profileApp.addEventListener("pointerdown", (event: PointerEvent) => {
-        if (!window.matchMedia(MOBILE_AUTH_QUERY).matches || event.pointerType === "mouse" || event.button !== 0) {
-            return;
-        }
-
-        if (appState.profileModal !== "none" || appState.teamModal !== "none" || appState.eventsModal !== "none") {
-            return;
-        }
-
-        const target = event.target;
-        if (!(target instanceof Element)) {
-            return;
-        }
-
-        if (target.closest(".profile-nav-button, .profile-modal, button, input, textarea, select, a")) {
-            return;
-        }
-
-        const isOpen = profileApp.classList.contains("is-mobile-menu-open");
-        const appRect = profileApp.getBoundingClientRect();
-        const sidebarRect = sidebar.getBoundingClientRect();
-        const isNearBottom = event.clientY >= appRect.bottom - 160;
-        const isInsideSidebar = event.clientY >= sidebarRect.top - 18;
-
-        if ((!isOpen && !isNearBottom) || (isOpen && !isInsideSidebar)) {
-            return;
-        }
-
-        startY = event.clientY;
-        activePointerId = event.pointerId;
-        dragStartedOpen = isOpen;
-        dragMode = isOpen ? "close" : "open";
-        dragHeights = getMenuHeights();
-        isDragging = false;
-        profileApp.style.touchAction = "none";
-        sidebar.style.touchAction = "none";
-        event.preventDefault();
-        sidebar.setPointerCapture(event.pointerId);
-    });
-
-    profileApp.addEventListener("pointermove", (event: PointerEvent) => {
-        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
-            return;
-        }
-
-        const deltaY = startY - event.clientY;
-        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
-        const distance = Math.max(rawDistance, 0);
-        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
-        const nextHeight =
-            dragMode === "open"
-                ? Math.min(dragHeights.closed + distance, dragHeights.open)
-                : Math.max(dragHeights.open - distance, dragHeights.closed);
-
-        if (distance > 4) {
-            isDragging = true;
-            event.preventDefault();
-        }
-
-        applyMenuDragState(nextHeight, dragHeights);
-
-        if (distance >= maxDistance) {
-            applyMenuDragState(dragMode === "open" ? dragHeights.open : dragHeights.closed, dragHeights);
-        }
-    });
-
-    const finishSwipe = (event: PointerEvent): void => {
-        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
-            return;
-        }
-
-        const deltaY = startY - event.clientY;
-        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
-        const distance = Math.max(rawDistance, 0);
-        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
-        const shouldOpen =
-            dragMode === "open"
-                ? isDragging && distance / maxDistance > 0.35
-                : !(isDragging && distance / maxDistance > 0.35);
-
-        if (sidebar.hasPointerCapture(event.pointerId)) {
-            sidebar.releasePointerCapture(event.pointerId);
-        }
-
-        activePointerId = null;
-        dragMode = null;
-        dragHeights = null;
-        dragStartedOpen = false;
-        isDragging = false;
-        setMenuOpen(shouldOpen);
-    };
-
-    profileApp.addEventListener("pointerup", finishSwipe);
-    profileApp.addEventListener("pointercancel", (event: PointerEvent) => {
-        if (activePointerId !== event.pointerId) {
-            return;
-        }
-
-        if (sidebar.hasPointerCapture(event.pointerId)) {
-            sidebar.releasePointerCapture(event.pointerId);
-        }
-
-        activePointerId = null;
-        dragMode = null;
-        dragHeights = null;
-        const fallbackOpenState = dragStartedOpen;
-        dragStartedOpen = false;
-        isDragging = false;
-        setMenuOpen(fallbackOpenState);
     });
 }
 
@@ -3838,7 +3567,7 @@ function wireProfileViewEvents(): void {
             appState.profile = null;
             resetProfileUi();
             appState.signIn.password = "";
-            setStatus("Сессия завершена.");
+            setStatus("╨б╨╡╤Б╤Б╨╕╤П ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░.");
             setView("sign-in");
         });
     }
@@ -3899,7 +3628,7 @@ function wireProfileViewEvents(): void {
 
     profileMount.querySelectorAll<HTMLButtonElement>("[data-dashboard-placeholder]").forEach((button) => {
         button.addEventListener("click", () => {
-            setStatus("Раздел скоро будет доступен.");
+            setStatus("╨а╨░╨╖╨┤╨╡╨╗ ╤Б╨║╨╛╤А╨╛ ╨▒╤Г╨┤╨╡╤В ╨┤╨╛╤Б╤В╤Г╨┐╨╡╨╜.");
             render();
         });
     });
@@ -3939,7 +3668,7 @@ function wireProfileViewEvents(): void {
 
             void submitTeamVote(memberId, score)
                 .then(() => {
-                    setStatus("Голос сохранен.");
+                    setStatus("╨У╨╛╨╗╨╛╤Б ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜.");
                     closeTeamModal();
                 })
                 .catch((error: unknown) => {
@@ -3982,13 +3711,13 @@ function wireProfileViewEvents(): void {
                 : teamFlowState.checkInReport.trim();
 
             if (!Number.isInteger(week) || week < 1 || week > 52) {
-                teamFlowState.checkInError = "Укажите неделю от 1 до 52.";
+                teamFlowState.checkInError = "╨г╨║╨░╨╢╨╕╤В╨╡ ╨╜╨╡╨┤╨╡╨╗╤О ╨╛╤В 1 ╨┤╨╛ 52.";
                 render();
                 return;
             }
 
             if (!report) {
-                teamFlowState.checkInError = "Заполните текст отчета.";
+                teamFlowState.checkInError = "╨Ч╨░╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╤В╨╡╨║╤Б╤В ╨╛╤В╤З╨╡╤В╨░.";
                 render();
                 return;
             }
@@ -3998,7 +3727,7 @@ function wireProfileViewEvents(): void {
                     teamFlowState.checkInWeek = "";
                     teamFlowState.checkInReport = "";
                     teamFlowState.checkInError = "";
-                    setStatus("Check-in отправлен.");
+                    setStatus("Check-in ╨╛╤В╨┐╤А╨░╨▓╨╗╨╡╨╜.");
                     closeTeamModal();
                 })
                 .catch((error: unknown) => {
@@ -4021,15 +3750,15 @@ function wireProfileViewEvents(): void {
             const link = appState.teamRequestsInviteLink || buildTeamInviteLink();
             try {
                 await navigator.clipboard.writeText(link);
-                setStatus("Ссылка-приглашение скопирована.");
+                setStatus("╨б╤Б╤Л╨╗╨║╨░-╨┐╤А╨╕╨│╨╗╨░╤И╨╡╨╜╨╕╨╡ ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╨╜╨░.");
             } catch {
-                setStatus("Не удалось скопировать ссылку.", "error");
+                setStatus("╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╤В╤М ╤Б╤Б╤Л╨╗╨║╤Г.", "error");
             }
             render();
         });
     }
 
-    // Навигация карусели заявок
+    // ╨Э╨░╨▓╨╕╨│╨░╤Ж╨╕╤П ╨║╨░╤А╤Г╤Б╨╡╨╗╨╕ ╨╖╨░╤П╨▓╨╛╨║
     const teamRequestsPrev = profileMount.querySelector("#teamRequestsPrev");
     const teamRequestsNext = profileMount.querySelector("#teamRequestsNext");
     if (isHTMLButtonElement(teamRequestsPrev)) {
@@ -4073,7 +3802,7 @@ function wireProfileViewEvents(): void {
 
             void submitHelpRequestStatus(id, status)
                 .then(() => {
-                    setStatus(status === "Accepted" ? "Заявка принята." : "Заявка отклонена.");
+                    setStatus(status === "Accepted" ? "╨Ч╨░╤П╨▓╨║╨░ ╨┐╤А╨╕╨╜╤П╤В╨░." : "╨Ч╨░╤П╨▓╨║╨░ ╨╛╤В╨║╨╗╨╛╨╜╨╡╨╜╨░.");
                     render();
                 })
                 .catch((error: unknown) => {
@@ -4101,8 +3830,8 @@ function wireProfileViewEvents(): void {
             if (appState.localCreatedTeam) {
                 const invited: TeamMemberRow = {
                     id: `invite-${Date.now().toString(36)}`,
-                    displayName: "Новый участник (демо)",
-                    roleLabel: "УЧАСТНИК",
+                    displayName: "╨Э╨╛╨▓╤Л╨╣ ╤Г╤З╨░╤Б╤В╨╜╨╕╨║ (╨┤╨╡╨╝╨╛)",
+                    roleLabel: "╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
                     avatarUrl: "",
                     isCaptain: false
                 };
@@ -4114,10 +3843,10 @@ function wireProfileViewEvents(): void {
             }
             pushUserActivity({
                 kind: "team_joined",
-                title: "НОВЫЙ УЧАСТНИК",
-                description: "Заявка в команду принята."
+                title: "╨Э╨Ю╨Т╨л╨Щ ╨г╨з╨Р╨б╨в╨Э╨Ш╨Ъ",
+                description: "╨Ч╨░╤П╨▓╨║╨░ ╨▓ ╨║╨╛╨╝╨░╨╜╨┤╤Г ╨┐╤А╨╕╨╜╤П╤В╨░."
             });
-            setStatus("Заявка принята (демо).");
+            setStatus("╨Ч╨░╤П╨▓╨║╨░ ╨┐╤А╨╕╨╜╤П╤В╨░ (╨┤╨╡╨╝╨╛).");
             closeTeamModal();
         });
     }
@@ -4125,7 +3854,7 @@ function wireProfileViewEvents(): void {
     const teamDecline = profileMount.querySelector("#teamRequestDeclineButton");
     if (isHTMLButtonElement(teamDecline)) {
         teamDecline.addEventListener("click", () => {
-            setStatus("Заявка отклонена (демо).");
+            setStatus("╨Ч╨░╤П╨▓╨║╨░ ╨╛╤В╨║╨╗╨╛╨╜╨╡╨╜╨░ (╨┤╨╡╨╝╨╛).");
             closeTeamModal();
         });
     }
@@ -4198,7 +3927,7 @@ function wireProfileViewEvents(): void {
     const savePasswordButton = profileMount.querySelector("#profileSavePasswordButton");
     if (isHTMLButtonElement(savePasswordButton)) {
         savePasswordButton.addEventListener("click", () => {
-            setStatus("Пароль обновлён (демо).");
+            setStatus("╨Я╨░╤А╨╛╨╗╤М ╨╛╨▒╨╜╨╛╨▓╨╗╤С╨╜ (╨┤╨╡╨╝╨╛).");
             closeProfileModal();
         });
     }
@@ -4288,7 +4017,7 @@ function wireProfileViewEvents(): void {
             try {
                 findTeamRequest.disabled = true;
                 await requestTeamJoin(teamId);
-                setStatus("Заявка отправлена капитану команды.");
+                setStatus("╨Ч╨░╤П╨▓╨║╨░ ╨╛╤В╨┐╤А╨░╨▓╨╗╨╡╨╜╨░ ╨║╨░╨┐╨╕╤В╨░╨╜╤Г ╨║╨╛╨╝╨░╨╜╨┤╤Л.");
                 closeProfileModal();
             } catch (error: unknown) {
                 setStatus(getErrorMessage(error), "error");
@@ -4327,9 +4056,9 @@ function wireProfileViewEvents(): void {
         copyInvite.addEventListener("click", async () => {
             try {
                 await navigator.clipboard.writeText(appState.profileInviteLink);
-                setStatus("Ссылка скопирована.");
+                setStatus("╨б╤Б╤Л╨╗╨║╨░ ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╨╜╨░.");
             } catch {
-                setStatus("Не удалось скопировать ссылку.", "error");
+                setStatus("╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╤Б╨║╨╛╨┐╨╕╤А╨╛╨▓╨░╤В╤М ╤Б╤Б╤Л╨╗╨║╤Г.", "error");
             }
             render();
         });
@@ -4366,7 +4095,7 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
     appState.signIn.email = getInputValue(form.elements.namedItem("email")).trim();
     appState.signIn.password = getInputValue(form.elements.namedItem("password"));
     appState.isSubmitting = true;
-    setStatus("Подключаемся к серверу...");
+    setStatus("╨Я╨╛╨┤╨║╨╗╤О╤З╨░╨╡╨╝╤Б╤П ╨║ ╤Б╨╡╤А╨▓╨╡╤А╤Г...");
     render();
 
     try {
@@ -4390,7 +4119,7 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
         }
         appState.signIn.password = "";
         appState.view = "account";
-        setStatus("Вход выполнен.");
+        setStatus("╨Т╤Е╨╛╨┤ ╨▓╤Л╨┐╨╛╨╗╨╜╨╡╨╜.");
     } catch (error) {
         setStatus(getErrorMessage(error), "error");
     } finally {
@@ -4407,25 +4136,25 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
     appState.signUp.passwordConfirm = getInputValue(form.elements.namedItem("passwordConfirm"));
 
     if (!appState.signUp.email || !appState.signUp.password) {
-        setStatus("Заполните email и пароль.", "error");
+        setStatus("╨Ч╨░╨┐╨╛╨╗╨╜╨╕╤В╨╡ email ╨╕ ╨┐╨░╤А╨╛╨╗╤М.", "error");
         updateStatusBlock();
         return;
     }
 
     if (appState.signUp.password.length < MIN_PASSWORD_LENGTH) {
-        setStatus(`Пароль не короче ${MIN_PASSWORD_LENGTH} символов (требование сервера).`, "error");
+        setStatus(`╨Я╨░╤А╨╛╨╗╤М ╨╜╨╡ ╨║╨╛╤А╨╛╤З╨╡ ${MIN_PASSWORD_LENGTH} ╤Б╨╕╨╝╨▓╨╛╨╗╨╛╨▓ (╤В╤А╨╡╨▒╨╛╨▓╨░╨╜╨╕╨╡ ╤Б╨╡╤А╨▓╨╡╤А╨░).`, "error");
         updateStatusBlock();
         return;
     }
 
     if (appState.signUp.password !== appState.signUp.passwordConfirm) {
-        setStatus("Пароли не совпадают.", "error");
+        setStatus("╨Я╨░╤А╨╛╨╗╨╕ ╨╜╨╡ ╤Б╨╛╨▓╨┐╨░╨┤╨░╤О╤В.", "error");
         updateStatusBlock();
         return;
     }
 
     appState.isSubmitting = true;
-    setStatus("Создаём аккаунт...");
+    setStatus("╨б╨╛╨╖╨┤╨░╤С╨╝ ╨░╨║╨║╨░╤Г╨╜╤В...");
     render();
 
     try {
@@ -4451,7 +4180,7 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
         appState.view = "account";
         appState.signUp.password = "";
         appState.signUp.passwordConfirm = "";
-        setStatus("Регистрация завершена.");
+        setStatus("╨а╨╡╨│╨╕╤Б╤В╤А╨░╤Ж╨╕╤П ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░.");
     } catch (error) {
         setStatus(getErrorMessage(error), "error");
     } finally {
@@ -4463,20 +4192,20 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
 async function refreshProfile(): Promise<void> {
     const session = loadSession();
     if (!session) {
-        setStatus("Сессия не найдена.", "error");
+        setStatus("╨б╨╡╤Б╤Б╨╕╤П ╨╜╨╡ ╨╜╨░╨╣╨┤╨╡╨╜╨░.", "error");
         render();
         return;
     }
 
     appState.isSubmitting = true;
-    setStatus("Обновляем профиль...");
+    setStatus("╨Ю╨▒╨╜╨╛╨▓╨╗╤П╨╡╨╝ ╨┐╤А╨╛╤Д╨╕╨╗╤М...");
     render();
 
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
         await refreshTeamWorkspace();
-        setStatus("Данные обновлены.");
+        setStatus("╨Ф╨░╨╜╨╜╤Л╨╡ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╤Л.");
     } catch (error) {
         setStatus(getErrorMessage(error), "error");
     } finally {
@@ -4486,8 +4215,8 @@ async function refreshProfile(): Promise<void> {
 }
 
 /**
- * Не блокирует вход: login/register уже отдают тот же профиль + id.
- * При успехе обновляет данные; при ошибке /me остаётся state из auth.
+ * ╨Э╨╡ ╨▒╨╗╨╛╨║╨╕╤А╤Г╨╡╤В ╨▓╤Е╨╛╨┤: login/register ╤Г╨╢╨╡ ╨╛╤В╨┤╨░╤О╤В ╤В╨╛╤В ╨╢╨╡ ╨┐╤А╨╛╤Д╨╕╨╗╤М + id.
+ * ╨Я╤А╨╕ ╤Г╤Б╨┐╨╡╤Е╨╡ ╨╛╨▒╨╜╨╛╨▓╨╗╤П╨╡╤В ╨┤╨░╨╜╨╜╤Л╨╡; ╨┐╤А╨╕ ╨╛╤И╨╕╨▒╨║╨╡ /me ╨╛╤Б╤В╨░╤С╤В╤Б╤П state ╨╕╨╖ auth.
  */
 function syncProfileWithServerInBackground(bearerToken: string): void {
     void (async () => {
@@ -4502,7 +4231,7 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             await refreshTeamWorkspace();
             render();
         } catch {
-            /* сессия уже валидна с данными из тела login/register */
+            /* ╤Б╨╡╤Б╤Б╨╕╤П ╤Г╨╢╨╡ ╨▓╨░╨╗╨╕╨┤╨╜╨░ ╤Б ╨┤╨░╨╜╨╜╤Л╨╝╨╕ ╨╕╨╖ ╤В╨╡╨╗╨░ login/register */
         }
     })();
 }
@@ -4538,7 +4267,7 @@ function renderSignInFeedbackBlock(): string {
     if (isInvalidCredentialsError()) {
         return `
             <button type="button" class="auth-recovery-link" data-view="password-recovery">
-                Забыли пароль? Нажмите для восстановления
+                ╨Ч╨░╨▒╤Л╨╗╨╕ ╨┐╨░╤А╨╛╨╗╤М? ╨Э╨░╨╢╨╝╨╕╤В╨╡ ╨┤╨╗╤П ╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П
             </button>
         `;
     }
@@ -4575,14 +4304,14 @@ async function submitPersonalProfileSave(): Promise<void> {
     const draft = appState.profileFormDraft;
     const p = appState.profile;
     if (!draft || !p) {
-        setStatus("Откройте форму через «НАСТРОЙКИ» и попробуйте снова.", "error");
+        setStatus("╨Ю╤В╨║╤А╨╛╨╣╤В╨╡ ╤Д╨╛╤А╨╝╤Г ╤З╨╡╤А╨╡╨╖ ┬л╨Э╨Р╨б╨в╨а╨Ю╨Щ╨Ъ╨Ш┬╗ ╨╕ ╨┐╨╛╨┐╤А╨╛╨▒╤Г╨╣╤В╨╡ ╤Б╨╜╨╛╨▓╨░.", "error");
         render();
         return;
     }
 
     draft.group = normalizeAcademicGroupInput(draft.group);
     if (!isAcademicGroupValid(draft.group)) {
-        setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
+        setStatus("╨Я╨╛╨╗╨╡ ┬л╨Р╨Ъ╨Р╨Ф╨Х╨Ь. ╨У╨а╨г╨Я╨Я╨Р┬╗ ╨╖╨░╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╨▓ ╤Д╨╛╤А╨╝╨░╤В╨╡ ╨а╨Ш-150909.", "error");
         render();
         return;
     }
@@ -4612,7 +4341,7 @@ async function submitPersonalProfileSave(): Promise<void> {
     try {
         syncCurrentUserInLocalTeamRoster();
     } catch {
-        /* не мешаем закрыть форму, если не записался состав команды в storage */
+        /* ╨╜╨╡ ╨╝╨╡╤И╨░╨╡╨╝ ╨╖╨░╨║╤А╤Л╤В╤М ╤Д╨╛╤А╨╝╤Г, ╨╡╤Б╨╗╨╕ ╨╜╨╡ ╨╖╨░╨┐╨╕╤Б╨░╨╗╤Б╤П ╤Б╨╛╤Б╤В╨░╨▓ ╨║╨╛╨╝╨░╨╜╨┤╤Л ╨▓ storage */
     }
 
     const session = loadSession();
@@ -4627,8 +4356,8 @@ async function submitPersonalProfileSave(): Promise<void> {
 
     pushUserActivity({
         kind: "profile_updated",
-        title: "ПРОФИЛЬ ОБНОВЛЁН",
-        description: "Личные данные сохранены."
+        title: "╨Я╨а╨Ю╨д╨Ш╨Ы╨м ╨Ю╨С╨Э╨Ю╨Т╨Ы╨Б╨Э",
+        description: "╨Ы╨╕╤З╨╜╤Л╨╡ ╨┤╨░╨╜╨╜╤Л╨╡ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╤Л."
     });
 
     if (session) {
@@ -4639,16 +4368,16 @@ async function submitPersonalProfileSave(): Promise<void> {
                 appState.profileEdits = savedEdits;
                 applyProfileEditsToInMemoryProfile();
                 persistSavedProfileEdits();
-                setStatus("Данные сохранены на сервере и в этом браузере.");
+                setStatus("╨Ф╨░╨╜╨╜╤Л╨╡ ╤Б╨╛╤Е╤А╨░╨╜╨╡╨╜╤Л ╨╜╨░ ╤Б╨╡╤А╨▓╨╡╤А╨╡ ╨╕ ╨▓ ╤Н╤В╨╛╨╝ ╨▒╤А╨░╤Г╨╖╨╡╤А╨╡.");
             } catch (error) {
-                setStatus(`Сохранено в браузере. Сервер: ${getErrorMessage(error)}`, "error");
+                setStatus(`╨б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╛ ╨▓ ╨▒╤А╨░╤Г╨╖╨╡╤А╨╡. ╨б╨╡╤А╨▓╨╡╤А: ${getErrorMessage(error)}`, "error");
             }
             render();
         })();
         return;
     }
 
-    setStatus("Сохранено локально (нет активной сессии для сервера).");
+    setStatus("╨б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╛ ╨╗╨╛╨║╨░╨╗╤М╨╜╨╛ (╨╜╨╡╤В ╨░╨║╤В╨╕╨▓╨╜╨╛╨╣ ╤Б╨╡╤Б╤Б╨╕╨╕ ╨┤╨╗╤П ╤Б╨╡╤А╨▓╨╡╤А╨░).");
     render();
 }
 
