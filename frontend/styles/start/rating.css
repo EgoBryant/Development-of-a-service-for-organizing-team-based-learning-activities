@@ -770,3 +770,166 @@
         font-size: 9px;
     }
 }
+
+@media (min-width: 1025px) {
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-leaderboard {
+        gap: 18px;
+        padding: 24px 24px 18px 0;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-leaderboard-tabs {
+        width: min(340px, 100%);
+        margin: 0 auto;
+        padding: 6px;
+        box-shadow: 0 8px 18px rgba(33, 78, 154, 0.14);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-leaderboard-tab {
+        min-height: 40px;
+        padding: 10px 18px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-toolbar {
+        min-height: 56px;
+        background: rgba(232, 238, 252, 0.9);
+        box-shadow: inset 0 0 0 1px rgba(150, 170, 220, 0.25);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-search-input {
+        padding: 16px 22px;
+        font-size: 13px;
+        color: rgba(146, 165, 215, 0.95);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-filter-wrap {
+        padding: 4px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-filter-btn {
+        min-width: 126px;
+        padding: 11px 20px;
+        font-size: 12px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-featured-row {
+        grid-template-columns: repeat(3, minmax(146px, 182px));
+        justify-content: center;
+        gap: clamp(24px, 2.8vw, 36px);
+        padding-top: 2px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-featured-card-photo {
+        border-radius: 24px;
+        max-height: clamp(152px, 21vh, 196px);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-featured-card-name {
+        display: none;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-featured-card-points {
+        margin-top: -12px;
+        position: relative;
+        z-index: 2;
+        background: rgba(241, 246, 255, 0.98);
+        color: rgba(52, 122, 245, 0.96);
+        box-shadow: 0 8px 16px rgba(54, 93, 178, 0.2);
+        border: 1px solid rgba(150, 176, 228, 0.4);
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-featured-card-points .rating-points-icon--left {
+        width: 15px;
+        height: 15px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-list-scroll {
+        gap: 10px;
+        padding-top: 2px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-list-row {
+        min-height: 56px;
+        border-radius: 22px;
+        background: rgba(236, 241, 252, 0.96);
+        box-shadow: 0 6px 14px rgba(49, 95, 175, 0.1);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-list-main {
+        font-size: 23px;
+        font-weight: 900;
+        color: rgba(42, 126, 245, 0.95);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-list-label {
+        font-size: 18px;
+        letter-spacing: 0.05em;
+        color: rgba(42, 126, 245, 0.95);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-list-points {
+        background: rgba(241, 246, 255, 0.98);
+        color: rgba(52, 122, 245, 0.96);
+        border: 1px solid rgba(160, 184, 230, 0.45);
+        box-shadow: 0 6px 12px rgba(54, 93, 178, 0.14);
+        border-radius: 999px;
+        padding: 12px 20px;
+        font-size: 14px;
+        text-transform: none;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-featured-row--teams {
+        padding-top: 6px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-team-podium {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(18px, 2.6vw, 30px);
+        align-items: center;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-team-podium-card {
+        min-height: 132px;
+        padding: 16px 18px;
+        gap: 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(160, 184, 230, 0.45);
+        box-shadow: 0 8px 16px rgba(54, 93, 178, 0.12);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-team-podium-slot--first .rating-team-podium-card {
+        min-height: 142px;
+        padding-top: 18px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-team-podium-icon {
+        display: block;
+        width: 34px;
+        height: 34px;
+        filter: drop-shadow(0 4px 8px rgba(70, 95, 170, 0.28));
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-team-podium-name {
+        font-size: 17px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        color: rgba(42, 126, 245, 0.95);
+    }
+
+    .profile-app--dashboard-profile:has(.rating-leaderboard--teams) .rating-team-podium-points {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(160, 184, 230, 0.45);
+        background: rgba(241, 246, 255, 0.98);
+        box-shadow: 0 6px 12px rgba(54, 93, 178, 0.14);
+        font-size: 14px;
+        line-height: 1;
+        color: rgba(42, 126, 245, 0.95);
+    }
+}

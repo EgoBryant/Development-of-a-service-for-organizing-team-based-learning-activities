@@ -30,6 +30,7 @@ import {
     getSettingsPhotoDisplay,
     renderSettingsPageMain
 } from "./pages/SettingsPage";
+import { renderTasksPageMain, wireTasksPageEvents } from "./pages/TasksPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
 import {
@@ -64,6 +65,7 @@ import type {
     EventsModalKind,
     ExternalProfileView,
     ProfileModalKind,
+    TasksKrcTier,
     View
 } from "./types/app";
 import type { AuthResponse, UserProfileResponse } from "./types/auth";
@@ -184,6 +186,7 @@ const appState: AppState = {
     eventsShareLink: "",
     newsCreateDraft: null,
     newsShowValidationError: false,
+    tasksKrcTier: "pro",
     teamVoteMemberIndex: 0,
     teamRequestsCurrentIndex: 0,
     teamRequestsInviteLink: "",
@@ -210,8 +213,8 @@ const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
-const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 767px)";
-const DESKTOP_DASHBOARD_QUERY = "(min-width: 768px)";
+const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 1024px)";
+const DESKTOP_DASHBOARD_QUERY = "(min-width: 1025px)";
 const MOBILE_BOTTOM_NAV_CLOSED_HEIGHT = 76;
 const MOBILE_BOTTOM_NAV_OPEN_HEIGHT = 116;
 const MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY = 1.35;
@@ -1753,6 +1756,7 @@ function hydrateProfileClientStateFromStorage(): void {
         data.dashboardSection === "profile" ||
         data.dashboardSection === "team" ||
         data.dashboardSection === "rating" ||
+        data.dashboardSection === "tasks" ||
         data.dashboardSection === "events" ||
         data.dashboardSection === "settings"
     ) {
@@ -4535,11 +4539,12 @@ function renderProfileView(): void {
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
+    const navTasksActive = appState.dashboardSection === "tasks" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
     const navSettingsActive = appState.dashboardSection === "settings" ? " is-active" : "";
     const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
     const extraNavHtml = `
-                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
+                    <button type="button" class="profile-nav-button${navTasksActive}" data-dashboard="tasks"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
                     <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
 
     const mainColumn =
@@ -4547,15 +4552,17 @@ function renderProfileView(): void {
             ? renderTeamPageMain(statusHtml)
             : appState.dashboardSection === "rating"
               ? renderRatingPageMain(statusHtml)
-              : appState.dashboardSection === "events"
-                ? renderEventsDashboardMain(statusHtml)
-                : appState.dashboardSection === "settings"
-                  ? renderSettingsPageMain(
-                      statusHtml,
-                      appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
-                      appState.profileAvatarFileName
-                  )
-                  : renderProfileMainHtml();
+              : appState.dashboardSection === "tasks"
+                ? renderTasksPageMain(statusHtml, appState.tasksKrcTier)
+                : appState.dashboardSection === "events"
+                  ? renderEventsDashboardMain(statusHtml)
+                  : appState.dashboardSection === "settings"
+                    ? renderSettingsPageMain(
+                        statusHtml,
+                        appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
+                        appState.profileAvatarFileName
+                    )
+                    : renderProfileMainHtml();
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
@@ -4647,6 +4654,32 @@ function wireMobileProfileMenu(): void {
     let velocityY = 0;
 
     const isBottomNavLayout = (): boolean => window.matchMedia(MOBILE_BOTTOM_NAV_QUERY).matches;
+
+    const isNavButtonTarget = (target: Element): boolean => Boolean(target.closest(".profile-nav-button"));
+
+    const canStartMenuGesture = (target: Element, clientY: number): boolean => {
+        if (isNavButtonTarget(target)) {
+            return false;
+        }
+
+        if (target.closest(".profile-modal, button, input, textarea, select, a, label")) {
+            return false;
+        }
+
+        const isOpen = profileApp.classList.contains("is-mobile-menu-open");
+        if (target.closest(".profile-sidebar-swipe-handle")) {
+            return true;
+        }
+
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const isInsideSidebar = clientY >= sidebarRect.top - 12 && clientY <= sidebarRect.bottom + 12;
+        if (isOpen && isInsideSidebar) {
+            return true;
+        }
+
+        const appRect = profileApp.getBoundingClientRect();
+        return clientY >= appRect.bottom - 160;
+    };
 
     const getMenuHeights = (): { closed: number; open: number } => ({
         closed: MOBILE_BOTTOM_NAV_CLOSED_HEIGHT,
@@ -4800,7 +4833,7 @@ function wireMobileProfileMenu(): void {
             }
 
             if (profileApp.classList.contains("is-mobile-menu-open")) {
-                setMenuOpen(false);
+                setMenuOpen(false, false);
             }
         });
     });
@@ -4902,7 +4935,7 @@ function wireMobileProfileMenu(): void {
     };
 
     const onPointerDown = (event: PointerEvent): void => {
-        if (!isBottomNavLayout() || event.pointerType === "mouse" && event.button !== 0) {
+        if (!isBottomNavLayout() || event.pointerType === "mouse" || event.button !== 0) {
             return;
         }
 
@@ -4912,6 +4945,10 @@ function wireMobileProfileMenu(): void {
 
         const target = event.target;
         if (!(target instanceof Element) || target.closest(".profile-modal")) {
+            return;
+        }
+
+        if (!canStartMenuGesture(target, event.clientY)) {
             return;
         }
 
@@ -5104,6 +5141,13 @@ function wireProfileViewEvents(): void {
     }
     if (appState.dashboardSection === "team" && isHTMLElement(profileMount)) {
         wireTeamPageEvents(profileMount);
+    }
+    if (appState.dashboardSection === "tasks" && isHTMLElement(profileMount)) {
+        wireTasksPageEvents(profileMount, (tier: TasksKrcTier) => {
+            appState.tasksKrcTier = tier;
+            clearStatus();
+            render();
+        });
     }
     if (appState.dashboardSection === "settings") {
         wireSettingsPageEvents();

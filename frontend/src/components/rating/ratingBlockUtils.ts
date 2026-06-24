@@ -1,6 +1,8 @@
 import rating1IconUrl from "../../assets/icons/Rating_1.svg";
 import rating2IconUrl from "../../assets/icons/Rating_2.svg";
 import rating3IconUrl from "../../assets/icons/Rating_3.svg";
+import ligaMobileIconUrl from "../../assets/icons/Liga_mobile.svg";
+import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import type { RatingLeaderboardEntry, RatingSortKey } from "../../types/rating";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
 import { escapeHtml } from "../../utils/html";
@@ -64,7 +66,7 @@ export function renderSortMenuHtml(block: "users" | "teams", sortKey: RatingSort
 }
 
 export function renderUserFeaturedCardHtml(entry: RatingLeaderboardEntry, dataAttr: string, place: number): string {
-    const pointsText = entry.pointsLabel ?? `${entry.points} баллов`;
+    const pointsText = String(entry.points);
     const avatarSrc = resolveUserAvatarUrl(entry.id, entry.avatarUrl);
     const photoInner = avatarSrc
         ? `<img class="rating-featured-card-image" src="${escapeHtml(avatarSrc)}" alt="" loading="lazy">`
@@ -82,7 +84,11 @@ export function renderUserFeaturedCardHtml(entry: RatingLeaderboardEntry, dataAt
                 <span class="rating-featured-card-rank">${place}</span>
             </div>
             <span class="rating-featured-card-name">${escapeHtml(entry.label)}</span>
-            <span class="rating-featured-card-points">${escapeHtml(pointsText)}</span>
+            <span class="rating-featured-card-points">
+                <img class="rating-points-icon rating-points-icon--left" src="${escapeHtml(ligaMobileIconUrl)}" alt="" aria-hidden="true">
+                <span class="rating-points-value">${escapeHtml(pointsText)}</span>
+                <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+            </span>
         </button>`;
 }
 
@@ -99,7 +105,7 @@ function renderTeamPodiumSlot(
         return `<div class="rating-team-podium-slot ${placeClass} rating-team-podium-slot--empty" aria-hidden="true"></div>`;
     }
 
-    const pointsText = entry.pointsLabel ?? `${entry.points} баллов`;
+    const pointsText = String(entry.points);
 
     return `
         <button
@@ -130,14 +136,25 @@ export function renderTeamPodiumHtml(entries: RatingLeaderboardEntry[]): string 
 }
 
 export function renderListRowHtml(entry: RatingLeaderboardEntry, dataAttr: string, variant: "users" | "teams" = "users"): string {
-    const pointsText = entry.pointsLabel ?? `${entry.points} баллов`;
+    const pointsText = String(entry.points);
     const rowClass = variant === "teams" ? "rating-list-row rating-list-row--clickable rating-list-row--team" : "rating-list-row rating-list-row--clickable";
 
     return `
         <button type="button" class="${rowClass}" role="listitem" ${dataAttr}="${escapeHtml(entry.id)}">
             <span class="rating-list-main">${escapeHtml(String(entry.rank))}</span>
             <span class="rating-list-label">${escapeHtml(entry.label)}</span>
-            <span class="rating-list-points">${escapeHtml(pointsText)}</span>
+            ${variant === "users"
+                ? `<span class="rating-list-points">
+                    <span class="rating-points-value">${escapeHtml(pointsText)}</span>
+                    <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+                </span>`
+                : variant === "teams"
+                    ? `<span class="rating-list-points">
+                        <img class="rating-points-icon rating-points-icon--left" src="${escapeHtml(ligaMobileIconUrl)}" alt="" aria-hidden="true">
+                        <span class="rating-points-value">${escapeHtml(pointsText)}</span>
+                        <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+                    </span>`
+                : `<span class="rating-list-points">${escapeHtml(pointsText)}</span>`}
         </button>`;
 }
 

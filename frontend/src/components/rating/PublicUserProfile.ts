@@ -60,6 +60,17 @@ export function renderPublicUserProfile(userId: string): string {
 
     return `
         <div class="rating-public-profile">
+            <div class="rating-toolbar rating-toolbar--public">
+                <input
+                    type="search"
+                    class="rating-search-input"
+                    placeholder="ПОИСК"
+                    disabled
+                >
+                <div class="rating-filter-wrap">
+                    <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+                </div>
+            </div>
             <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
             <div class="profile-hero-card">
                 <div class="profile-top">

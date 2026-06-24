@@ -16,6 +16,7 @@ export function renderPublicTeamProfile(teamId: string): string {
     }
 
     const krkLabel = team.krk % 1 === 0 ? String(team.krk) : team.krk.toFixed(1);
+    const shouldUseCarouselScroll = team.members.length > 4;
 
     const memberCards = team.members
         .map((member) => {
@@ -47,6 +48,17 @@ export function renderPublicTeamProfile(teamId: string): string {
               .join("");
 
     return `
+        <div class="rating-toolbar rating-toolbar--public">
+            <input
+                type="search"
+                class="rating-search-input"
+                placeholder="ПОИСК"
+                disabled
+            >
+            <div class="rating-filter-wrap">
+                <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+            </div>
+        </div>
         <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
         <div class="team-active-wrap">
             <div class="team-active-upper">
@@ -64,18 +76,18 @@ export function renderPublicTeamProfile(teamId: string): string {
                 <div class="team-carousel-wrap${team.members.length <= 1 ? " team-carousel-wrap--single" : ""}">
                     <button
                         type="button"
-                        class="team-carousel-arrow team-carousel-arrow--prev${team.members.length <= 1 ? " team-carousel-arrow--hidden" : ""}"
+                        class="team-carousel-arrow team-carousel-arrow--prev${shouldUseCarouselScroll ? "" : " team-carousel-arrow--hidden"}"
                         id="ratingTeamCarouselPrev"
                         aria-label="Предыдущий участник"
                     >
                         <img src="${escapeHtml(scrollLeftIconUrl)}" alt="" aria-hidden="true">
                     </button>
-                    <div class="team-carousel" id="ratingTeamCarousel">
+                    <div class="team-carousel${shouldUseCarouselScroll ? " team-carousel--scroll" : ""}" id="ratingTeamCarousel">
                         ${memberCards || `<p class="rating-team-members-empty">Участники пока не добавлены.</p>`}
                     </div>
                     <button
                         type="button"
-                        class="team-carousel-arrow team-carousel-arrow--next${team.members.length <= 1 ? " team-carousel-arrow--hidden" : ""}"
+                        class="team-carousel-arrow team-carousel-arrow--next${shouldUseCarouselScroll ? "" : " team-carousel-arrow--hidden"}"
                         id="ratingTeamCarouselNext"
                         aria-label="Следующий участник"
                     >
