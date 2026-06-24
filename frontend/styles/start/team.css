@@ -105,6 +105,12 @@ button.team-topbar-tab--active:hover {
     color: transparent;
 }
 
+.team-topbar-tab--rank {
+    background: var(--exam-button-gradient);
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(120, 124, 254, 0.22);
+}
+
 .team-topbar-krk {
     display: grid;
     grid-template-columns: auto 1fr;

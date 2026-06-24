@@ -9,7 +9,23 @@ export const DEMO_RATING_TEAMS: RatingTeam[] = [
         krk: 8.6,
         members: [
             { id: "user-ivanov", displayName: "ИВАНОВ И.", roleLabel: "КАПИТАН" },
-            { id: "user-kozlov", displayName: "КОЗЛОВ К.", roleLabel: "УЧАСТНИК" }
+            { id: "user-kozlov", displayName: "КОЗЛОВ К.", roleLabel: "ЭКСПЕРТ" }
+        ],
+        activityHistory: [
+            {
+                kind: "achievement",
+                title: "ИВАНОВ И. получил ачивку «Свой круг»",
+                meta: "",
+                createdAtUtc: "2026-03-01T10:00:00Z",
+                points: 15
+            },
+            {
+                kind: "workshop",
+                title: "Команда провела воркшоп по проектированию",
+                meta: "",
+                createdAtUtc: "2026-02-28T14:00:00Z",
+                points: 50
+            }
         ]
     },
     {
@@ -30,38 +46,6 @@ export const DEMO_RATING_TEAMS: RatingTeam[] = [
         points: 1095,
         krk: 7.8,
         members: [{ id: "user-sidorov", displayName: "СИДОРОВ С.", roleLabel: "КАПИТАН" }]
-    },
-    {
-        id: "team-delta",
-        rank: 4,
-        name: "КОМАНДА ДЕЛЬТА",
-        points: 980,
-        krk: 7.2,
-        members: [{ id: "user-morozov", displayName: "МОРОЗОВ М.", roleLabel: "КАПИТАН" }]
-    },
-    {
-        id: "team-epsilon",
-        rank: 5,
-        name: "КОМАНДА ЭПСИЛОН",
-        points: 910,
-        krk: 6.9,
-        members: []
-    },
-    {
-        id: "team-zeta",
-        rank: 6,
-        name: "КОМАНДА ДЗЕТА",
-        points: 860,
-        krk: 6.5,
-        members: []
-    },
-    {
-        id: "team-eta",
-        rank: 7,
-        name: "КОМАНДА ЭТА",
-        points: 820,
-        krk: 6.2,
-        members: []
     }
 ];
 
@@ -73,8 +57,10 @@ export const DEMO_RATING_USERS: RatingUser[] = [
         points: 420,
         hasTeam: true,
         teamId: "team-alpha",
+        teamName: "КОМАНДА АЛЬФА",
+        groupTitle: "РИ-190922",
         league: "ЗОЛОТО",
-        achievementsCount: 12
+        achievementsCount: 5
     },
     {
         id: "user-petrov",
@@ -83,8 +69,10 @@ export const DEMO_RATING_USERS: RatingUser[] = [
         points: 405,
         hasTeam: true,
         teamId: "team-beta",
+        teamName: "КОМАНДА БЕТА",
+        groupTitle: "РИ-190921",
         league: "СЕРЕБРО",
-        achievementsCount: 9
+        achievementsCount: 4
     },
     {
         id: "user-sidorov",
@@ -93,8 +81,10 @@ export const DEMO_RATING_USERS: RatingUser[] = [
         points: 390,
         hasTeam: true,
         teamId: "team-gamma",
+        teamName: "КОМАНДА ГАММА",
+        groupTitle: "РИ-190920",
         league: "СЕРЕБРО",
-        achievementsCount: 8
+        achievementsCount: 4
     },
     {
         id: "user-kozlov",
@@ -103,8 +93,10 @@ export const DEMO_RATING_USERS: RatingUser[] = [
         points: 360,
         hasTeam: true,
         teamId: "team-alpha",
+        teamName: "КОМАНДА АЛЬФА",
+        groupTitle: "РИ-190922",
         league: "БРОНЗА",
-        achievementsCount: 6
+        achievementsCount: 3
     },
     {
         id: "user-novikov",
@@ -113,18 +105,10 @@ export const DEMO_RATING_USERS: RatingUser[] = [
         points: 340,
         hasTeam: true,
         teamId: "team-beta",
+        teamName: "КОМАНДА БЕТА",
+        groupTitle: "РИ-190921",
         league: "БРОНЗА",
-        achievementsCount: 5
-    },
-    {
-        id: "user-morozov",
-        rank: 6,
-        name: "МОРОЗОВ М.",
-        points: 325,
-        hasTeam: true,
-        teamId: "team-delta",
-        league: "БАЗОВАЯ",
-        achievementsCount: 4
+        achievementsCount: 3
     },
     {
         id: "user-volkov",
@@ -133,16 +117,7 @@ export const DEMO_RATING_USERS: RatingUser[] = [
         points: 310,
         hasTeam: false,
         teamId: null,
-        league: "БАЗОВАЯ",
-        achievementsCount: 3
-    },
-    {
-        id: "user-sokolov",
-        rank: 8,
-        name: "СОКОЛОВ С.",
-        points: 295,
-        hasTeam: false,
-        teamId: null,
+        groupTitle: "РИ-190918",
         league: "БАЗОВАЯ",
         achievementsCount: 2
     }

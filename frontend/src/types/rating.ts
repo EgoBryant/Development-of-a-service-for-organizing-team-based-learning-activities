@@ -1,21 +1,26 @@
 export type RatingView = "leaderboard" | "user" | "team";
 
+export type RatingLeaderboardTab = "teams" | "users";
+
 export type RatingSortKey = "rank-asc" | "rank-desc" | "points-desc" | "points-asc" | "name-asc";
 
 export type UserProfileTab = "rating" | "achievements";
 
 export interface RatingLeaderboardEntry {
+    id: string;
     rank: number;
     label: string;
     points: number;
     pointsLabel?: string;
     searchText?: string;
+    avatarUrl?: string;
 }
 
 export interface RatingTeamMember {
     id: string;
     displayName: string;
     roleLabel: string;
+    avatarUrl?: string;
 }
 
 export interface RatingTeam {
@@ -56,6 +61,7 @@ export interface RatingUser {
     isCaptain?: boolean;
     league: string;
     achievementsCount: number;
+    avatarUrl?: string;
 }
 
 export interface RescueDraft {
