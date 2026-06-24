@@ -193,6 +193,30 @@ public class TeamsController : ApiControllerBase
         return Ok(await _teamService.GetActivityForUserTeamAsync(userId.Value, limit, HttpContext.RequestAborted));
     }
 
+    [HttpGet("me/weekly-stats")]
+    [ProducesResponseType<TeamWeeklyStatsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TeamWeeklyStatsResponse>> MyTeamWeeklyStats()
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var stats = await _teamService.GetWeeklyStatsForUserTeamAsync(userId.Value, HttpContext.RequestAborted);
+        if (stats is null)
+        {
+            return NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not assigned to a team.",
+                statusCode: StatusCodes.Status404NotFound));
+        }
+
+        return Ok(stats);
+    }
+
     [HttpGet("join-requests")]
     [ProducesResponseType<IEnumerable<TeamJoinRequestResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

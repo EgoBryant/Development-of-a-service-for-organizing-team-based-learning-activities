@@ -351,7 +351,7 @@
 }
 
 .event-create-modal .team-rescue-textarea {
-    min-height: 148px;
+    min-height: 168px;
 }
 
 .event-success-card {
@@ -675,8 +675,9 @@
     z-index: 50;
 }
 
-/* Модалка «Спасение» на вкладке команды — desktop по макету */
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page.profile-modal-card {
+/* Модалка «Спасение» / «Check-in» на вкладке команды — desktop по макету */
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page.profile-modal-card,
+.team-checkin-modal.team-overlay-modal .team-checkin-card.team-rescue-card--team-page.profile-modal-card {
     width: min(440px, calc(100vw - 48px));
     max-width: 440px;
     min-height: 0;
@@ -692,7 +693,8 @@
     gap: 0;
 }
 
-.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page .team-rescue-close {
+.team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page .team-rescue-close,
+.team-checkin-modal.team-overlay-modal .team-checkin-card.team-rescue-card--team-page .team-rescue-close {
     background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
 }
 
@@ -839,4 +841,238 @@
 .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--duo:focus {
     background: linear-gradient(90deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
     box-shadow: 0 10px 24px rgba(120, 124, 254, 0.32);
+}
+
+/* Модалка «Check-in» — desktop */
+.team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-purpose.team-rescue-purpose {
+    margin-bottom: 24px;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: rgba(164, 185, 230, 1);
+    color: rgba(164, 185, 230, 1);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+    text-transform: none;
+    text-align: center;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page {
+    --checkin-podium-circle-size: 120px;
+    --checkin-podium-slot-width: 120px;
+    --checkin-podium-gap: 10px;
+    --checkin-podium-surface: rgba(240, 245, 255, 1);
+    --checkin-podium-span-width: calc(
+        var(--checkin-podium-slot-width) * 2 +
+        var(--checkin-podium-gap) * 2 +
+        var(--checkin-podium-circle-size)
+    );
+    --checkin-podium-outset: 12px;
+    --checkin-content-width: calc(var(--checkin-podium-span-width) + var(--checkin-podium-outset) * 2);
+    gap: 16px;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-textarea-wrap {
+    width: var(--checkin-content-width);
+    max-width: 100%;
+    margin-inline: auto;
+}
+
+.team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-form.team-rescue-form--team-page .team-checkin-textarea-wrap .team-checkin-textarea.team-rescue-textarea--description {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    min-height: 72px;
+    max-height: none;
+    margin-inline: 0;
+    padding: 16px 20px;
+    overflow-y: auto;
+    resize: none;
+    box-sizing: border-box;
+    border-radius: 26px;
+    background: rgba(225, 233, 255, 0.7);
+    border: none;
+    text-align: center;
+    text-transform: none;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: rgba(164, 185, 230, 1);
+}
+
+.team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-form.team-rescue-form--team-page .team-checkin-textarea-wrap .team-checkin-textarea.team-rescue-textarea--description::placeholder {
+    color: rgba(164, 185, 230, 1);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+    opacity: 1;
+}
+
+.team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-form.team-rescue-form--team-page .team-checkin-textarea-wrap .team-checkin-textarea.team-rescue-textarea--description:focus {
+    background: rgba(225, 233, 255, 0.92);
+    border-color: transparent;
+    box-shadow: 0 0 0 4px rgba(62, 151, 255, 0.12);
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page .team-rescue-submit {
+    margin-top: 4px;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-field-error {
+    margin: 4px 0 0;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: var(--checkin-podium-gap);
+    width: calc(var(--checkin-podium-slot-width) * 3 + var(--checkin-podium-gap) * 2);
+    max-width: 100%;
+    min-height: 168px;
+    margin-inline: auto;
+    margin-bottom: 8px;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: var(--checkin-podium-slot-width);
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium-circle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--checkin-podium-circle-size);
+    height: var(--checkin-podium-circle-size);
+    border-radius: 50%;
+    background: var(--checkin-podium-surface, rgba(240, 245, 255, 1));
+    overflow: hidden;
+    box-shadow: 0 10px 22px rgba(19, 60, 150, 0.14);
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium-icon {
+    display: block;
+    width: 58%;
+    height: 58%;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium-slot--first .team-checkin-podium-circle {
+    width: var(--checkin-podium-circle-size);
+    height: var(--checkin-podium-circle-size);
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium-slot--first {
+    transform: translateY(-6px);
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-podium-score {
+    position: relative;
+    z-index: 2;
+    min-width: 72px;
+    margin-top: -12px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--checkin-podium-surface, rgba(240, 245, 255, 1));
+    box-shadow: 0 10px 22px rgba(19, 60, 150, 0.18);
+    color: rgba(23, 45, 157, 1);
+    font-family: "Montserrat", sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: var(--checkin-content-width);
+    max-width: 100%;
+    margin-inline: auto;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-slider {
+    display: block;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-slider-track {
+    position: relative;
+    height: 32px;
+    border-radius: 999px;
+    background: rgba(240, 245, 255, 1);
+    box-shadow:
+        inset 0 4px 10px rgba(19, 60, 150, 0.22),
+        inset 0 2px 5px rgba(41, 79, 145, 0.14),
+        inset 0 -2px 4px rgba(255, 255, 255, 0.94),
+        inset 0 0 0 1px rgba(140, 162, 210, 0.36);
+    overflow: hidden;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-slider-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--checkin-slider-value, 0%);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(0, 169, 242, 1) 0%, rgba(0, 226, 224, 1) 100%);
+    box-shadow: none;
+    pointer-events: none;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-slider-label {
+    position: absolute;
+    top: 50%;
+    left: var(--checkin-slider-label-left, 50%);
+    z-index: 2;
+    transform: translateY(-50%);
+    padding: 0;
+    color: rgba(164, 185, 230, 1);
+    font-family: "Montserrat", sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: left 0.08s linear;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-slider-label.has-fill-overlap {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 1) 0%,
+        rgba(255, 255, 255, 1) var(--checkin-label-fill-start, 0%),
+        rgba(255, 255, 255, 0.94) var(--checkin-label-fill-mid, 0%),
+        rgba(164, 185, 230, 1) var(--checkin-label-fill-end, 0%),
+        rgba(164, 185, 230, 1) 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.team-checkin-modal.team-overlay-modal .team-checkin-slider-input {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
 }

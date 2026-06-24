@@ -78,6 +78,19 @@ public class HelpRequestsService : IHelpRequestsService
             return new HelpRequestCreateResult { Type = HelpRequestCreateResultType.UserHasNoTeam };
         }
 
+        var fromTeam = await _dbContext.Teams
+            .AsNoTracking()
+            .SingleOrDefaultAsync(team => team.Id == user.TeamId.Value, cancellationToken);
+        if (fromTeam is null)
+        {
+            return new HelpRequestCreateResult { Type = HelpRequestCreateResultType.UserHasNoTeam };
+        }
+
+        if (fromTeam.CaptainId != userId)
+        {
+            return new HelpRequestCreateResult { Type = HelpRequestCreateResultType.NotCaptain };
+        }
+
         if (user.TeamId.Value == request.ToTeamId)
         {
             return new HelpRequestCreateResult { Type = HelpRequestCreateResultType.SameTeam };

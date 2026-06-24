@@ -399,7 +399,8 @@ button.team-topbar-tab--active:hover {
 .team-checkin-btn {
     border: none;
     border-radius: 999px;
-    padding: 10px 20px;
+    padding: 10px 28px;
+    min-width: 120px;
     background: var(--exam-button-gradient);
     color: rgba(255, 255, 255, 0.95);
     font-size: 11px;
@@ -589,6 +590,18 @@ button.team-topbar-tab--active:hover {
 
 .team-action-btn--pink:hover {
     box-shadow: 0 10px 24px rgba(223, 46, 128, 0.4);
+}
+
+.team-action-btn--pink:disabled,
+.team-rescue-mobile-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.team-action-btn--pink:disabled:hover {
+    box-shadow: none;
 }
 
 .team-rescue-mobile-action {

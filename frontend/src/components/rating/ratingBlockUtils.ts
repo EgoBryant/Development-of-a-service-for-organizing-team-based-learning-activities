@@ -1,6 +1,8 @@
 import rating1IconUrl from "../../assets/icons/Rating_1.svg";
 import rating2IconUrl from "../../assets/icons/Rating_2.svg";
 import rating3IconUrl from "../../assets/icons/Rating_3.svg";
+import ligaMobileIconUrl from "../../assets/icons/Liga_mobile.svg";
+import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import type { RatingLeaderboardEntry, RatingSortKey } from "../../types/rating";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
 import { escapeHtml } from "../../utils/html";
@@ -79,7 +81,7 @@ function renderUserPodiumSlot(
         return `<div class="rating-user-podium-slot ${placeClass} rating-user-podium-slot--empty" aria-hidden="true"></div>`;
     }
 
-    const pointsText = entry.pointsLabel ?? `${entry.points} баллов`;
+    const pointsText = String(entry.points);
     const placeIconUrl = place === 1 ? rating1IconUrl : place === 2 ? rating2IconUrl : rating3IconUrl;
     const avatarSrc = resolveUserAvatarUrl(entry.id, entry.avatarUrl);
     const photoInner = avatarSrc
@@ -100,6 +102,12 @@ function renderUserPodiumSlot(
                     <span class="gradient-text">${escapeHtml(pointsText)}</span>
                 </span>
             </div>
+            <span class="rating-featured-card-name">${escapeHtml(entry.label)}</span>
+            <span class="rating-featured-card-points">
+                <img class="rating-points-icon rating-points-icon--left" src="${escapeHtml(ligaMobileIconUrl)}" alt="" aria-hidden="true">
+                <span class="rating-points-value">${escapeHtml(pointsText)}</span>
+                <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+            </span>
         </button>`;
 }
 
@@ -129,7 +137,7 @@ function renderTeamPodiumSlot(
         return `<div class="rating-team-podium-slot ${placeClass} rating-team-podium-slot--empty" aria-hidden="true"></div>`;
     }
 
-    const pointsText = entry.pointsLabel ?? `${entry.points} баллов`;
+    const pointsText = String(entry.points);
 
     return `
         <button
@@ -162,7 +170,7 @@ export function renderTeamPodiumHtml(entries: RatingLeaderboardEntry[]): string 
 }
 
 export function renderListRowHtml(entry: RatingLeaderboardEntry, dataAttr: string, variant: "users" | "teams" = "users"): string {
-    const pointsText = entry.pointsLabel ?? `${entry.points} баллов`;
+    const pointsText = String(entry.points);
     const rowClass =
         variant === "teams"
             ? "rating-list-row rating-list-row--clickable rating-list-row--team"
@@ -173,6 +181,20 @@ export function renderListRowHtml(entry: RatingLeaderboardEntry, dataAttr: strin
             <span class="rating-list-main gradient-text">${escapeHtml(String(entry.rank))}</span>
             <span class="rating-list-label gradient-text">${escapeHtml(entry.label)}</span>
             <span class="rating-list-points"><span class="gradient-text">${escapeHtml(pointsText)}</span></span>
+            <span class="rating-list-main">${escapeHtml(String(entry.rank))}</span>
+            <span class="rating-list-label">${escapeHtml(entry.label)}</span>
+            ${variant === "users"
+                ? `<span class="rating-list-points">
+                    <span class="rating-points-value">${escapeHtml(pointsText)}</span>
+                    <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+                </span>`
+                : variant === "teams"
+                    ? `<span class="rating-list-points">
+                        <img class="rating-points-icon rating-points-icon--left" src="${escapeHtml(ligaMobileIconUrl)}" alt="" aria-hidden="true">
+                        <span class="rating-points-value">${escapeHtml(pointsText)}</span>
+                        <img class="rating-points-icon rating-points-icon--right" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+                    </span>`
+                : `<span class="rating-list-points">${escapeHtml(pointsText)}</span>`}
         </button>`;
 }
 

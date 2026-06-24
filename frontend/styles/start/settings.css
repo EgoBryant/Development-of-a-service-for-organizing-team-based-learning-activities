@@ -204,7 +204,7 @@
     pointer-events: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
     .settings-dashboard-main {
         display: none;
     }

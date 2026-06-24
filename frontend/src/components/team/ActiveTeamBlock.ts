@@ -125,7 +125,7 @@ export function renderActiveTeamBlock(): string {
 
                     <div class="team-history-actions">
                         ${goToEventsButtonHtml}
-                        <button type="button" class="team-action-btn team-action-btn--pink" data-team-rescue-button>СПАСЕНИЕ</button>
+                        <button type="button" class="team-action-btn team-action-btn--pink" data-team-rescue-button ${isCaptain ? "" : "disabled"}>СПАСЕНИЕ</button>
                     </div>
                 </div>
             </div>

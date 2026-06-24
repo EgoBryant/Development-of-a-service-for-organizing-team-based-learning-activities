@@ -8,7 +8,7 @@ export interface PersistedClientProfileV1 {
     fullName: string;
     group: string;
     avatarDataUrl: string | null;
-    dashboardSection?: "profile" | "team" | "rating" | "events" | "settings";
+    dashboardSection?: "profile" | "team" | "rating" | "tasks" | "events" | "settings";
 }
 
 export type ProfileAchievementTone = "rose" | "blue" | "green" | "amber" | "violet" | "slate";

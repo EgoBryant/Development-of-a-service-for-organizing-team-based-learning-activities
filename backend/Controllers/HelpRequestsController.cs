@@ -73,6 +73,7 @@ public class HelpRequestsController : ApiControllerBase
                 title: "Team required",
                 detail: "Captain must belong to a team to create a help request.",
                 statusCode: StatusCodes.Status409Conflict)),
+            HelpRequestCreateResultType.NotCaptain => Forbid(),
             HelpRequestCreateResultType.TargetTeamNotFound => NotFound(Problem(
                 title: "Target team not found",
                 detail: "The target team was not found.",
