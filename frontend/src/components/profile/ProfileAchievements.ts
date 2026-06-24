@@ -1,4 +1,5 @@
 import { PROFILE_ACHIEVEMENTS } from "../../data/profileAchievements";
+import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import type { ProfileAchievement } from "../../types/profile";
 import { escapeHtml } from "../../utils/html";
 import { renderProfileModalShell } from "./ProfileModalShell";
@@ -27,7 +28,8 @@ export function renderProfileAchievementModal(achievement: ProfileAchievement): 
     return renderProfileModalShell({
         ariaLabel: "Достижение",
         closeButtonId: "profileCloseAchievementButton",
-        extraCardClass: "profile-modal-card--achievement-content",
+        extraModalClass: "profile-modal--achievement",
+        extraCardClass: "profile-modal-card-achievement profile-modal-card--achievement-content",
         bodyHtml: `
             <div class="profile-achievement-hero">
                 <img class="profile-achievement-icon" src="${escapeHtml(achievement.iconUrl)}" alt="" aria-hidden="true">
@@ -36,7 +38,10 @@ export function renderProfileAchievementModal(achievement: ProfileAchievement): 
             <div class="profile-achievement-body">
                 <p class="profile-achievement-description">${escapeHtml(achievement.description)}</p>
             </div>
-            <div class="profile-achievement-points">${escapeHtml(String(achievement.points))} баллов</div>
+            <div class="profile-achievement-points">
+                <span>${escapeHtml(String(achievement.points))}</span>
+                <img class="profile-achievement-points-icon" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+            </div>
         `
     });
 }

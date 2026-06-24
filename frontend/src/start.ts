@@ -2,8 +2,10 @@ import "../styles/start.css";
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
+import ligaMobileIconUrl from "./assets/icons/Liga_mobile.svg";
 import profileMenuIconUrl from "./assets/icons/Menu_Icons/Profile.svg";
 import ratingMenuIconUrl from "./assets/icons/Menu_Icons/Rating.svg";
+import scoreMobileIconUrl from "./assets/icons/Score_mobile.svg";
 import settingsMenuIconUrl from "./assets/icons/Menu_Icons/Settings.svg";
 import tasksMenuIconUrl from "./assets/icons/Menu_Icons/Tasks.svg";
 import teamMenuIconUrl from "./assets/icons/Menu_Icons/Team.svg";
@@ -3032,7 +3034,7 @@ function renderProfileView(): void {
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
-    const profileAppModeClass = " profile-app--dashboard-profile";
+    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
     const extraNavHtml = `
                     <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
                     <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
@@ -3053,15 +3055,24 @@ function renderProfileView(): void {
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
-                                <span class="profile-stat-orb profile-stat-orb--muted" aria-hidden="true">${leagueLabel}</span>
+                                <span class="profile-stat-orb profile-stat-orb--muted profile-stat-orb--league" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${ligaMobileIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">${leagueLabel}</span>
+                                </span>
                                 <span class="profile-stat-value">${escapeHtml(leagueValue)}</span>
                             </div>
                             <div class="profile-stat-track">
-                                <span class="profile-stat-orb profile-stat-orb--muted" aria-hidden="true">БАЛЛЫ</span>
+                                <span class="profile-stat-orb profile-stat-orb--muted profile-stat-orb--score" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${scoreMobileIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">БАЛЛЫ</span>
+                                </span>
                                 <span class="profile-stat-value profile-stat-value--num">${escapeHtml(pointsValue)}</span>
                             </div>
                             <div class="profile-stat-track profile-stat-track--rating">
-                                <span class="profile-stat-orb profile-stat-orb--accent" aria-hidden="true">${ratingLabel}</span>
+                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">${ratingLabel}</span>
+                                </span>
                                 <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
                             </div>
                         </div>
@@ -3137,12 +3148,79 @@ function wireMobileProfileMenu(): void {
     const profileApp = profileMount.querySelector<HTMLElement>(".profile-app");
     const menuButton = profileMount.querySelector("#profileMobileMenuButton");
     const backdrop = profileMount.querySelector("[data-profile-menu-close]");
+    const sidebar = profileMount.querySelector<HTMLElement>("#profileDashboardMenu");
+    const navTop = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-top");
+    const navBottom = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-bottom");
 
-    if (!profileApp || !isHTMLButtonElement(menuButton)) {
+    if (!profileApp || !isHTMLButtonElement(menuButton) || !sidebar || !navTop || !navBottom) {
         return;
     }
 
+    let startY = 0;
+    let activePointerId: number | null = null;
+    let dragMode: "open" | "close" | null = null;
+    let dragHeights: { closed: number; open: number } | null = null;
+    let dragStartedOpen = false;
+    let isDragging = false;
+
+    const clearDragStyles = (): void => {
+        profileApp.classList.remove("is-mobile-menu-dragging");
+        sidebar.style.removeProperty("height");
+        sidebar.style.removeProperty("min-height");
+        sidebar.style.removeProperty("max-height");
+        sidebar.style.removeProperty("grid-template-rows");
+        sidebar.style.removeProperty("gap");
+        sidebar.style.removeProperty("transform");
+        navBottom.style.removeProperty("max-height");
+        navBottom.style.removeProperty("opacity");
+        navBottom.style.removeProperty("transform");
+        navBottom.style.removeProperty("pointer-events");
+        profileApp.style.removeProperty("touch-action");
+        sidebar.style.removeProperty("touch-action");
+    };
+
+    const applyMenuDragState = (height: number, heights: { closed: number; open: number }): void => {
+        const delta = Math.max(heights.open - heights.closed, 1);
+        const progress = Math.min(Math.max((height - heights.closed) / delta, 0), 1);
+        const topHeight = Math.max(Math.round(navTop.getBoundingClientRect().height), 38);
+        const bottomHeight = Math.max(Math.round(navBottom.scrollHeight), 38);
+        const bottomVisibleHeight = Math.round(bottomHeight * progress);
+
+        profileApp.classList.add("is-mobile-menu-dragging");
+        sidebar.style.height = `${height}px`;
+        sidebar.style.minHeight = `${height}px`;
+        sidebar.style.maxHeight = `${height}px`;
+        sidebar.style.gridTemplateRows = `${topHeight}px ${bottomVisibleHeight}px`;
+        sidebar.style.gap = `${12 * progress}px`;
+        sidebar.style.transform = `translateY(${18 * (1 - progress)}px)`;
+        navBottom.style.maxHeight = `${bottomVisibleHeight}px`;
+        navBottom.style.opacity = progress.toFixed(3);
+        navBottom.style.transform = `translateY(${8 * (1 - progress)}px)`;
+        navBottom.style.pointerEvents = progress > 0.98 ? "auto" : "none";
+        profileApp.style.touchAction = "none";
+    };
+
+    const getMenuHeights = (): { closed: number; open: number } => {
+        const wasOpen = profileApp.classList.contains("is-mobile-menu-open");
+        const currentHeight = Math.round(sidebar.getBoundingClientRect().height);
+
+        if (wasOpen) {
+            profileApp.classList.remove("is-mobile-menu-dragging");
+            clearDragStyles();
+            profileApp.classList.remove("is-mobile-menu-open");
+            const closedHeight = Math.round(sidebar.getBoundingClientRect().height);
+            profileApp.classList.add("is-mobile-menu-open");
+            return { closed: closedHeight, open: currentHeight };
+        }
+
+        profileApp.classList.add("is-mobile-menu-open");
+        const openHeight = Math.round(sidebar.getBoundingClientRect().height);
+        profileApp.classList.remove("is-mobile-menu-open");
+        return { closed: currentHeight, open: openHeight };
+    };
+
     const setMenuOpen = (isOpen: boolean): void => {
+        clearDragStyles();
         profileApp.classList.toggle("is-mobile-menu-open", isOpen);
         menuButton.setAttribute("aria-expanded", String(isOpen));
         menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
@@ -3162,6 +3240,117 @@ function wireMobileProfileMenu(): void {
         button.addEventListener("click", () => {
             setMenuOpen(false);
         });
+    });
+
+    profileApp.addEventListener("pointerdown", (event: PointerEvent) => {
+        if (!window.matchMedia(MOBILE_AUTH_QUERY).matches || event.pointerType === "mouse" || event.button !== 0) {
+            return;
+        }
+
+        if (appState.profileModal !== "none" || appState.teamModal !== "none" || appState.eventsModal !== "none") {
+            return;
+        }
+
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+
+        if (target.closest(".profile-nav-button, .profile-modal, button, input, textarea, select, a")) {
+            return;
+        }
+
+        const isOpen = profileApp.classList.contains("is-mobile-menu-open");
+        const appRect = profileApp.getBoundingClientRect();
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const isNearBottom = event.clientY >= appRect.bottom - 160;
+        const isInsideSidebar = event.clientY >= sidebarRect.top - 18;
+
+        if ((!isOpen && !isNearBottom) || (isOpen && !isInsideSidebar)) {
+            return;
+        }
+
+        startY = event.clientY;
+        activePointerId = event.pointerId;
+        dragStartedOpen = isOpen;
+        dragMode = isOpen ? "close" : "open";
+        dragHeights = getMenuHeights();
+        isDragging = false;
+        profileApp.style.touchAction = "none";
+        sidebar.style.touchAction = "none";
+        event.preventDefault();
+        sidebar.setPointerCapture(event.pointerId);
+    });
+
+    profileApp.addEventListener("pointermove", (event: PointerEvent) => {
+        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
+            return;
+        }
+
+        const deltaY = startY - event.clientY;
+        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
+        const distance = Math.max(rawDistance, 0);
+        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
+        const nextHeight =
+            dragMode === "open"
+                ? Math.min(dragHeights.closed + distance, dragHeights.open)
+                : Math.max(dragHeights.open - distance, dragHeights.closed);
+
+        if (distance > 4) {
+            isDragging = true;
+            event.preventDefault();
+        }
+
+        applyMenuDragState(nextHeight, dragHeights);
+
+        if (distance >= maxDistance) {
+            applyMenuDragState(dragMode === "open" ? dragHeights.open : dragHeights.closed, dragHeights);
+        }
+    });
+
+    const finishSwipe = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
+            return;
+        }
+
+        const deltaY = startY - event.clientY;
+        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
+        const distance = Math.max(rawDistance, 0);
+        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
+        const shouldOpen =
+            dragMode === "open"
+                ? isDragging && distance / maxDistance > 0.35
+                : !(isDragging && distance / maxDistance > 0.35);
+
+        if (sidebar.hasPointerCapture(event.pointerId)) {
+            sidebar.releasePointerCapture(event.pointerId);
+        }
+
+        activePointerId = null;
+        dragMode = null;
+        dragHeights = null;
+        dragStartedOpen = false;
+        isDragging = false;
+        setMenuOpen(shouldOpen);
+    };
+
+    profileApp.addEventListener("pointerup", finishSwipe);
+    profileApp.addEventListener("pointercancel", (event: PointerEvent) => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        if (sidebar.hasPointerCapture(event.pointerId)) {
+            sidebar.releasePointerCapture(event.pointerId);
+        }
+
+        activePointerId = null;
+        dragMode = null;
+        dragHeights = null;
+        const fallbackOpenState = dragStartedOpen;
+        dragStartedOpen = false;
+        isDragging = false;
+        setMenuOpen(fallbackOpenState);
     });
 }
 
