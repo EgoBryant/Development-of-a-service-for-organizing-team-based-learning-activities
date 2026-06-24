@@ -206,7 +206,7 @@ button.team-topbar-tab--active:hover {
 }
 
 .team-carousel-arrow--hidden {
-    visibility: hidden;
+    display: none;
     pointer-events: none;
 }
 
@@ -393,9 +393,9 @@ button.team-topbar-tab--active:hover {
 .team-history-empty-text {
     margin: 0;
     text-align: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(140, 150, 185, 1);
+    font-size: 23px;
+    font-weight: 500;
+    color: rgba(164, 185, 230, 1);
     line-height: 1.65;
     max-width: 340px;
 }

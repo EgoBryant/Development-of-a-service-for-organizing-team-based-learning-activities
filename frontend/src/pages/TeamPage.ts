@@ -28,6 +28,56 @@ function buildTeamEventShareLink(): string {
     return `${window.location.origin}/events/${slug}`;
 }
 
+let teamCarouselResizeObserver: ResizeObserver | undefined;
+
+function setTeamCarouselArrowVisible(button: HTMLButtonElement | null, isVisible: boolean): void {
+    if (!button) {
+        return;
+    }
+
+    button.classList.toggle("team-carousel-arrow--hidden", !isVisible);
+    button.setAttribute("aria-hidden", String(!isVisible));
+    button.tabIndex = isVisible ? 0 : -1;
+}
+
+function syncTeamCarouselArrows(root: HTMLElement): void {
+    const carousel = root.querySelector<HTMLElement>("#teamCarousel");
+    const carouselWrap = root.querySelector<HTMLElement>(".team-carousel-wrap");
+    const carouselPrev = root.querySelector<HTMLButtonElement>("#teamCarouselPrev");
+    const carouselNext = root.querySelector<HTMLButtonElement>("#teamCarouselNext");
+
+    teamCarouselResizeObserver?.disconnect();
+    teamCarouselResizeObserver = undefined;
+
+    if (!carousel || !carouselWrap) {
+        return;
+    }
+
+    const sync = (): void => {
+        const overflows = carousel.scrollWidth - carousel.clientWidth > 1;
+        carouselWrap.classList.toggle("team-carousel-wrap--scrollable", overflows);
+        setTeamCarouselArrowVisible(carouselPrev, overflows);
+        setTeamCarouselArrowVisible(carouselNext, overflows);
+    };
+
+    const scheduleSync = (): void => {
+        window.requestAnimationFrame(sync);
+    };
+
+    scheduleSync();
+
+    carousel.querySelectorAll("img").forEach((image) => {
+        if (!image.complete) {
+            image.addEventListener("load", scheduleSync, { once: true });
+        }
+    });
+
+    if (typeof ResizeObserver !== "undefined") {
+        teamCarouselResizeObserver = new ResizeObserver(scheduleSync);
+        teamCarouselResizeObserver.observe(carousel);
+    }
+}
+
 export function renderTeamPageMain(statusHtml: string): string {
     const bridge = getAppBridge();
     const hasTeamAccess = bridge.hasTeamAccess();
@@ -235,6 +285,8 @@ export function wireTeamPageEvents(root: HTMLElement): void {
             carousel.scrollBy({ left: 212, behavior: "smooth" });
         });
     }
+
+    syncTeamCarouselArrows(root);
 
     const teamKrk = root.querySelector("#teamKrkButton");
     if (isHTMLButtonElement(teamKrk)) {
