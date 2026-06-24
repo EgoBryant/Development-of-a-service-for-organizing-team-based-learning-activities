@@ -68,13 +68,13 @@ export function renderActiveTeamBlock(): string {
                 </div>
 
                 <div class="team-carousel-wrap${members.length <= 1 ? " team-carousel-wrap--single" : ""}">
-                    <button type="button" class="team-carousel-arrow team-carousel-arrow--prev${members.length <= 1 ? " team-carousel-arrow--hidden" : ""}" id="teamCarouselPrev" aria-label="Предыдущий">
+                    <button type="button" class="team-carousel-arrow team-carousel-arrow--prev team-carousel-arrow--hidden" id="teamCarouselPrev" aria-label="Предыдущий" aria-hidden="true" tabindex="-1">
                         <img src="${escapeHtml(scrollLeftIconUrl)}" alt="" aria-hidden="true">
                     </button>
                     <div class="team-carousel" id="teamCarousel">
                         ${memberCards}
                     </div>
-                    <button type="button" class="team-carousel-arrow team-carousel-arrow--next${members.length <= 1 ? " team-carousel-arrow--hidden" : ""}" id="teamCarouselNext" aria-label="Следующий">
+                    <button type="button" class="team-carousel-arrow team-carousel-arrow--next team-carousel-arrow--hidden" id="teamCarouselNext" aria-label="Следующий" aria-hidden="true" tabindex="-1">
                         <img src="${escapeHtml(scrollRightIconUrl)}" alt="" aria-hidden="true">
                     </button>
                 </div>

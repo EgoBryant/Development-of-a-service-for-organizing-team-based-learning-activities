@@ -1438,9 +1438,18 @@
     }
 
     .profile-sidebar .profile-nav-button.is-active {
+        opacity: 0.4;
+        cursor: default;
+        pointer-events: none;
+        transform: none;
         box-shadow:
-            0 8px 16px rgba(34, 79, 155, 0.24),
-            inset 0 0 0 2px rgba(240, 245, 255, 0.7);
+            inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+            0 8px 16px rgba(34, 79, 155, 0.24);
+    }
+
+    .profile-sidebar .profile-nav-button.is-active:hover {
+        opacity: 0.4;
+        transform: none;
     }
 
     .profile-sidebar .profile-nav-icon {
