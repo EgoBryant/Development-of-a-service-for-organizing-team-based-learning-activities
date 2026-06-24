@@ -87,11 +87,13 @@ export function renderActiveTeamBlock(): string {
                         <button type="button" class="team-checkin-btn" id="teamCheckInButton" ${isCaptain ? "" : "disabled"}>CHECK-IN</button>
                     </div>
 
-                    ${isHistoryEmpty ? `
-                    <div class="team-history-empty-state">
-                        <p class="team-history-empty-text">Тут будут отображаться все активности и заработанные баллы. Проведите первый совместный воркшоп, чтобы запустить историю ваших побед</p>
-                    </div>` : `
-                    <div class="team-history-rows">${historyRows}</div>`}
+                    <div class="team-history-body">
+                        ${isHistoryEmpty ? `
+                        <div class="team-history-empty-state">
+                            <p class="team-history-empty-text">Тут будут отображаться все активности и заработанные баллы. Проведите первый совместный воркшоп, чтобы запустить историю ваших побед</p>
+                        </div>` : `
+                        <div class="team-history-rows">${historyRows}</div>`}
+                    </div>
 
                     <div class="team-history-actions">
                         <button type="button" class="team-action-btn team-action-btn--blue" id="teamGoToEventsButton">К СОБЫТИЯМ</button>

@@ -1,4 +1,4 @@
-﻿import "../styles/start.css";
+import "../styles/start.css";
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
@@ -9,10 +9,6 @@ import scoreMobileIconUrl from "./assets/icons/Score_mobile.svg";
 import settingsMenuIconUrl from "./assets/icons/Menu_Icons/Settings.svg";
 import tasksMenuIconUrl from "./assets/icons/Menu_Icons/Tasks.svg";
 import teamMenuIconUrl from "./assets/icons/Menu_Icons/Team.svg";
-import acceptIconUrl from "./assets/icons/Accept.svg";
-import rejectIconUrl from "./assets/icons/Reject.svg";
-import scrollLeftIconUrl from "./assets/icons/Scroll_button_left.svg";
-import scrollRightIconUrl from "./assets/icons/Scroll_button_right.svg";
 import { setAppBridge } from "./app/bridge";
 import type { JoinTeamResult } from "./app/bridge";
 import { isDemoInviteCodeValid, normalizeInviteCode } from "./data/demoTeam";
@@ -85,17 +81,9 @@ import {
 } from "./utils/dom";
 import { escapeHtml } from "./utils/html";
 import { renderProfileAchievementModal, renderProfileAchievementStrip } from "./components/profile/ProfileAchievements";
-import {
-    renderProfileCreateTeamModal,
-    renderProfileFindTeamModal,
-    renderProfileNoTeamModal,
-    renderProfileTeamSuccessModal
-} from "./components/profile/ProfileTeamModals";
-import { renderProfileModalShell } from "./components/profile/ProfileModalShell";
-import { renderTeamRequestsApplicantDock } from "./components/team/TeamRequestsApplicantDock";
 import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
-import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
+import { fetchRatingTeams, fetchRatingUsers } from "./services/ratingApi";
 import {
     createCheckIn,
     createHelpRequest,
@@ -109,13 +97,12 @@ import {
     fetchTeams,
     fetchTeamJoinRequests,
     joinTeam as joinTeamApi,
-    searchTeams,
     updateHelpRequestStatus,
     updateTeamJoinRequestStatus
 } from "./services/teamApi";
 import { getErrorMessage } from "./services/httpClient";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
-import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
+import { buildPersonalProfilePutBody } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
 
@@ -144,8 +131,6 @@ const appState: AppState = {
     profileAchievementId: "",
     profileCreateTeamName: "",
     profileCreateTeamDirection: "",
-    profileFindTeamQuery: "",
-    profileFindTeamSelectedId: null,
     profileInviteLink: "",
     profileFormDraft: null,
     dashboardSection: "profile",
@@ -161,10 +146,7 @@ const appState: AppState = {
     newsCreateDraft: null,
     newsShowValidationError: false,
     teamVoteMemberIndex: 0,
-    teamRequestsCurrentIndex: 0,
     teamRequestsInviteLink: "",
-    teamRequestsApplicantRequestId: null,
-    teamRequestsApplicantRating: null,
     localCreatedTeam: null,
     currentTeam: null,
     teamCatalog: [],
@@ -401,7 +383,12 @@ async function submitHelpRequestStatus(id: number, status: string): Promise<void
 async function requestTeamJoin(teamId: number): Promise<void> {
     const token = getSessionToken();
     if (!token) {
-        throw new Error("Войдите в аккаунт, чтобы отправить заявку в команду.");
+        pushUserActivity({
+            kind: "invite_sent",
+            title: "ЗАЯВКА В КОМАНДУ",
+            description: "Заявка сохранена локально. Войдите в аккаунт, чтобы отправить её капитану."
+        });
+        return;
     }
 
     const created = await createTeamJoinRequest(token, teamId, "Хочу присоединиться к команде.");
@@ -410,69 +397,6 @@ async function requestTeamJoin(teamId: number): Promise<void> {
         ...appState.teamJoinRequests.filter((item) => item.id !== created.id)
     ];
     await refreshTeamWorkspace();
-}
-
-function applyServerTeamState(team: TeamResponse): void {
-    appState.currentTeam = team;
-    appState.localCreatedTeam = null;
-
-    const profile = appState.profile;
-    if (profile) {
-        localStorage.removeItem(localTeamStorageKey(profile.id));
-        appState.profile = {
-            ...profile,
-            teamId: team.id,
-            teamName: team.name,
-            teamInviteCode: team.inviteCode,
-            isCaptain: team.captainId === profile.id,
-            teamScore: team.score,
-            role: team.captainId === profile.id ? "Captain" : profile.role
-        };
-    }
-
-    appState.profileInviteLink = buildTeamInviteLink();
-}
-
-async function refreshTeamCatalog(query = ""): Promise<void> {
-    const token = getSessionToken();
-    if (!token) {
-        return;
-    }
-
-    try {
-        appState.teamCatalog = query.trim()
-            ? await searchTeams(token, query.trim())
-            : await fetchTeams(token);
-    } catch {
-        appState.teamCatalog = [];
-    }
-}
-
-async function submitProfileTeamCreate(button?: HTMLButtonElement): Promise<void> {
-    const nameInputEl = isHTMLElement(profileMount) ? profileMount.querySelector("#profileTeamNameInput") : null;
-    const name = (
-        isHTMLInputElement(nameInputEl) ? nameInputEl.value : appState.profileCreateTeamName
-    ).trim() || "КОМАНДА";
-    const direction = appState.profileCreateTeamDirection.trim();
-
-    appState.profileCreateTeamName = name;
-    if (button) {
-        button.disabled = true;
-    }
-
-    try {
-        await createTeamFromBridge(name, direction);
-        appState.profileModal = "teamSuccess";
-        teamFlowState.noTeamView = "landing";
-        render();
-    } catch (error: unknown) {
-        setStatus(getErrorMessage(error), "error");
-        render();
-    } finally {
-        if (button) {
-            button.disabled = false;
-        }
-    }
 }
 
 async function submitTeamJoinRequestStatus(id: number, status: string): Promise<void> {
@@ -487,103 +411,13 @@ async function submitTeamJoinRequestStatus(id: number, status: string): Promise<
     await refreshTeamWorkspace();
 }
 
-function getPendingTeamJoinRequests(): TeamJoinRequestResponse[] {
-    const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId ?? 0;
-    return appState.teamJoinRequests.filter((request) =>
-        request.teamId === currentTeamId &&
-        request.status === "Pending"
-    );
-}
-
-function findTeamJoinRequestById(requestId: number): TeamJoinRequestResponse | undefined {
-    return appState.teamJoinRequests.find((request) => request.id === requestId);
-}
-
-function getActiveTeamRequestApplicant(): TeamJoinRequestResponse | undefined {
-    if (!appState.teamRequestsApplicantRequestId) {
-        return undefined;
-    }
-
-    const request = findTeamJoinRequestById(appState.teamRequestsApplicantRequestId);
-    if (!request || request.status !== "Pending") {
-        return undefined;
-    }
-
-    return request;
-}
-
-function clearTeamRequestApplicantReview(): void {
-    appState.teamRequestsApplicantRequestId = null;
-    appState.teamRequestsApplicantRating = null;
-}
-
-function returnToTeamRequests(): void {
-    clearTeamRequestApplicantReview();
-    appState.dashboardSection = "team";
-    persistDashboardSectionToStorage();
-    appState.teamModal = "requests";
-    render();
-}
-
-function openTeamRequestApplicantProfile(requestId: number): void {
-    const request = findTeamJoinRequestById(requestId);
-    if (!request || request.status !== "Pending") {
-        return;
-    }
-
-    appState.teamRequestsApplicantRequestId = requestId;
-    appState.teamRequestsApplicantRating = null;
-    appState.teamModal = "none";
-    appState.dashboardSection = "profile";
-    persistDashboardSectionToStorage();
-    render();
-
-    const token = getSessionToken();
-    if (!token) {
-        return;
-    }
-
-    void fetchRatingUserById(token, request.userId)
-        .then((ratingUser) => {
-            if (appState.teamRequestsApplicantRequestId !== requestId) {
-                return;
-            }
-
-            appState.teamRequestsApplicantRating = ratingUser;
-            render();
-        })
-        .catch(() => {
-            // Профиль отображается по данным заявки.
-        });
-}
-
-function handleTeamJoinRequestDecision(id: number, status: string): void {
-    void submitTeamJoinRequestStatus(id, status)
-        .then(() => {
-            const pendingCount = getPendingTeamJoinRequests().length;
-            appState.teamRequestsCurrentIndex = Math.min(
-                appState.teamRequestsCurrentIndex,
-                Math.max(0, pendingCount - 1)
-            );
-            setStatus(
-                status === "Accepted"
-                    ? "Заявка на вступление принята."
-                    : "Заявка на вступление отклонена."
-            );
-            returnToTeamRequests();
-        })
-        .catch((error: unknown) => {
-            setStatus(getErrorMessage(error), "error");
-            render();
-        });
-}
-
 async function joinTeamByInviteCode(code: string): Promise<JoinTeamResult> {
     const token = getSessionToken();
     if (token) {
         try {
             const team = await joinTeamApi(token, code.trim());
-            applyServerTeamState(team);
+            appState.currentTeam = team;
+            appState.localCreatedTeam = null;
             await refreshCurrentUserProfile();
             await refreshTeamWorkspace();
             pushUserActivity({
@@ -637,20 +471,11 @@ async function createTeamFromBridge(name: string, direction: string): Promise<vo
             name: teamName,
             description: direction.trim()
         });
-        applyServerTeamState(team);
-
-        try {
-            await refreshCurrentUserProfile();
-        } catch {
-            applyServerTeamState(team);
-        }
-
-        try {
-            await refreshTeamWorkspace();
-        } catch {
-            applyServerTeamState(team);
-        }
-
+        appState.currentTeam = team;
+        appState.localCreatedTeam = null;
+        appState.profileInviteLink = buildTeamInviteLink();
+        await refreshCurrentUserProfile();
+        await refreshTeamWorkspace();
         pushUserActivity({
             kind: "team_created",
             title: "КОМАНДА СОЗДАНА",
@@ -676,8 +501,7 @@ async function createTeamFromBridge(name: string, direction: string): Promise<vo
         appState.profile = {
             ...appState.profile,
             teamName: appState.localCreatedTeam.name,
-            teamInviteCode: appState.localCreatedTeam.inviteCode,
-            isCaptain: true
+            teamInviteCode: appState.localCreatedTeam.inviteCode
         };
     }
 
@@ -719,7 +543,6 @@ async function bootstrap(): Promise<void> {
         createTeamRescueRequest: submitTeamRescueRequest,
         updateTeamHelpRequestStatus: submitHelpRequestStatus,
         openTeamOverlayModal: (kind, memberIndex) => openTeamModal(kind, memberIndex),
-        openTeamOnboardingModal: openTeamOnboardingModal,
         openTeamRescue: openRescueModal,
         navigateToRating: () => {
             appState.dashboardSection = "rating";
@@ -730,12 +553,6 @@ async function bootstrap(): Promise<void> {
                     render();
                 }
             });
-            render();
-        },
-        navigateToEvents: () => {
-            appState.dashboardSection = "events";
-            persistDashboardSectionToStorage();
-            clearStatus();
             render();
         },
         addCalendarEventFromDraft: (draft: EventCreateDraft) => {
@@ -1388,17 +1205,12 @@ function resetProfileUi(): void {
     appState.profileAchievementId = "";
     appState.profileCreateTeamName = "";
     appState.profileCreateTeamDirection = "";
-    appState.profileFindTeamQuery = "";
-    appState.profileFindTeamSelectedId = null;
     appState.profileInviteLink = "";
     appState.profileFormDraft = null;
     appState.dashboardSection = "profile";
     appState.teamModal = "none";
     appState.teamVoteMemberIndex = 0;
-    appState.teamRequestsCurrentIndex = 0;
     appState.teamRequestsInviteLink = "";
-    appState.teamRequestsApplicantRequestId = null;
-    appState.teamRequestsApplicantRating = null;
     appState.localCreatedTeam = null;
     appState.currentTeam = null;
     appState.teamCatalog = [];
@@ -1453,14 +1265,10 @@ function getEffectiveInviteCode(): string {
 
 function getEffectiveTeamKrk(): string {
     if (appState.currentTeam) {
-        return String(Math.round(appState.currentTeam.krk));
+        return appState.currentTeam.krk.toFixed(1);
     }
 
-    if (appState.profile?.teamScore) {
-        return String(Math.round(appState.profile.teamScore));
-    }
-
-    return "0";
+    return "—";
 }
 
 function getEffectiveTeamScore(): string {
@@ -1477,73 +1285,6 @@ function buildTeamInviteLink(): string {
         getEffectiveInviteCode() ||
         "DEMO-INVITE";
     return `${window.location.origin}/team/${encodeURIComponent(name)}?invite=${encodeURIComponent(invite)}`;
-}
-
-function renderTeamJoinRequestPhotoHtml(
-    request: TeamJoinRequestResponse | undefined,
-    openProfile = false
-): string {
-    const avatarUrl = request?.avatarUrl?.trim();
-    const photoInner = avatarUrl
-        ? `<img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy">`
-        : `<span class="team-requests-placeholder">Фото</span>`;
-
-    if (openProfile && request) {
-        return `
-            <button
-                type="button"
-                class="team-requests-photo team-requests-photo-btn"
-                data-team-request-open-profile="${escapeHtml(String(request.id))}"
-                aria-label="Открыть профиль ${escapeHtml(request.displayName || request.userName || "участника")}"
-            >
-                ${photoInner}
-            </button>`;
-    }
-
-    return `
-        <div class="team-requests-photo">
-            ${photoInner}
-        </div>`;
-}
-
-function renderTeamRequestsCarouselHtml(
-    pendingJoinRequests: TeamJoinRequestResponse[],
-    currentIndex: number,
-    canAct: boolean
-): string {
-    if (pendingJoinRequests.length === 0) {
-        return `
-            <div class="team-requests-empty-state">
-                <p class="team-requests-empty">Никто не подал заявку? Отправь QR или ссылку друзьям</p>
-            </div>`;
-    }
-
-    const currentRequest = pendingJoinRequests[currentIndex];
-    const actionsHtml = canAct
-        ? `
-            <div class="team-requests-actions">
-                <button type="button" class="team-requests-btn team-requests-btn--reject" data-team-join-request-status="Rejected" data-team-join-request-id="${escapeHtml(String(currentRequest.id))}" aria-label="Отклонить">
-                    <img src="${escapeHtml(rejectIconUrl)}" alt="" aria-hidden="true">
-                </button>
-                <button type="button" class="team-requests-btn team-requests-btn--accept" data-team-join-request-status="Accepted" data-team-join-request-id="${escapeHtml(String(currentRequest.id))}" aria-label="Принять">
-                    <img src="${escapeHtml(acceptIconUrl)}" alt="" aria-hidden="true">
-                </button>
-            </div>`
-        : "";
-
-    return `
-        <div class="team-requests-carousel-wrap">
-            <button type="button" class="team-requests-nav" id="teamRequestsPrev" ${currentIndex <= 0 ? "disabled" : ""} aria-label="Предыдущий">
-                <img src="${escapeHtml(scrollLeftIconUrl)}" alt="" aria-hidden="true">
-            </button>
-            <div class="team-requests-candidate-card" data-request-id="${escapeHtml(String(currentRequest.id))}">
-                ${renderTeamJoinRequestPhotoHtml(currentRequest, Boolean(currentRequest))}
-                ${actionsHtml}
-            </div>
-            <button type="button" class="team-requests-nav" id="teamRequestsNext" ${currentIndex >= pendingJoinRequests.length - 1 ? "disabled" : ""} aria-label="Следующий">
-                <img src="${escapeHtml(scrollRightIconUrl)}" alt="" aria-hidden="true">
-            </button>
-        </div>`;
 }
 
 function localTeamStorageKey(userId: number): string {
@@ -1603,18 +1344,12 @@ function hydrateProfileClientStateFromStorage(): void {
     }
 
     const data = readClientProfileBlob(p.id);
-    const hasStoredEdits =
-        typeof data.fullName === "string" ||
-        typeof data.group === "string" ||
-        data.avatarDataUrl !== undefined;
-
-    if (hasStoredEdits) {
+    if (typeof data.fullName === "string" && typeof data.group === "string") {
         appState.profileEdits = {
-            fullName: typeof data.fullName === "string" ? data.fullName : buildFullNameFromProfile(p),
-            group: typeof data.group === "string" ? data.group : (p.groupTitle ?? ""),
+            fullName: data.fullName,
+            group: data.group,
             avatarDataUrl: data.avatarDataUrl ?? null
         };
-        applyProfileEditsToInMemoryProfile();
     }
 
     if (
@@ -1627,32 +1362,13 @@ function hydrateProfileClientStateFromStorage(): void {
     }
 }
 
-function applyProfileEditsToInMemoryProfile(): void {
-    const profile = appState.profile;
-    const edits = appState.profileEdits;
-    if (!profile || !edits) {
-        return;
-    }
-
-    const { firstName, lastName } = splitFullNameForApi(edits.fullName);
-    const groupTitle = edits.group.trim();
-
-    appState.profile = {
-        ...profile,
-        firstName,
-        lastName,
-        groupTitle: groupTitle || profile.groupTitle,
-        avatarUrl: edits.avatarDataUrl ?? profile.avatarUrl
-    };
-}
-
 function getEventsWeekStart(): Date {
     return getWeekStartForOffset(appState.eventsWeekOffset);
 }
 
 function formatEventsMonthLabel(weekStart: Date): string {
     const month = EVENTS_MONTH_LABELS[weekStart.getMonth()] ?? "МЕСЯЦ";
-    return `${month} ${weekStart.getFullYear()} г.`;
+    return `${month} ${weekStart.getFullYear()} Г.`;
 }
 
 function getDemoEventsForDay(dayIndex: number): CalendarEventItem[] {
@@ -1698,18 +1414,14 @@ function renderEventsCalendarColumn(dayIndex: number): string {
     const weekday = EVENTS_WEEKDAY_LABELS[dayIndex] ?? "ПН";
     const dayNumber = dayDate.getDate();
     const events = getFilteredCalendarEvents(dayIndex);
-    const cardsHtml = events.length
-        ? events.map((event) => renderEventsCalendarEventCard(event)).join("")
-        : `<p class="events-calendar-empty">Событий нет</p>`;
+    const cardsHtml = events.map((event) => renderEventsCalendarEventCard(event)).join("");
 
     return `
         <div class="events-calendar-col" role="listitem">
-            <article class="events-calendar-day-card">
-                <div class="events-calendar-col-head">${weekday} ${dayNumber}</div>
-                <div class="events-calendar-col-body">
-                    ${cardsHtml}
-                </div>
-            </article>
+            <div class="events-calendar-col-head">${weekday}, ${dayNumber}</div>
+            <div class="events-calendar-col-body" role="list">
+                ${cardsHtml}
+            </div>
         </div>`;
 }
 
@@ -1718,29 +1430,44 @@ function renderEventsCalendarBlock(): string {
     const monthLabel = formatEventsMonthLabel(weekStart);
     const scopeAllActive = appState.eventsCalendarScope === "all";
     const scopeMineActive = appState.eventsCalendarScope === "mine";
-    const visibleDayIndexes = [0, 1, 2, 3];
-    const columnsHtml = visibleDayIndexes.map((index) => renderEventsCalendarColumn(index)).join("");
+    const columnsHtml = EVENTS_WEEKDAY_LABELS.map((_, index) => renderEventsCalendarColumn(index)).join("");
 
     return `
         <section class="events-calendar-block" aria-label="Календарь недели">
             <header class="events-calendar-toolbar">
-                <div class="events-calendar-toolbar-start">
-                    <span class="events-calendar-month-label">${escapeHtml(monthLabel)}</span>
-                    <button type="button" class="events-calendar-create-btn" id="eventsOpenCreateButton">СОБЫТИЕ</button>
+                <div class="events-calendar-month-group">
+                    <span class="events-calendar-month-pill">${escapeHtml(monthLabel)}</span>
+                    <div class="events-calendar-week-nav" role="group" aria-label="Переключение недели">
+                        <button
+                            type="button"
+                            class="events-calendar-week-nav-btn events-calendar-week-nav-btn--prev"
+                            id="eventsWeekPrevButton"
+                            aria-label="Предыдущая неделя"
+                        ></button>
+                        <button
+                            type="button"
+                            class="events-calendar-week-nav-btn events-calendar-week-nav-btn--next"
+                            id="eventsWeekNextButton"
+                            aria-label="Следующая неделя"
+                        ></button>
+                    </div>
                 </div>
-                <div class="events-calendar-scope" role="group" aria-label="Фильтр событий">
-                    <button
-                        type="button"
-                        class="events-calendar-scope-btn${scopeMineActive ? " is-active" : ""}"
-                        data-events-calendar-scope="mine"
-                        aria-pressed="${scopeMineActive}"
-                    >МОИ</button>
-                    <button
-                        type="button"
-                        class="events-calendar-scope-btn${scopeAllActive ? " is-active" : ""}"
-                        data-events-calendar-scope="all"
-                        aria-pressed="${scopeAllActive}"
-                    >ВСЕ</button>
+                <div class="events-calendar-toolbar-end">
+                    <div class="events-calendar-scope" role="group" aria-label="Фильтр событий">
+                        <button
+                            type="button"
+                            class="events-calendar-scope-btn${scopeAllActive ? " is-active" : ""}"
+                            data-events-calendar-scope="all"
+                            aria-pressed="${scopeAllActive}"
+                        >ВСЕ</button>
+                        <button
+                            type="button"
+                            class="events-calendar-scope-btn${scopeMineActive ? " is-active" : ""}"
+                            data-events-calendar-scope="mine"
+                            aria-pressed="${scopeMineActive}"
+                        >МОИ</button>
+                    </div>
+                    <button type="button" class="events-calendar-create-btn" id="eventsOpenCreateButton" aria-label="Создать событие">+</button>
                 </div>
             </header>
             <div class="events-calendar-grid" role="list" aria-label="Дни недели">
@@ -1786,11 +1513,9 @@ function renderEventsDashboardMain(statusHtml: string): string {
     return `
             <section class="profile-main events-dashboard-main">
                 ${statusHtml}
-                <div class="events-shell">
-                    <div class="events-panels-stack">
-                        ${renderEventsCalendarBlock()}
-                        ${renderEventsFeedBlock()}
-                    </div>
+                <div class="events-panels-stack">
+                    ${renderEventsCalendarBlock()}
+                    ${renderEventsFeedBlock()}
                 </div>
             </section>`;
 }
@@ -1798,6 +1523,24 @@ function renderEventsDashboardMain(statusHtml: string): string {
 function wireEventsDashboardEvents(): void {
     if (!isHTMLElement(profileMount) || appState.dashboardSection !== "events") {
         return;
+    }
+
+    const weekPrev = profileMount.querySelector("#eventsWeekPrevButton");
+    if (isHTMLButtonElement(weekPrev)) {
+        weekPrev.addEventListener("click", () => {
+            appState.eventsWeekOffset -= 1;
+            clearStatus();
+            render();
+        });
+    }
+
+    const weekNext = profileMount.querySelector("#eventsWeekNextButton");
+    if (isHTMLButtonElement(weekNext)) {
+        weekNext.addEventListener("click", () => {
+            appState.eventsWeekOffset += 1;
+            clearStatus();
+            render();
+        });
     }
 
     profileMount.querySelectorAll<HTMLButtonElement>("[data-events-calendar-scope]").forEach((button) => {
@@ -2005,23 +1748,22 @@ function renderEventsModal(): string {
     }
 
     if (appState.eventsModal === "success") {
-        return renderProfileModalShell({
-            ariaLabel: "Событие создано",
-            closeButtonId: "eventsCloseSuccessButton",
-            backdropCloseAttr: 'data-close-events-modal="1"',
-            extraModalClass: "team-overlay-modal event-success-modal",
-            bodyHtml: `
-                <h2 class="profile-shell-title">УСПЕШНО!</h2>
-                <div class="event-success-link-row">
-                    <div class="event-success-link-field">ССЫЛКА</div>
-                    <button type="button" class="event-success-link-copy" id="eventsCopyLinkButton">СКОПИРОВАТЬ</button>
-                </div>
-                <div class="event-success-qr-wrap">
-                    <img id="eventsSuccessQrImg" class="event-success-qr" width="200" height="200" alt="">
-                </div>
-                <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search event-success-done" id="eventsSuccessDoneButton">ГОТОВО</button>
-            `
-        });
+        return `
+                <div class="profile-modal team-overlay-modal event-success-modal" role="dialog" aria-modal="true" aria-label="Событие создано">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-events-modal="1"></div>
+                    <div class="profile-modal-card event-success-card">
+                        <button type="button" class="team-rescue-close" id="eventsCloseSuccessButton" aria-label="Закрыть"></button>
+                        <h2 class="profile-modal-title event-success-title">УСПЕШНО!</h2>
+                        <div class="event-success-link-row">
+                            <div class="event-success-link-field">ССЫЛКА</div>
+                            <button type="button" class="event-success-link-copy" id="eventsCopyLinkButton">СКОПИРОВАТЬ</button>
+                        </div>
+                        <div class="event-success-qr-wrap">
+                            <img id="eventsSuccessQrImg" class="event-success-qr" width="200" height="200" alt="">
+                        </div>
+                        <button type="button" class="event-success-done" id="eventsSuccessDoneButton">ГОТОВО</button>
+                    </div>
+                </div>`;
     }
 
     return "";
@@ -2288,10 +2030,9 @@ async function refreshTeamWorkspace(): Promise<void> {
                 };
             }
         } else {
+            // Если команды нет — сбрасываем в безопасные дефолтные значения (без null)
             appState.currentTeam = null;
-            if (!appState.localCreatedTeam) {
-                appState.localCreatedTeam = null;
-            }
+            appState.localCreatedTeam = null;
             if (appState.profile) {
                 appState.profile = {
                     ...appState.profile,
@@ -2303,10 +2044,8 @@ async function refreshTeamWorkspace(): Promise<void> {
                 };
             }
         }
-    } catch {
-        if (!appState.currentTeam) {
-            appState.currentTeam = null;
-        }
+    } catch (err) {
+        appState.currentTeam = null;
     }
 }
 
@@ -2439,15 +2178,46 @@ function formatShortDate(value: string | null | undefined): string {
 }
 
 function getTeamHistoryItems(): TeamHistoryItem[] {
-    return [];
+    const checkIns = appState.teamCheckIns.map<TeamHistoryItem>((checkIn) => ({
+        label: "CHECK-IN",
+        title: `${checkIn.weekNumber} неделя · ${checkIn.status || "Submitted"}`,
+        meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc)
+    }));
+
+    const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
+        label: "СПАСЕНИЕ",
+        title: `${request.topic || "Запрос помощи"} · ${request.status}`,
+        meta: `${request.fromTeamName} → ${request.toTeamName}`,
+        pointsLabel: request.bonusPoints > 0 ? `+${request.bonusPoints}` : undefined
+    }));
+
+    const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
+        label: "ЗАЯВКА",
+        title: `${request.displayName || request.userName || "Участник"} · ${request.status}`,
+        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
+    }));
+
+    const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
+        label: "ГОЛОС",
+        title: `${vote.toUserName || "Участник"} · ${vote.score}/5`,
+        meta: formatShortDate(vote.createdAtUtc)
+    }));
+
+    const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
+    return items.length > 0
+        ? items
+        : [
+              {
+                  label: "СТАРТ",
+                  title: "История активности появится после check-in, спасения или голосования.",
+                  meta: "MVP"
+              }
+          ];
 }
 
-function getJoinableTeams(searchQuery?: string): TeamSearchItem[] {
+function getJoinableTeams(): TeamSearchItem[] {
     const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId;
-    const querySource =
-        searchQuery ??
-        (appState.profileModal === "findTeam" ? appState.profileFindTeamQuery : teamFlowState.searchQuery);
-    const query = querySource.trim().toLowerCase();
+    const query = teamFlowState.searchQuery.trim().toLowerCase();
 
     return appState.teamCatalog
         .filter((team) => team.id !== currentTeamId)
@@ -2552,43 +2322,17 @@ async function paintTeamSuccessQr(): Promise<void> {
     const url = appState.profileInviteLink.trim() || buildTeamInviteLink();
     try {
         img.src = await QRCode.toDataURL(url, {
-            width: 220,
+            width: 200,
             margin: 2,
             color: {
-                dark: "#172d9d",
-                light: "#f0f5ff"
+                dark: "#2a2a2a",
+                light: "#ffffff"
             }
         });
         img.alt = "QR-код ссылки-приглашения";
     } catch {
         img.removeAttribute("src");
         img.alt = "Не удалось сформировать QR";
-    }
-}
-
-async function paintRequestsQr(): Promise<void> {
-    if (!isHTMLElement(profileMount)) {
-        return;
-    }
-
-    const qrWrap = profileMount.querySelector("#teamRequestsQrWrap");
-    if (!(qrWrap instanceof HTMLElement)) {
-        return;
-    }
-
-    const link = appState.teamRequestsInviteLink || buildTeamInviteLink();
-    try {
-        const dataUrl = await QRCode.toDataURL(link, {
-            width: 130,
-            margin: 1,
-            color: {
-                dark: "#172d9d",
-                light: "#ffffff"
-            }
-        });
-        qrWrap.innerHTML = `<img src="${escapeHtml(dataUrl)}" alt="QR-код приглашения">`;
-    } catch {
-        qrWrap.innerHTML = `<span class="team-requests-placeholder">Не удалось загрузить QR</span>`;
     }
 }
 
@@ -2605,7 +2349,6 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
 
     if (kind === "requests") {
         appState.teamRequestsInviteLink = buildTeamInviteLink();
-        appState.teamRequestsCurrentIndex = 0;
     }
 
     if (kind === "rescue") {
@@ -2777,25 +2520,23 @@ function renderTeamModal(): string {
                 >${score}</button>`)
             .join("");
 
-        return renderProfileModalShell({
-            ariaLabel: "Голосование",
-            closeButtonId: "teamCloseVoteButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal",
-            extraCardClass: "team-vote-card",
-            bodyHtml: `
-                <h2 class="profile-shell-title">ГОЛОСОВАНИЕ</h2>
-                <div class="team-vote-hero">
-                    <div class="${avatarClass}" aria-hidden="true">${voteAvatarInner}</div>
-                    <div class="team-vote-role-pill">${escapeHtml(voteRole)}</div>
-                    <p class="team-vote-name">${escapeHtml(member?.displayName ?? "УЧАСТНИК")}</p>
-                </div>
-                <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
-                    ${voteButtons}
-                </div>
-                ${existingVote ? `<p class="team-vote-hint">Ваша оценка уже сохранена.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
-            `
-        });
+        return `
+                <div class="profile-modal team-overlay-modal" role="dialog" aria-modal="true" aria-label="Голосование">
+                    <div class="profile-modal-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-vote-card" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
+                        <button type="button" class="profile-modal-dot" id="teamCloseVoteButton" aria-label="Закрыть"></button>
+                        <h2 class="profile-modal-title">ГОЛОСОВАНИЕ</h2>
+                        <div class="team-vote-hero">
+                            <div class="${avatarClass}" aria-hidden="true">${voteAvatarInner}</div>
+                            <div class="team-vote-role-pill">${escapeHtml(voteRole)}</div>
+                            <p class="team-vote-name">${escapeHtml(member?.displayName ?? "УЧАСТНИК")}</p>
+                        </div>
+                        <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале">
+                            ${voteButtons}
+                        </div>
+                        ${existingVote ? `<p class="team-vote-hint">Ваша оценка уже сохранена.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
+                    </div>
+                </div>`;
     }
 
     if (appState.teamModal === "checkIn") {
@@ -2804,35 +2545,33 @@ function renderTeamModal(): string {
             ? `<p class="team-validation-error team-validation-error--modal">${escapeHtml(teamFlowState.checkInError)}</p>`
             : "";
 
-        return renderProfileModalShell({
-            ariaLabel: "Check-in команды",
-            closeButtonId: "teamCloseCheckInButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal team-rescue-modal",
-            extraCardClass: "profile-modal-card--form",
-            bodyHtml: `
-                <h2 class="profile-shell-title">CHECK-IN</h2>
-                ${errorHtml}
-                <form id="teamCheckInForm" class="team-rescue-form profile-modal-card-body" novalidate>
-                    <input
-                        id="teamCheckInWeekInput"
-                        class="team-rescue-field"
-                        type="number"
-                        min="1"
-                        max="52"
-                        placeholder="НЕДЕЛЯ"
-                        value="${escapeHtml(nextWeek)}"
-                    >
-                    <textarea
-                        id="teamCheckInReportInput"
-                        class="team-rescue-textarea"
-                        placeholder="Кратко опишите прогресс, риски и договоренности команды"
-                        aria-label="Отчет команды"
-                    >${escapeHtml(teamFlowState.checkInReport)}</textarea>
-                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
-                </form>
-            `
-        });
+        return `
+                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Check-in команды">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-rescue-card">
+                        <button type="button" class="team-rescue-close" id="teamCloseCheckInButton" aria-label="Закрыть"></button>
+                        <h2 class="team-rescue-title">CHECK-IN</h2>
+                        ${errorHtml}
+                        <form id="teamCheckInForm" class="team-rescue-form" novalidate>
+                            <input
+                                id="teamCheckInWeekInput"
+                                class="team-rescue-field"
+                                type="number"
+                                min="1"
+                                max="52"
+                                placeholder="НЕДЕЛЯ"
+                                value="${escapeHtml(nextWeek)}"
+                            >
+                            <textarea
+                                id="teamCheckInReportInput"
+                                class="team-rescue-textarea"
+                                placeholder="Кратко опишите прогресс, риски и договоренности команды"
+                                aria-label="Отчет команды"
+                            >${escapeHtml(teamFlowState.checkInReport)}</textarea>
+                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
+                        </form>
+                    </div>
+                </div>`;
     }
 
     if (appState.teamModal === "rescue") {
@@ -2843,151 +2582,144 @@ function renderTeamModal(): string {
             .filter((team) => team.id !== currentTeamId)
             .map((team) => `<option value="${team.id}" ${draft.targetTeamId === String(team.id) ? "selected" : ""}>${escapeHtml(team.name)}</option>`)
             .join("");
-        return renderProfileModalShell({
-            ariaLabel: "Спасение",
-            closeButtonId: "teamCloseRescueButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal team-rescue-modal",
-            extraCardClass: "profile-modal-card--form",
-            bodyHtml: `
-                <h2 class="profile-shell-title">СПАСЕНИЕ</h2>
-                <form id="teamRescueForm" class="team-rescue-form profile-modal-card-body" novalidate>
-                    <select id="teamRescueTargetInput" class="team-rescue-field" aria-label="Команда для помощи">
-                        <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
-                        ${targetOptions}
-                    </select>
-                    <div class="team-rescue-topic-row">
-                        <input
-                            id="teamRescueTopicInput"
-                            class="team-rescue-field team-rescue-field--topic"
-                            type="text"
-                            placeholder="ТЕМА"
-                            value="${escapeHtml(draft.topic)}"
-                            autocomplete="off"
-                        >
-                        <input
-                            id="teamRescueTagInput"
-                            class="team-rescue-field team-rescue-field--tag"
-                            type="text"
-                            placeholder="ТЕГ"
-                            value="${escapeHtml(draft.tag)}"
-                            autocomplete="off"
-                        >
+        return `
+                <div class="profile-modal team-overlay-modal team-rescue-modal" role="dialog" aria-modal="true" aria-label="Спасение">
+                    <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-rescue-card">
+                        <button type="button" class="team-rescue-close" id="teamCloseRescueButton" aria-label="Закрыть"></button>
+                        <h2 class="team-rescue-title">СПАСЕНИЕ</h2>
+                        <form id="teamRescueForm" class="team-rescue-form" novalidate>
+                            <select id="teamRescueTargetInput" class="team-rescue-field" aria-label="Команда для помощи">
+                                <option value="">КОМАНДА-ПОЛУЧАТЕЛЬ</option>
+                                ${targetOptions}
+                            </select>
+                            <div class="team-rescue-topic-row">
+                                <input
+                                    id="teamRescueTopicInput"
+                                    class="team-rescue-field team-rescue-field--topic"
+                                    type="text"
+                                    placeholder="ТЕМА"
+                                    value="${escapeHtml(draft.topic)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="teamRescueTagInput"
+                                    class="team-rescue-field team-rescue-field--tag"
+                                    type="text"
+                                    placeholder="ТЕГ"
+                                    value="${escapeHtml(draft.tag)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <textarea
+                                id="teamRescueDescriptionInput"
+                                class="team-rescue-textarea"
+                                placeholder=" "
+                                aria-label="Описание ситуации"
+                            >${escapeHtml(draft.description)}</textarea>
+                            <div class="team-rescue-photo-row">
+                                <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
+                                <label class="team-rescue-photo-btn">
+                                    ВЫБРАТЬ
+                                    <input
+                                        type="file"
+                                        id="teamRescuePhotoInput"
+                                        class="team-rescue-file"
+                                        accept="image/*"
+                                        hidden
+                                    >
+                                </label>
+                            </div>
+                            <div class="team-rescue-duo-row">
+                                <input
+                                    id="teamRescueLeagueInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ЛИГА"
+                                    value="${escapeHtml(draft.league)}"
+                                    autocomplete="off"
+                                >
+                                <input
+                                    id="teamRescueDeadlineInput"
+                                    class="team-rescue-field team-rescue-field--duo"
+                                    type="text"
+                                    placeholder="ДЕДЛАЙН"
+                                    value="${escapeHtml(draft.deadline)}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <button type="submit" class="team-rescue-submit">ОТПРАВИТЬ</button>
+                        </form>
                     </div>
-                    <textarea
-                        id="teamRescueDescriptionInput"
-                        class="team-rescue-textarea"
-                        placeholder=" "
-                        aria-label="Описание ситуации"
-                    >${escapeHtml(draft.description)}</textarea>
-                    <div class="team-rescue-photo-row">
-                        <span class="team-rescue-photo-label" id="teamRescuePhotoLabel">${escapeHtml(photoLabel)}</span>
-                        <label class="team-rescue-photo-btn">
-                            ВЫБРАТЬ
-                            <input
-                                type="file"
-                                id="teamRescuePhotoInput"
-                                class="team-rescue-file"
-                                accept="image/*"
-                                hidden
-                            >
-                        </label>
-                    </div>
-                    <div class="team-rescue-duo-row">
-                        <input
-                            id="teamRescueLeagueInput"
-                            class="team-rescue-field team-rescue-field--duo"
-                            type="text"
-                            placeholder="ЛИГА"
-                            value="${escapeHtml(draft.league)}"
-                            autocomplete="off"
-                        >
-                        <input
-                            id="teamRescueDeadlineInput"
-                            class="team-rescue-field team-rescue-field--duo"
-                            type="text"
-                            placeholder="ДЕДЛАЙН"
-                            value="${escapeHtml(draft.deadline)}"
-                            autocomplete="off"
-                        >
-                    </div>
-                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
-                </form>
-            `
-        });
+                </div>`;
     }
 
     if (appState.teamModal === "requests") {
+        const link = appState.teamRequestsInviteLink || buildTeamInviteLink();
         const currentTeamId = appState.currentTeam?.id ?? appState.profile?.teamId ?? 0;
-        const pendingJoinRequests = appState.teamJoinRequests.filter((request) =>
-            request.teamId === currentTeamId &&
-            request.status === "Pending"
+        const joinRequests = appState.teamJoinRequests.filter((request) =>
+            request.teamId === currentTeamId || request.userId === appState.profile?.id
         );
+        const joinRequestsHtml = joinRequests.length
+            ? joinRequests.map((request) => {
+                  const incoming = request.teamId === currentTeamId;
+                  const canAct = incoming && isTeamCaptain() && request.status === "Pending";
+                  return `
+                    <article class="team-request-row">
+                        <div>
+                            <h3 class="team-request-title">${escapeHtml(request.displayName || request.userName || "Участник")}</h3>
+                            <p class="team-request-meta">${escapeHtml(request.teamName)} · ${escapeHtml(request.status)}</p>
+                            ${request.message ? `<p class="team-request-meta">${escapeHtml(request.message)}</p>` : ""}
+                        </div>
+                        ${canAct ? `
+                            <div class="team-request-actions">
+                                <button type="button" class="team-request-dot-pill" data-team-join-request-status="Accepted" data-team-join-request-id="${request.id}" aria-label="Принять"></button>
+                                <button type="button" class="team-request-dot-pill is-decline" data-team-join-request-status="Rejected" data-team-join-request-id="${request.id}" aria-label="Отклонить"></button>
+                            </div>` : ""}
+                    </article>`;
+              }).join("")
+            : `<p class="team-list-empty">Заявок на вступление пока нет.</p>`;
 
-        const totalCount = pendingJoinRequests.length;
-        const currentIndex = totalCount > 0
-            ? Math.min(appState.teamRequestsCurrentIndex, totalCount - 1)
-            : 0;
-        appState.teamRequestsCurrentIndex = currentIndex;
-        const currentRequest = pendingJoinRequests[currentIndex];
-        const canAct = isTeamCaptain() && Boolean(currentRequest);
-        const carouselHtml = renderTeamRequestsCarouselHtml(pendingJoinRequests, currentIndex, canAct);
-
-        return renderProfileModalShell({
-            ariaLabel: "Заявки",
-            closeButtonId: "teamCloseRequestsButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal",
-            extraCardClass: `team-requests-card ${totalCount > 0 ? "team-requests-card--filled" : "team-requests-card--empty"}`,
-            bodyHtml: `
-                <div class="team-requests-shell ${totalCount > 0 ? "team-requests-shell--filled" : "team-requests-shell--empty"}">
-                    <h2 class="team-requests-modal-title">
-                        ЗАЯВКИ
-                        <span class="team-requests-count">${escapeHtml(String(totalCount))}</span>
-                    </h2>
-                    ${carouselHtml}
-                    <div class="team-requests-qrcode" id="teamRequestsQrWrap">
-                        <span class="team-requests-placeholder">QR-код загружается...</span>
+        const helpRequestsHtml = appState.teamHelpRequests.length
+            ? appState.teamHelpRequests.map((request) => {
+                  const incoming = request.toTeamId === currentTeamId;
+                  const canAct = incoming && isTeamCaptain() && request.status === "Open";
+                  return `
+                    <article class="team-request-row">
+                        <div>
+                            <h3 class="team-request-title">${escapeHtml(request.topic || "Спасение")}</h3>
+                            <p class="team-request-meta">${escapeHtml(request.fromTeamName)} → ${escapeHtml(request.toTeamName)}</p>
+                            <p class="team-request-meta">${escapeHtml(request.status)}${request.bonusPoints ? ` · +${escapeHtml(String(request.bonusPoints))}` : ""}</p>
+                        </div>
+                        ${canAct ? `
+                            <div class="team-request-actions">
+                                <button type="button" class="team-request-dot-pill" data-help-request-status="Accepted" data-help-request-id="${request.id}" aria-label="Принять"></button>
+                                <button type="button" class="team-request-dot-pill is-decline" data-help-request-status="Rejected" data-help-request-id="${request.id}" aria-label="Отклонить"></button>
+                            </div>` : ""}
+                    </article>`;
+              }).join("")
+            : `<p class="team-list-empty">Запросов «спасения» пока нет.</p>`;
+        return `
+                <div class="profile-modal team-overlay-modal" role="dialog" aria-modal="true" aria-label="Заявки">
+                    <div class="profile-modal-backdrop" data-close-team-modal="1"></div>
+                    <div class="profile-modal-card team-requests-card">
+                        <button type="button" class="profile-modal-dot" id="teamCloseRequestsButton" aria-label="Закрыть"></button>
+                        <h2 class="profile-modal-title">ЗАЯВКИ</h2>
+                        <div class="team-request-list">
+                            <h3 class="team-request-section-title">ВСТУПЛЕНИЕ</h3>
+                            ${joinRequestsHtml}
+                            <h3 class="team-request-section-title">СПАСЕНИЕ</h3>
+                            ${helpRequestsHtml}
+                        </div>
+                        <div class="profile-link-row team-requests-link-row">
+                            <div class="profile-link-field">${escapeHtml(link)}</div>
+                            <button type="button" class="profile-link-copy" id="teamRequestsCopyLinkButton">СКОПИРОВАТЬ</button>
+                        </div>
                     </div>
-                    <button type="button" class="team-requests-copy-btn" id="teamRequestsCopyLinkButton">СКОПИРОВАТЬ</button>
-                </div>
-            `
-        });
+                </div>`;
     }
 
     return "";
-}
-
-function openTeamOnboardingModal(step: "intro" | "find" | "create"): void {
-    if (step === "intro") {
-        openProfileModal("noTeam");
-        return;
-    }
-
-    if (step === "find") {
-        appState.profileFindTeamQuery = "";
-        appState.profileFindTeamSelectedId = null;
-        openProfileModal("findTeam");
-        void refreshTeamCatalog().then(() => {
-            if (appState.profileModal === "findTeam") {
-                render();
-            }
-        });
-        return;
-    }
-
-    appState.profileCreateTeamName = "";
-    appState.profileCreateTeamDirection = "";
-    openProfileModal("createTeam");
-}
-
-function tryOpenNoTeamModal(): boolean {
-    if (hasTeamAccess()) {
-        return false;
-    }
-
-    openProfileModal("noTeam");
-    return true;
 }
 
 function openProfileModal(kind: ProfileModalKind): void {
@@ -3009,37 +2741,10 @@ function openProfileModal(kind: ProfileModalKind): void {
 function closeProfileModal(): void {
     appState.profileModal = "none";
     appState.profileFormDraft = null;
-    appState.profileFindTeamQuery = "";
-    appState.profileFindTeamSelectedId = null;
     render();
 }
 
 const ACADEMIC_GROUP_PATTERN = /^[A-ZА-ЯЁ]{2}-\d{6}$/u;
-const MAX_PROFILE_AVATAR_FILE_BYTES = 2 * 1024 * 1024;
-
-function getProfileAvatarSizeLimitMessage(): string {
-    return "Фото профиля не должно превышать 2 МБ.";
-}
-
-function isProfileAvatarFileWithinLimit(file: File): boolean {
-    return file.size <= MAX_PROFILE_AVATAR_FILE_BYTES;
-}
-
-function isProfileAvatarDataUrlWithinLimit(dataUrl: string | null | undefined): boolean {
-    if (!dataUrl || !dataUrl.startsWith("data:")) {
-        return true;
-    }
-
-    const commaIndex = dataUrl.indexOf(",");
-    if (commaIndex === -1) {
-        return true;
-    }
-
-    const base64 = dataUrl.slice(commaIndex + 1);
-    const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
-    const bytes = Math.floor((base64.length * 3) / 4) - padding;
-    return bytes <= MAX_PROFILE_AVATAR_FILE_BYTES;
-}
 
 function normalizeAcademicGroupInput(value: string): string {
     const uppercased = value.toUpperCase();
@@ -3071,13 +2776,11 @@ function renderProfileModal(): string {
                 return "";
             }
 
-            return renderProfileModalShell({
-                ariaLabel: "Личные данные",
-                closeButtonId: "profileClosePersonalButton",
-                extraCardClass: "profile-modal-card--form",
-                bodyHtml: `
-                    <h2 class="profile-shell-title">ЛИЧНЫЕ ДАННЫЕ</h2>
-                    <div class="profile-modal-card-body">
+            return `
+                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Личные данные">
+                    <div class="profile-modal-backdrop" data-close-modal="1"></div>
+                    <div class="profile-modal-card">
+                        <h2 class="profile-modal-title">ЛИЧНЫЕ ДАННЫЕ</h2>
                         <div class="profile-modal-field profile-modal-photo-row">
                             <span class="profile-modal-photo-label">ФОТО</span>
                             <label class="profile-modal-file">
@@ -3085,7 +2788,6 @@ function renderProfileModal(): string {
                                 <span class="profile-pill-button">ВЫБРАТЬ</span>
                             </label>
                         </div>
-                        <p class="profile-modal-field-hint">Максимальный размер фото — 2 МБ.</p>
                         <input id="profileNameInput" class="profile-modal-input" type="text" placeholder="ИМЯ ФАМИЛИЯ" value="${escapeHtml(draft.fullName)}">
                         <input
                             id="profileGroupInput"
@@ -3097,37 +2799,70 @@ function renderProfileModal(): string {
                             autocapitalize="characters"
                             spellcheck="false"
                         >
-                        <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePersonalButton">СОХРАНИТЬ</button>
+                        <button type="button" class="profile-pill-wide" id="profileSavePersonalButton">СОХРАНИТЬ</button>
                         <button type="button" class="profile-modal-text" id="profileOpenPasswordButton">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</button>
                     </div>
-                `
-            });
+                </div>
+            `;
         case "password":
-            return renderProfileModalShell({
-                ariaLabel: "Восстановление пароля",
-                closeButtonId: "profileClosePasswordButton",
-                extraCardClass: "profile-modal-card--form",
-                bodyHtml: `
-                    <h2 class="profile-shell-title">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</h2>
-                    <div class="profile-modal-card-body">
+            return `
+                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Восстановление пароля">
+                    <div class="profile-modal-backdrop" data-close-modal="1"></div>
+                    <div class="profile-modal-card">
+                        <h2 class="profile-modal-title">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</h2>
                         <input id="profileNewPasswordInput" class="profile-modal-input" type="password" placeholder="НОВЫЙ ПАРОЛЬ">
                         <input id="profileConfirmPasswordInput" class="profile-modal-input" type="password" placeholder="ПОДТВЕРЖДЕНИЕ">
-                        <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePasswordButton">СОХРАНИТЬ</button>
+                        <button type="button" class="profile-pill-wide" id="profileSavePasswordButton">СОХРАНИТЬ</button>
                     </div>
-                `
-            });
+                </div>
+            `;
         case "noTeam":
-            return renderProfileNoTeamModal();
-        case "findTeam":
-            return renderProfileFindTeamModal(
-                getJoinableTeams(appState.profileFindTeamQuery),
-                appState.profileFindTeamQuery,
-                appState.profileFindTeamSelectedId
-            );
+            return `
+                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Нет команды">
+                    <div class="profile-modal-backdrop" data-close-modal="1"></div>
+                    <div class="profile-modal-card profile-modal-card-compact">
+                        <button type="button" class="profile-modal-dot" id="profileCloseNoTeamButton" aria-label="Закрыть"></button>
+                        <h2 class="profile-modal-title">НЕТ КОМАНДЫ</h2>
+                        <div class="profile-modal-stack">
+                            <button type="button" class="profile-pill-wide" id="profileFindTeamButton">НАЙТИ</button>
+                            <button type="button" class="profile-pill-wide" id="profileOpenCreateTeamButton">СОЗДАТЬ</button>
+                        </div>
+                    </div>
+                </div>
+            `;
         case "createTeam":
-            return renderProfileCreateTeamModal(appState.profileCreateTeamName);
+            return `
+                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Создание команды">
+                    <div class="profile-modal-backdrop" data-close-modal="1"></div>
+                    <div class="profile-modal-card">
+                        <h2 class="profile-modal-title">СОЗДАНИЕ КОМАНДЫ</h2>
+                        <input id="profileTeamNameInput" class="profile-modal-input" type="text" placeholder="НАЗВАНИЕ" value="${escapeHtml(appState.profileCreateTeamName)}">
+                        <input id="profileTeamDirectionInput" class="profile-modal-input" type="text" placeholder="НАПРАВЛЕНИЕ" value="${escapeHtml(appState.profileCreateTeamDirection)}">
+                        <div class="profile-modal-stack">
+                            <button type="button" class="profile-pill-wide" id="profileConfirmCreateTeamButton">СОЗДАТЬ</button>
+                            <button type="button" class="profile-pill-wide profile-pill-outline" id="profileBackFromCreateTeamButton">НАЗАД</button>
+                        </div>
+                    </div>
+                </div>
+            `;
         case "teamSuccess":
-            return renderProfileTeamSuccessModal();
+            return `
+                <div class="profile-modal" role="dialog" aria-modal="true" aria-label="Команда создана">
+                    <div class="profile-modal-backdrop" data-close-modal="1"></div>
+                    <div class="profile-modal-card profile-modal-card-success">
+                        <button type="button" class="profile-modal-dot" id="profileCloseSuccessButton" aria-label="Закрыть"></button>
+                        <h2 class="profile-modal-title">УСПЕШНО!</h2>
+                        <div class="profile-link-row">
+                            <div class="profile-link-field">ССЫЛКА</div>
+                            <button type="button" class="profile-link-copy" id="profileCopyInviteButton">СКОПИРОВАТЬ</button>
+                        </div>
+                        <div class="profile-success-qr-wrap">
+                            <img id="profileSuccessQrImg" class="profile-success-qr" width="200" height="200" alt="">
+                        </div>
+                        <button type="button" class="profile-pill-wide" id="profileSuccessGoButton">ПЕРЕЙТИ</button>
+                    </div>
+                </div>
+            `;
         case "achievement":
             return renderProfileAchievementModal(getProfileAchievementById(appState.profileAchievementId));
         default:
@@ -3255,61 +2990,29 @@ function bindAchievementCustomScrollbar(scroller: HTMLElement): void {
     });
 }
 
-function renderProfileMainHtml(): string {
-    if (appState.teamRequestsApplicantRequestId && !getActiveTeamRequestApplicant()) {
-        clearTeamRequestApplicantReview();
+function renderProfileView(): void {
+    if (!isHTMLElement(profileMount)) {
+        return;
     }
 
-    const applicantRequest = getActiveTeamRequestApplicant();
-    const viewingApplicant = Boolean(applicantRequest);
-    const applicantRating = appState.teamRequestsApplicantRating;
     const profile = appState.profile;
-
     const leagueLabel = "ЛИГА";
+    const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
+    const pointsValue = String(actualPoints);
     const ratingLabel = "РЕЙТИНГ";
-
-    let leagueValue: string;
-    let pointsValue: string;
-    let ratingValue: string;
-    let fullName: string;
-    let group: string;
-    let teamPillText: string;
-    let avatarSrc: string;
-    let achievementsContent: string;
-
-    if (viewingApplicant && applicantRequest) {
-        fullName =
-            applicantRating?.name?.trim() ||
-            applicantRequest.displayName?.trim() ||
-            applicantRequest.userName?.trim() ||
-            "Участник";
-        group = applicantRating?.groupTitle?.trim() || "—";
-        teamPillText = applicantRating?.teamName?.trim() || "КОМАНДА";
-        leagueValue = applicantRating?.league?.trim() || "Новичок";
-        pointsValue = applicantRating ? String(applicantRating.points) : "—";
-        ratingValue =
-            applicantRating && applicantRating.rank > 0 ? `${applicantRating.rank} место` : "—";
-        avatarSrc = applicantRequest.avatarUrl?.trim() || "";
-        achievementsContent = `
-                    <div class="profile-achievements-empty" aria-live="polite">
-                        <p class="profile-achievements-empty-text">Достижения участника появятся здесь после выполнения челленджей.</p>
-                    </div>`;
-    } else {
-        const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
-        pointsValue = String(actualPoints);
-        ratingValue =
-            profile?.personalRating && profile.personalRating > 0
-                ? `${profile.personalRating} место`
-                : "—";
-        const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
-        leagueValue =
-            rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
-        fullName = getFullNameDisplay();
-        group = getGroupDisplay();
-        teamPillText = getEffectiveTeamName() || "КОМАНДА";
-        avatarSrc = getAvatarDisplay();
-        achievementsContent = hasProfileAchievements(profile)
-            ? `
+    const ratingValue = profile?.personalRating && profile.personalRating > 0 ? `${profile.personalRating} место` : "—";
+    const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
+    const leagueValue = rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
+    const fullName = getFullNameDisplay();
+    const group = getGroupDisplay();
+    const teamName = getEffectiveTeamName();
+    const teamPillText = teamName || "КОМАНДА";
+    const avatarSrc = getAvatarDisplay();
+    const photoContent = avatarSrc
+        ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
+        : `<span class="profile-photo-placeholder">Фото</span>`;
+    const achievementsContent = hasProfileAchievements(profile)
+        ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
@@ -3320,46 +3023,31 @@ function renderProfileMainHtml(): string {
                             <div class="profile-achievements-thumb" id="profileAchievementsThumb"></div>
                         </div>
                     </div>`
-            : `
+        : `
                     <div class="profile-achievements-empty" aria-live="polite">
                         <p class="profile-achievements-empty-text">Каждое достижение — это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку!</p>
                         <button type="button" class="profile-achievements-empty-button">К ЧЕЛЛЕНДЖАМ</button>
                     </div>`;
-    }
+    const statusHtml = "";
 
-    const photoContent = avatarSrc
-        ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
-        : `<span class="profile-photo-placeholder">Фото</span>`;
+    const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
+    const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
+    const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
+    const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
+    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
+    const extraNavHtml = `
+                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
+                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
 
-    const ratingTrackHtml = viewingApplicant
-        ? `
-                            <div class="profile-stat-track profile-stat-track--rating">
-                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
-                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
-                                    <span class="profile-stat-label">${ratingLabel}</span>
-                                </span>
-                                <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
-                            </div>`
-        : `
-                            <button type="button" class="profile-stat-track profile-stat-track--rating" id="profileRatingTrackButton">
-                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
-                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
-                                    <span class="profile-stat-label">${ratingLabel}</span>
-                                </span>
-                                <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
-                            </button>`;
-
-    const teamPillHtml = viewingApplicant
-        ? `<div class="profile-info-pill profile-info-pill-accent">${escapeHtml(teamPillText)}</div>`
-        : `<button type="button" class="profile-info-pill profile-info-pill-accent" id="profileTeamPillButton">${escapeHtml(teamPillText)}</button>`;
-
-    const dockHtml =
-        viewingApplicant && applicantRequest
-            ? renderTeamRequestsApplicantDock(applicantRequest.id, isTeamCaptain())
-            : "";
-
-    return `
-            <section class="profile-main${viewingApplicant ? " profile-main--requests-review" : ""}">
+    const mainColumn =
+        appState.dashboardSection === "team"
+            ? renderTeamPageMain(statusHtml)
+            : appState.dashboardSection === "rating"
+              ? renderRatingPageMain(statusHtml)
+              : appState.dashboardSection === "events"
+                ? renderEventsDashboardMain(statusHtml)
+                : `
+            <section class="profile-main">
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
@@ -3380,47 +3068,26 @@ function renderProfileMainHtml(): string {
                                 </span>
                                 <span class="profile-stat-value profile-stat-value--num">${escapeHtml(pointsValue)}</span>
                             </div>
-                            ${ratingTrackHtml}
+                            <div class="profile-stat-track profile-stat-track--rating">
+                                <span class="profile-stat-orb profile-stat-orb--accent profile-stat-orb--rating" aria-hidden="true">
+                                    <img class="profile-stat-icon" src="${ratingMenuIconUrl}" alt="" aria-hidden="true">
+                                    <span class="profile-stat-label">${ratingLabel}</span>
+                                </span>
+                                <span class="profile-stat-value">${escapeHtml(ratingValue)}</span>
+                            </div>
                         </div>
                     </div>
                     <div class="profile-pills-row">
                         <div class="profile-info-pill profile-info-pill--name">${escapeHtml(fullName || "ИМЯ ФАМИЛИЯ")}</div>
                         <div class="profile-info-pill profile-info-pill--group">${escapeHtml(group || "РИ-XXXXXX")}</div>
-                        ${teamPillHtml}
+                        <button type="button" class="profile-info-pill profile-info-pill-accent" id="profileTeamPillButton">${escapeHtml(teamPillText)}</button>
                     </div>
                 </div>
                 <div class="profile-achievements">
                     <h3 class="profile-achievements-title">ДОСТИЖЕНИЯ</h3>
                     ${achievementsContent}
                 </div>
-                ${dockHtml}
         </section>`;
-}
-
-function renderProfileView(): void {
-    if (!isHTMLElement(profileMount)) {
-        return;
-    }
-
-    const statusHtml = "";
-
-    const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
-    const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
-    const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
-    const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
-    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
-    const extraNavHtml = `
-                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
-                    <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
-
-    const mainColumn =
-        appState.dashboardSection === "team"
-            ? renderTeamPageMain(statusHtml)
-            : appState.dashboardSection === "rating"
-              ? renderRatingPageMain(statusHtml)
-              : appState.dashboardSection === "events"
-                ? renderEventsDashboardMain(statusHtml)
-                : renderProfileMainHtml();
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
@@ -3462,10 +3129,6 @@ function renderProfileView(): void {
 
     if (appState.profileModal === "teamSuccess") {
         void paintTeamSuccessQr();
-    }
-
-    if (appState.teamModal === "requests") {
-        void paintRequestsQr();
     }
 
     if (appState.eventsModal === "success") {
@@ -3748,21 +3411,7 @@ function wireProfileViewEvents(): void {
     const teamPill = profileMount.querySelector("#profileTeamPillButton");
     if (isHTMLButtonElement(teamPill)) {
         teamPill.addEventListener("click", () => {
-            if (tryOpenNoTeamModal()) {
-                return;
-            }
-
             appState.dashboardSection = "team";
-            persistDashboardSectionToStorage();
-            clearStatus();
-            render();
-        });
-    }
-
-    const ratingTrackButton = profileMount.querySelector("#profileRatingTrackButton");
-    if (isHTMLButtonElement(ratingTrackButton)) {
-        ratingTrackButton.addEventListener("click", () => {
-            appState.dashboardSection = "rating";
             persistDashboardSectionToStorage();
             clearStatus();
             render();
@@ -3774,15 +3423,6 @@ function wireProfileViewEvents(): void {
             const section = button.dataset.dashboard as DashboardSection | undefined;
             if (!section) {
                 return;
-            }
-
-            if (section === "team" && tryOpenNoTeamModal()) {
-                return;
-            }
-
-            if (getActiveTeamRequestApplicant()) {
-                clearTeamRequestApplicantReview();
-                appState.teamModal = "none";
             }
 
             appState.dashboardSection = section;
@@ -3924,40 +3564,6 @@ function wireProfileViewEvents(): void {
         });
     }
 
-    // Навигация карусели заявок
-    const teamRequestsPrev = profileMount.querySelector("#teamRequestsPrev");
-    const teamRequestsNext = profileMount.querySelector("#teamRequestsNext");
-    if (isHTMLButtonElement(teamRequestsPrev)) {
-        teamRequestsPrev.addEventListener("click", () => {
-            appState.teamRequestsCurrentIndex = Math.max(0, appState.teamRequestsCurrentIndex - 1);
-            render();
-        });
-    }
-    if (isHTMLButtonElement(teamRequestsNext)) {
-        teamRequestsNext.addEventListener("click", () => {
-            const pendingCount = getPendingTeamJoinRequests().length;
-            appState.teamRequestsCurrentIndex = Math.min(pendingCount - 1, appState.teamRequestsCurrentIndex + 1);
-            render();
-        });
-    }
-
-    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-request-open-profile]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const requestId = Number(button.dataset.teamRequestOpenProfile ?? "0");
-            if (!Number.isInteger(requestId) || requestId <= 0) {
-                return;
-            }
-
-            openTeamRequestApplicantProfile(requestId);
-        });
-    });
-
-    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-request-back]").forEach((button) => {
-        button.addEventListener("click", () => {
-            returnToTeamRequests();
-        });
-    });
-
     profileMount.querySelectorAll<HTMLButtonElement>("[data-help-request-id]").forEach((button) => {
         button.addEventListener("click", () => {
             const id = Number(button.dataset.helpRequestId ?? "0");
@@ -3986,7 +3592,15 @@ function wireProfileViewEvents(): void {
                 return;
             }
 
-            handleTeamJoinRequestDecision(id, status);
+            void submitTeamJoinRequestStatus(id, status)
+                .then(() => {
+                    setStatus(status === "Accepted" ? "Заявка на вступление принята." : "Заявка на вступление отклонена.");
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
         });
     });
 
@@ -4063,13 +3677,6 @@ function wireProfileViewEvents(): void {
                 return;
             }
 
-            if (!isProfileAvatarFileWithinLimit(file)) {
-                avatarInput.value = "";
-                setStatus(getProfileAvatarSizeLimitMessage(), "error");
-                render();
-                return;
-            }
-
             const reader = new FileReader();
             reader.onload = () => {
                 if (typeof reader.result === "string" && appState.profileFormDraft) {
@@ -4098,9 +3705,9 @@ function wireProfileViewEvents(): void {
         });
     }
 
-    const closeTeamFlow = profileMount.querySelector("#profileCloseTeamFlowButton");
-    if (isHTMLButtonElement(closeTeamFlow)) {
-        closeTeamFlow.addEventListener("click", () => {
+    const closeNoTeam = profileMount.querySelector("#profileCloseNoTeamButton");
+    if (isHTMLButtonElement(closeNoTeam)) {
+        closeNoTeam.addEventListener("click", () => {
             closeProfileModal();
         });
     }
@@ -4108,10 +3715,8 @@ function wireProfileViewEvents(): void {
     const findTeam = profileMount.querySelector("#profileFindTeamButton");
     if (isHTMLButtonElement(findTeam)) {
         findTeam.addEventListener("click", () => {
-            appState.profileFindTeamQuery = "";
-            appState.profileFindTeamSelectedId = null;
-            appState.profileModal = "findTeam";
-            void refreshTeamCatalog().then(() => render());
+            setStatus("Поиск команды скоро будет доступен.");
+            closeProfileModal();
         });
     }
 
@@ -4125,95 +3730,43 @@ function wireProfileViewEvents(): void {
         });
     }
 
-    const openFindFromCreate = profileMount.querySelector("#profileOpenFindTeamFromCreateButton");
-    if (isHTMLButtonElement(openFindFromCreate)) {
-        openFindFromCreate.addEventListener("click", () => {
-            appState.profileFindTeamQuery = "";
-            appState.profileFindTeamSelectedId = null;
-            appState.profileModal = "findTeam";
-            render();
-        });
-    }
-
-    const backFromFindTeam = profileMount.querySelector("#profileBackFromFindTeamButton");
-    if (isHTMLButtonElement(backFromFindTeam)) {
-        backFromFindTeam.addEventListener("click", () => {
-            appState.profileModal = "noTeam";
-            render();
-        });
-    }
-
-    const findTeamSearchInput = profileMount.querySelector("#profileFindTeamSearchInput");
-    if (isHTMLInputElement(findTeamSearchInput)) {
-        findTeamSearchInput.addEventListener("input", () => {
-            appState.profileFindTeamQuery = findTeamSearchInput.value;
-            appState.profileFindTeamSelectedId = null;
-            void refreshTeamCatalog(findTeamSearchInput.value).then(() => {
-                if (appState.profileModal === "findTeam") {
-                    render();
-                }
-            });
-        });
-    }
-
-    profileMount.querySelectorAll<HTMLButtonElement>("[data-team-pick-id]").forEach((button) => {
-        button.addEventListener("click", () => {
-            if (button.dataset.teamPending === "1") {
-                return;
-            }
-
-            const teamId = Number(button.dataset.teamPickId ?? "0");
-            if (!Number.isInteger(teamId) || teamId <= 0) {
-                return;
-            }
-
-            appState.profileFindTeamSelectedId = teamId;
-            render();
-        });
-    });
-
-    const findTeamRequest = profileMount.querySelector("#profileFindTeamRequestButton");
-    if (isHTMLButtonElement(findTeamRequest)) {
-        findTeamRequest.addEventListener("click", async () => {
-            const teamId = appState.profileFindTeamSelectedId;
-            if (!teamId) {
-                return;
-            }
-
-            try {
-                findTeamRequest.disabled = true;
-                await requestTeamJoin(teamId);
-                setStatus("Заявка отправлена капитану команды.");
-                closeProfileModal();
-            } catch (error: unknown) {
-                setStatus(getErrorMessage(error), "error");
-                render();
-            }
-        });
-    }
-
     const teamNameInput = profileMount.querySelector("#profileTeamNameInput");
     if (isHTMLInputElement(teamNameInput)) {
         teamNameInput.addEventListener("input", () => {
             appState.profileCreateTeamName = teamNameInput.value;
         });
-        teamNameInput.addEventListener("keydown", (event) => {
-            if (event.key !== "Enter" || !isHTMLElement(profileMount)) {
-                return;
-            }
+    }
 
-            event.preventDefault();
-            const confirmButton = profileMount.querySelector("#profileConfirmCreateTeamButton");
-            if (isHTMLButtonElement(confirmButton)) {
-                void submitProfileTeamCreate(confirmButton);
-            }
+    const teamDirectionInput = profileMount.querySelector("#profileTeamDirectionInput");
+    if (isHTMLInputElement(teamDirectionInput)) {
+        teamDirectionInput.addEventListener("input", () => {
+            appState.profileCreateTeamDirection = teamDirectionInput.value;
         });
     }
 
     const confirmCreateTeam = profileMount.querySelector("#profileConfirmCreateTeamButton");
     if (isHTMLButtonElement(confirmCreateTeam)) {
         confirmCreateTeam.addEventListener("click", () => {
-            void submitProfileTeamCreate(confirmCreateTeam);
+            const name = appState.profileCreateTeamName.trim() || "КОМАНДА";
+            const direction = appState.profileCreateTeamDirection.trim();
+            void createTeamFromBridge(name, direction)
+                .then(() => {
+                    appState.profileInviteLink = buildTeamInviteLink();
+                    appState.profileModal = "teamSuccess";
+                    render();
+                })
+                .catch((error: unknown) => {
+                    setStatus(getErrorMessage(error), "error");
+                    render();
+                });
+        });
+    }
+
+    const backCreateTeam = profileMount.querySelector("#profileBackFromCreateTeamButton");
+    if (isHTMLButtonElement(backCreateTeam)) {
+        backCreateTeam.addEventListener("click", () => {
+            appState.profileModal = "noTeam";
+            render();
         });
     }
 
@@ -4240,10 +3793,18 @@ function wireProfileViewEvents(): void {
     const successGo = profileMount.querySelector("#profileSuccessGoButton");
     if (isHTMLButtonElement(successGo)) {
         successGo.addEventListener("click", () => {
+            if (appState.profile && appState.localCreatedTeam) {
+                appState.profile = {
+                    ...appState.profile,
+                    teamName: appState.localCreatedTeam.name,
+                    teamInviteCode: appState.localCreatedTeam.inviteCode
+                };
+                persistLocalTeam();
+            }
+
             closeProfileModal();
             appState.dashboardSection = "team";
             persistDashboardSectionToStorage();
-            teamFlowState.noTeamView = "landing";
             clearStatus();
             render();
         });
@@ -4441,31 +4002,10 @@ function renderSignInFeedbackBlock(): string {
     return renderStatusBlock();
 }
 
-function syncPersonalFormDraftFromDom(): void {
-    if (!appState.profileFormDraft || !isHTMLElement(profileMount)) {
-        return;
-    }
-
-    const nameInput = profileMount.querySelector("#profileNameInput");
-    const groupInput = profileMount.querySelector("#profileGroupInput");
-
-    if (isHTMLInputElement(nameInput)) {
-        appState.profileFormDraft.fullName = nameInput.value;
-    }
-
-    if (isHTMLInputElement(groupInput)) {
-        const normalizedGroup = normalizeAcademicGroupInput(groupInput.value);
-        groupInput.value = normalizedGroup;
-        appState.profileFormDraft.group = normalizedGroup;
-    }
-}
-
 async function submitPersonalProfileSave(): Promise<void> {
     if (appState.profileModal !== "personal") {
         return;
     }
-
-    syncPersonalFormDraftFromDom();
 
     const draft = appState.profileFormDraft;
     const p = appState.profile;
@@ -4482,24 +4022,19 @@ async function submitPersonalProfileSave(): Promise<void> {
         return;
     }
 
-    if (!isProfileAvatarDataUrlWithinLimit(draft.avatarDataUrl)) {
-        setStatus(getProfileAvatarSizeLimitMessage(), "error");
-        render();
-        return;
-    }
-
     appState.profileEdits = {
         fullName: draft.fullName,
         group: draft.group,
         avatarDataUrl: draft.avatarDataUrl
     };
 
-    applyProfileEditsToInMemoryProfile();
-
     try {
         persistSavedProfileEdits();
     } catch {
-        setStatus(getProfileAvatarSizeLimitMessage(), "error");
+        setStatus(
+            "Не удалось сохранить в браузер (часто из‑за слишком большого фото). Попробуйте файл меньшего размера.",
+            "error"
+        );
         render();
         return;
     }
@@ -4512,11 +4047,6 @@ async function submitPersonalProfileSave(): Promise<void> {
 
     const session = loadSession();
     const putBody = buildPersonalProfilePutBody(p, draft);
-    const savedEdits: ProfileEdits = {
-        fullName: draft.fullName,
-        group: draft.group,
-        avatarDataUrl: draft.avatarDataUrl
-    };
 
     closeProfileModal();
 
@@ -4531,9 +4061,6 @@ async function submitPersonalProfileSave(): Promise<void> {
             try {
                 const updated = await updateProfile(session.token, putBody);
                 appState.profile = updated;
-                appState.profileEdits = savedEdits;
-                applyProfileEditsToInMemoryProfile();
-                persistSavedProfileEdits();
                 setStatus("Данные сохранены на сервере и в этом браузере.");
             } catch (error) {
                 setStatus(`Сохранено в браузере. Сервер: ${getErrorMessage(error)}`, "error");
@@ -4548,14 +4075,14 @@ async function submitPersonalProfileSave(): Promise<void> {
 }
 
 if (profileMount instanceof HTMLElement) {
-    profileMount.addEventListener("click", (event: MouseEvent) => {
-        const target = event.target;
+    profileMount.addEventListener("click", (e: MouseEvent) => {
+        const target = e.target;
         if (!(target instanceof Element)) {
             return;
         }
 
         if (target.closest("#profileSavePersonalButton")) {
-            event.preventDefault();
+            e.preventDefault();
             void submitPersonalProfileSave();
         }
     });

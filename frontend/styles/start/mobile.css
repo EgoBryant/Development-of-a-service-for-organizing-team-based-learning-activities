@@ -316,6 +316,28 @@
         gap: 12px;
     }
 
+    .team-history-panel {
+        height: 320px;
+        min-height: 320px;
+        max-height: 320px;
+        padding: 16px 14px 14px;
+        border-radius: 22px;
+    }
+
+    .team-history-empty-text {
+        font-size: 11px;
+        line-height: 1.6;
+        max-width: 280px;
+    }
+
+    .team-action-btn--blue {
+        min-width: 200px;
+    }
+
+    .team-action-btn--pink {
+        min-width: 150px;
+    }
+
     .team-top-bar {
         align-items: stretch;
         gap: 10px;
