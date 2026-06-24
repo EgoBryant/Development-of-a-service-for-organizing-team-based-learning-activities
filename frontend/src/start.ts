@@ -2850,18 +2850,6 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         fetchRatingUsers(token).catch(() => [])
     ]);
 
-<<<<<<< HEAD
-    const mergedTeams = mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam);
-    const mergedUsers = mergeSessionUserIntoRatingUsers(users, appState.profile);
-
-    setRatingData(mergedTeams, mergedUsers);
-
-    const userIds = [
-        ...mergedUsers.map((user) => user.id),
-        ...mergedTeams.flatMap((team) => team.members.map((member) => member.id))
-    ];
-    await refreshAchievementsForUsers(token, userIds);
-=======
     const avatarLookup = collectKnownUserAvatars({
         teamCatalog: appState.teamCatalog,
         currentTeam: appState.currentTeam,
@@ -2872,16 +2860,21 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
     const enrichedUsers = enrichRatingUsersWithKnownAvatars(users, avatarLookup);
     const enrichedTeams = enrichRatingTeamsWithKnownAvatars(teams, avatarLookup);
 
-    setRatingData(
-        mergeSessionTeamIntoRatingTeams(
-            enrichedTeams,
-            appState.profile,
-            appState.currentTeam,
-            appState.localCreatedTeam
-        ),
-        mergeSessionUserIntoRatingUsers(enrichedUsers, appState.profile)
+    const mergedTeams = mergeSessionTeamIntoRatingTeams(
+        enrichedTeams,
+        appState.profile,
+        appState.currentTeam,
+        appState.localCreatedTeam
     );
->>>>>>> 198596aba0ea257324efbbf741093cedbc0e60b7
+    const mergedUsers = mergeSessionUserIntoRatingUsers(enrichedUsers, appState.profile);
+
+    setRatingData(mergedTeams, mergedUsers);
+
+    const userIds = [
+        ...mergedUsers.map((user) => user.id),
+        ...mergedTeams.flatMap((team) => team.members.map((member) => member.id))
+    ];
+    await refreshAchievementsForUsers(token, userIds);
 }
 
 async function refreshTeamWorkspace(): Promise<void> {
