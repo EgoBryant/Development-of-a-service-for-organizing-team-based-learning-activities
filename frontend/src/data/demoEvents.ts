@@ -1,6 +1,6 @@
 import type { CalendarEventItem } from "../types/event";
 
-export const EVENTS_WEEKDAY_LABELS = ["ПН", "ВТ", "СР", "ЧТ"] as const;
+export const EVENTS_CALENDAR_YEAR = 2026;
 
 export const EVENTS_MONTH_LABELS = [
     "ЯНВАРЬ",
@@ -17,9 +17,9 @@ export const EVENTS_MONTH_LABELS = [
     "ДЕКАБРЬ"
 ] as const;
 
-/** Демо-неделя 1–4 июня 2026 (см. макет вкладки «События»). */
-export const DEMO_WEEK_CALENDAR_EVENTS: readonly CalendarEventItem[][] = [
-    [
+/** Демо-события июня 2026 (см. макет вкладки «События»). */
+export const DEMO_CALENDAR_EVENTS_BY_DATE: Readonly<Record<string, readonly CalendarEventItem[]>> = {
+    "2026-06-01": [
         {
             id: "ev-mon-checkin",
             topic: "CHECK-IN",
@@ -31,7 +31,7 @@ export const DEMO_WEEK_CALENDAR_EVENTS: readonly CalendarEventItem[][] = [
             isMine: true
         }
     ],
-    [
+    "2026-06-02": [
         {
             id: "ev-tue-workshop",
             topic: "Воркшоп «АГИТДУ»",
@@ -42,7 +42,9 @@ export const DEMO_WEEK_CALENDAR_EVENTS: readonly CalendarEventItem[][] = [
             endDateTime: "2026-06-02T15:30",
             isMine: false
         }
-    ],
-    [],
-    []
-];
+    ]
+};
+
+export function getDemoEventsForDateKey(dateKey: string): CalendarEventItem[] {
+    return [...(DEMO_CALENDAR_EVENTS_BY_DATE[dateKey] ?? [])];
+}

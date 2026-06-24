@@ -196,17 +196,33 @@
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-block {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-height: 0;
     margin-right: var(--events-content-inline-pad);
 }
 
+.profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-carousel-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-viewport {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-block {
-    flex: 0 0 auto;
+    --events-feed-block-height: 340px;
+    flex: 0 0 var(--events-feed-block-height);
+    height: var(--events-feed-block-height);
+    min-height: var(--events-feed-block-height);
+    max-height: var(--events-feed-block-height);
     margin-top: auto;
     margin-right: 0;
     width: calc(100% - var(--events-content-inline-pad));
     max-width: none;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-toolbar {
@@ -215,8 +231,8 @@
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-grid {
-    flex: 0 0 auto;
-    gap: clamp(18px, 2vw, 24px);
+    --events-calendar-gap: 12px;
+    gap: var(--events-calendar-gap);
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-toolbar-start,
@@ -231,19 +247,26 @@
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-day-card {
-    min-height: clamp(252px, 30vh, 300px);
-    padding: 14px;
-    gap: 12px;
+    height: auto;
+    min-height: clamp(210px, 36vh, 330px);
+    max-height: clamp(210px, 36vh, 330px);
+    padding: 34px 12px 12px;
+    gap: 0;
     background: rgba(245, 247, 255, 1);
     box-shadow: 0 12px 28px rgba(19, 60, 150, 0.1);
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-col-head {
-    box-shadow: 0 6px 16px rgba(19, 60, 150, 0.08);
+    box-shadow: 0 8px 18px rgba(19, 60, 150, 0.12);
+}
+
+.profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-list--cards .events-feed-list-badge {
+    background: rgba(255, 255, 255, 1);
+    color: rgba(36, 116, 255, 1);
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-col-body {
-    min-height: clamp(188px, 22vh, 228px);
+    min-height: 0;
     padding: 0;
     border-top: none;
 }
@@ -938,7 +961,6 @@
 .rating-filter-option:hover,
 .events-news-add-btn,
 .events-calendar-create-btn,
-.events-feed-tab.is-active,
 .events-calendar-scope-btn.is-active,
 .events-calendar-event-pill,
 .event-success-link-copy,

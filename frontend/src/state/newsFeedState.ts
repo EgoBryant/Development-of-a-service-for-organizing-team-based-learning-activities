@@ -1,6 +1,6 @@
 import type { NewsColorVariant, NewsPost, NewsPostPushInput } from "../types/news";
 
-const STORAGE_KEY = "team-exam-news-feed";
+const STORAGE_KEY = "team-exam-news-feed-v2";
 const MAX_ITEMS = 40;
 
 const COLOR_CYCLE: NewsColorVariant[] = ["pink", "blue", "green", "purple", "amber", "rose"];
@@ -68,13 +68,18 @@ function seedDemoNewsFeedIfEmpty(): void {
     const seeds: NewsPostPushInput[] = [
         {
             title: "Воркшоп команды",
-            body: "Команда «Организаторы» провела воркшоп «АГИТДУР» и получила бонусные баллы за активность.",
+            body: "Команда «Организаторы» провели воркшоп «АГиТДУ: сдать нельзя отчислиться»",
             authorName: "Организатор",
             pointsLabel: "50 баллов"
         },
         {
-            title: "Челлендж недели",
-            body: "Челлендж «Неделя сплочённости» выполнила команда «Синхрон» — начислены дополнительные баллы.",
+            title: "Переход в лигу",
+            body: "Валерий Салимгареев перешёл в лигу «Профи»",
+            authorName: "Система"
+        },
+        {
+            title: "Челлендж выполнен",
+            body: "Егор Шадрин успешно выполнил челлендж «Ночной дозор»",
             authorName: "Куратор",
             pointsLabel: "25 баллов"
         }
@@ -100,9 +105,10 @@ export function pushNewsPost(input: NewsPostPushInput): NewsPost {
         id: `news-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: input.title.trim(),
         body: input.body.trim(),
-        authorName: (input.authorName?.trim() || "Организатор"),
+        authorName: input.authorName?.trim() || "Организатор",
         createdAt: new Date().toISOString(),
-        colorVariant: nextColorVariant()
+        colorVariant: nextColorVariant(),
+        pointsLabel: input.pointsLabel
     };
 
     newsFeedItems.unshift(item);

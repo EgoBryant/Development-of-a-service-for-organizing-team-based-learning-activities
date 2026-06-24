@@ -50,7 +50,7 @@ export interface AppState {
     teamRescueDraft: TeamRescueDraft | null;
     eventsCalendarScope: EventsCalendarScope;
     eventsFeedTab: EventsFeedTab;
-    eventsWeekOffset: number;
+    eventsCalendarStartIndex: number;
     eventsModal: EventsModalKind;
     eventsCreateDraft: EventCreateDraft | null;
     eventsShowValidationError: boolean;
