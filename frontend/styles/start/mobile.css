@@ -789,7 +789,7 @@
         box-sizing: border-box;
     }
 
-    .profile-modal-card.profile-modal-card--shell,
+    .profile-modal-card.profile-modal-card--shell:not(.team-vote-card),
     .profile-modal-card-achievement {
         width: min(calc(100vw - 24px), calc(100dvh - 24px), 500px);
         height: min(calc(100vw - 24px), calc(100dvh - 24px), 500px);
@@ -971,6 +971,7 @@
         min-height: 44px;
         padding-right: 38px;
         font-size: 11px;
+        position: relative;
     }
 
     .team-vote-card .team-vote-dropdown {
@@ -1035,11 +1036,13 @@
         flex: 1 1 auto;
         min-height: 0;
         --team-rescue-control-height: 47px;
+        --team-rescue-control-width: 118px;
         --team-rescue-duo-gap: 8px;
         --team-rescue-duo-btn-width: calc((100% - var(--team-rescue-duo-gap)) / 2);
         --team-rescue-title-field-gap: 40px;
         --team-rescue-field-width: 100%;
         --team-rescue-block-width: 100%;
+        --team-rescue-btn-font-size: 11px;
         gap: 10px;
     }
 
@@ -1049,6 +1052,14 @@
         width: 100%;
         font-size: 20px;
         letter-spacing: 0.12em;
+        text-align: center;
+        font-weight: 900;
+        text-transform: uppercase;
+        background: var(--exam-button-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-dots {
@@ -1101,6 +1112,12 @@
         height: 47px;
         padding: 12px 18px;
         margin-top: calc(var(--team-rescue-title-field-gap, 40px) - 10px);
+        border: none;
+        background: var(--exam-button-gradient);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(120, 124, 254, 0.28);
+        font-weight: 800;
+        letter-spacing: 0.1em;
     }
 
     .team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page {
@@ -1190,10 +1207,41 @@
         min-width: 0;
     }
 
-    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--duo {
-        min-height: 44px;
-        padding: 12px 14px;
-        font-size: 11px;
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-control-btn,
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-tag-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 999px;
+        background: var(--exam-button-gradient);
+        color: #ffffff;
+        font-family: "Montserrat", sans-serif;
+        font-size: var(--team-rescue-btn-font-size, 11px);
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 10px 22px rgba(27, 96, 222, 0.22);
+        cursor: pointer;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row {
+        background: rgba(230, 235, 245, 1);
+        border-radius: 26px;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-textarea--description {
+        background: rgba(230, 235, 245, 1);
+        color: rgba(23, 45, 157, 1);
+        text-align: left;
+        text-transform: none;
+    }
+
+    .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name {
+        background: transparent;
+        color: rgba(23, 45, 157, 1);
+        text-align: left;
+        text-transform: none;
     }
 
     .team-rescue-topic-row,
@@ -1222,8 +1270,8 @@
         justify-self: stretch;
     }
 
-    .team-rescue-field,
-    .team-rescue-textarea,
+    .event-create-modal .team-rescue-field,
+    .event-create-modal .team-rescue-textarea,
     .event-create-modal .team-rescue-field--tag,
     .event-create-modal .team-rescue-field--duo,
     .event-create-modal .team-rescue-select.team-rescue-field--tag,
@@ -1235,7 +1283,6 @@
         letter-spacing: 0.04em;
     }
 
-    .team-rescue-textarea,
     .event-create-modal .team-rescue-textarea {
         min-height: 108px;
         border-radius: 22px;
@@ -1251,7 +1298,7 @@
         font-size: 11px;
     }
 
-    .team-rescue-submit,
+    .team-rescue-submit:not(.team-rescue-submit--wide),
     .event-success-done {
         width: 100%;
         min-width: 0;
@@ -3148,7 +3195,7 @@
         display: none;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) > .team-rescue-mobile-action {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-rescue-mobile-action {
         position: fixed;
         left: 50%;
         bottom: calc(14px + 76px + 12px);
@@ -3172,7 +3219,7 @@
         pointer-events: auto;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) > .team-rescue-mobile-action::before {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-rescue-mobile-action::before {
         content: "";
         width: 40px;
         height: 40px;
@@ -3180,7 +3227,7 @@
         display: block;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) > .team-rescue-mobile-action:disabled {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-rescue-mobile-action:disabled {
         opacity: 0.5;
         cursor: not-allowed;
         box-shadow: none;
@@ -3254,15 +3301,25 @@
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-card--team-page.profile-modal-card {
         width: calc(100vw - 20px);
         max-width: calc(100vw - 20px);
+        min-height: min(560px, calc(100dvh - 104px));
         max-height: calc(100dvh - 104px);
         padding: 24px 12px 98px;
         border-radius: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
     }
 
     .team-overlay-modal.profile-modal--shell .team-vote-card.profile-modal-card.profile-modal-card--shell {
         width: calc(100vw - 20px);
         max-width: calc(100vw - 20px);
+        min-height: 0;
         max-height: calc(100dvh - 104px);
+        aspect-ratio: auto;
+        padding: 28px 14px 18px;
+        border-radius: 24px;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .team-vote-card .team-vote-display-row {
@@ -3275,6 +3332,14 @@
         width: 100%;
         font-size: 18px;
         letter-spacing: 0.12em;
+        text-align: center;
+        font-weight: 900;
+        text-transform: uppercase;
+        background: var(--exam-button-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-dots {
@@ -3285,9 +3350,11 @@
     }
 
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page {
+        --team-rescue-control-width: 108px;
         --team-rescue-duo-gap: 8px;
         --team-rescue-duo-btn-width: calc((100% - var(--team-rescue-duo-gap)) / 2);
         --team-rescue-title-field-gap: 40px;
+        --team-rescue-btn-font-size: 10px;
         gap: 8px;
     }
 
@@ -3320,6 +3387,12 @@
         min-width: var(--team-rescue-duo-btn-width);
         max-width: var(--team-rescue-duo-btn-width);
         margin-top: calc(var(--team-rescue-title-field-gap, 40px) - 8px);
+        border: none;
+        background: var(--exam-button-gradient);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(120, 124, 254, 0.28);
+        font-weight: 800;
+        letter-spacing: 0.1em;
     }
 
     .team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page {
@@ -3643,7 +3716,7 @@
         font-size: 12px;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) > .team-rescue-mobile-action {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-rescue-mobile-action {
         bottom: calc(22px + 86px + 14px);
         width: 48px;
         min-width: 48px;
@@ -3651,7 +3724,7 @@
         min-height: 48px;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) > .team-rescue-mobile-action::before {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-rescue-mobile-action::before {
         width: 48px;
         height: 48px;
     }
@@ -5565,32 +5638,6 @@
         color: #ffffff;
         font-weight: 800;
     }
-
-    /* Rescue modal readability */
-    .team-rescue-modal .team-rescue-field,
-    .team-rescue-modal .team-rescue-textarea,
-    .team-rescue-modal .team-rescue-tag-trigger,
-    .team-rescue-modal .team-rescue-control-btn {
-        background: #ffffff !important;
-        color: rgba(24, 45, 110, 0.98) !important;
-        border: 1px solid rgba(95, 130, 220, 0.3) !important;
-        font-size: 13px !important;
-        font-weight: 700 !important;
-    }
-
-    .team-rescue-modal .team-rescue-field::placeholder,
-    .team-rescue-modal .team-rescue-textarea::placeholder {
-        color: rgba(95, 115, 170, 0.92) !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        opacity: 1;
-    }
-
-    .team-rescue-modal .team-rescue-field:focus,
-    .team-rescue-modal .team-rescue-textarea:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(120, 124, 254, 0.3) !important;
-    }
 }
 
 /* ABSOLUTE FINAL OVERRIDES FOR PUBLIC RATING PROFILES */
@@ -5737,17 +5784,5 @@
         font-size: 22px !important;
         font-weight: 800 !important;
         line-height: 1 !important;
-    }
-
-    .team-rescue-modal .team-rescue-form--team-page .team-rescue-field--duo,
-    .team-rescue-modal .team-rescue-form--team-page .team-rescue-datepicker,
-    .team-rescue-modal .team-rescue-form--team-page .team-rescue-control-btn,
-    .team-rescue-modal .team-rescue-form--team-page .team-rescue-select.team-rescue-field--duo {
-        min-height: 44px !important;
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        color: rgba(24, 45, 110, 0.98) !important;
-        background: #ffffff !important;
-        border: 1px solid rgba(95, 130, 220, 0.35) !important;
     }
 }
