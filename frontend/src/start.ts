@@ -24,6 +24,12 @@ import {
     renderTeamPageModals,
     wireTeamPageEvents
 } from "./pages/TeamPage";
+import {
+    getSettingsGroupDisplay,
+    getSettingsNameDisplay,
+    getSettingsPhotoDisplay,
+    renderSettingsPageMain
+} from "./pages/SettingsPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
 import {
@@ -148,6 +154,11 @@ const appState: AppState = {
     profileFindTeamSelectedId: null,
     profileInviteLink: "",
     profileFormDraft: null,
+    profileAvatarFileName: "",
+    settingsPhotoOriginalAvatarDataUrl: null,
+    settingsPhotoOriginalFileName: "",
+    settingsPhotoPendingAvatarDataUrl: null,
+    settingsPhotoErrorMessage: "",
     dashboardSection: "profile",
     teamModal: "none",
     teamRescueDraft: null,
@@ -187,6 +198,7 @@ const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
 const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 767px)";
+const DESKTOP_DASHBOARD_QUERY = "(min-width: 768px)";
 const MOBILE_BOTTOM_NAV_CLOSED_HEIGHT = 76;
 const MOBILE_BOTTOM_NAV_OPEN_HEIGHT = 116;
 const MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY = 1.35;
@@ -342,10 +354,25 @@ async function submitTeamCheckIn(weekNumber: number, reportText: string): Promis
     await refreshTeamWorkspace();
 }
 
+function parseVoteTargetUserId(memberId: string): number | null {
+    const trimmed = memberId.trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    const prefixedMatch = /^user-(\d+)$/i.exec(trimmed);
+    if (prefixedMatch) {
+        return Number(prefixedMatch[1]);
+    }
+
+    const numericId = Number(trimmed);
+    return Number.isFinite(numericId) && numericId > 0 ? numericId : null;
+}
+
 async function submitTeamVote(memberId: string, score: number): Promise<void> {
     const token = getSessionToken();
-    const numericMemberId = Number(memberId);
-    if (!token || !Number.isFinite(numericMemberId) || numericMemberId <= 0) {
+    const numericMemberId = parseVoteTargetUserId(memberId);
+    if (!token || numericMemberId === null) {
         pushUserActivity({
             kind: "team_achievement",
             title: "ГОЛОС КОМАНДЫ",
@@ -355,7 +382,6 @@ async function submitTeamVote(memberId: string, score: number): Promise<void> {
     }
 
     await createVote(token, numericMemberId, score);
-    appState.teamMyVotes = await fetchMyVotes(token).catch(() => appState.teamMyVotes);
     await refreshTeamWorkspace();
 }
 
@@ -1629,9 +1655,13 @@ function hydrateProfileClientStateFromStorage(): void {
         data.dashboardSection === "profile" ||
         data.dashboardSection === "team" ||
         data.dashboardSection === "rating" ||
-        data.dashboardSection === "events"
+        data.dashboardSection === "events" ||
+        data.dashboardSection === "settings"
     ) {
-        appState.dashboardSection = data.dashboardSection;
+        appState.dashboardSection =
+            data.dashboardSection === "settings" && !isDesktopDashboardLayout()
+                ? "profile"
+                : data.dashboardSection;
     }
 }
 
@@ -2279,6 +2309,12 @@ async function refreshTeamWorkspace(): Promise<void> {
     }
 
     try {
+        appState.teamMyVotes = await fetchMyVotes(token);
+    } catch {
+        appState.teamMyVotes = [];
+    }
+
+    try {
         const teamData = await fetchMyTeam(token);
         
         if (teamData) {
@@ -2418,10 +2454,14 @@ function getTeamMembersForView(): TeamMemberView[] {
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
             avatarUrl: member.avatarUrl,
             userPoints: member.userPoints,
-            canVote: member.id !== currentUserId && !voteByTarget.has(member.id),
+            canVote: member.id !== currentUserId,
             voteScore: voteByTarget.get(member.id) ?? null
         }));
     }
+
+    const voteByTargetId = new Map(
+        appState.teamMyVotes.map((vote) => [String(vote.toUserId), vote.score])
+    );
 
     return getTeamRoster().map((member) => ({
         id: member.id,
@@ -2429,7 +2469,7 @@ function getTeamMembersForView(): TeamMemberView[] {
         roleLabel: member.roleLabel,
         avatarUrl: member.avatarUrl,
         canVote: member.id !== `user-${currentUserId ?? ""}`,
-        voteScore: null
+        voteScore: voteByTargetId.get(member.id) ?? null
     }));
 }
 
@@ -2877,7 +2917,10 @@ function renderTeamModal(): string {
     if (appState.teamModal === "vote") {
         const roster = getTeamRoster();
         const member = roster[appState.teamVoteMemberIndex] ?? roster[0];
-        const existingVote = member ? appState.teamMyVotes.find((vote) => String(vote.toUserId) === member.id) : undefined;
+        const memberUserId = member ? parseVoteTargetUserId(member.id) : null;
+        const existingVote = memberUserId !== null
+            ? appState.teamMyVotes.find((vote) => vote.toUserId === memberUserId)
+            : undefined;
         const voteAvatarInner = member?.avatarUrl
             ? `<img src="${escapeHtml(member.avatarUrl)}" alt="" loading="lazy">`
             : "";
@@ -2889,7 +2932,6 @@ function renderTeamModal(): string {
                     type="button"
                     class="team-vote-score${existingVote?.score === score ? " is-active" : ""}"
                     data-team-vote-score="${score}"
-                    ${existingVote ? "disabled" : ""}
                 >${score}</button>`)
             .join("");
 
@@ -2909,7 +2951,7 @@ function renderTeamModal(): string {
                 <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
                     ${voteButtons}
                 </div>
-                ${existingVote ? `<p class="team-vote-hint">Ваша оценка уже сохранена.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
+                ${existingVote ? `<p class="team-vote-hint">Вы можете изменить оценку от 1 до 5.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
             `
         });
     }
@@ -3103,17 +3145,496 @@ function tryOpenNoTeamModal(): boolean {
     return true;
 }
 
+function isDesktopDashboardLayout(): boolean {
+    return window.matchMedia(DESKTOP_DASHBOARD_QUERY).matches;
+}
+
+function createProfileFormDraftFromDisplay(): ProfileEdits {
+    return {
+        fullName: getFullNameDisplay(),
+        group: getGroupDisplay(),
+        avatarDataUrl: getAvatarDisplay() || null
+    };
+}
+
+function isPersonalProfileEditingOpen(): boolean {
+    return (
+        appState.profileModal === "personal" ||
+        (appState.dashboardSection === "settings" && isDesktopDashboardLayout())
+    );
+}
+
+function openSettingsView(): void {
+    if (isDesktopDashboardLayout()) {
+        appState.teamModal = "none";
+        appState.eventsModal = "none";
+        appState.profileModal = "none";
+        appState.dashboardSection = "settings";
+        appState.profileFormDraft = createProfileFormDraftFromDisplay();
+        appState.settingsPhotoOriginalAvatarDataUrl = null;
+        appState.settingsPhotoOriginalFileName = "";
+        appState.settingsPhotoPendingAvatarDataUrl = null;
+        appState.settingsPhotoErrorMessage = "";
+        persistDashboardSectionToStorage();
+        clearStatus();
+        render();
+        return;
+    }
+
+    openProfileModal("personal");
+}
+
+const SETTINGS_FIELD_EDIT_LABEL = "ИЗМЕНИТЬ";
+const SETTINGS_FIELD_APPLY_LABEL = "ПРИМЕНИТЬ";
+const SETTINGS_FIELD_SELECT_LABEL = "ВЫБРАТЬ";
+
+function updateSettingsFieldDisplay(node: HTMLElement, display: { text: string; isPlaceholder: boolean }): void {
+    node.textContent = display.text;
+    node.classList.toggle("is-placeholder", display.isPlaceholder);
+    node.classList.toggle("is-filled", !display.isPlaceholder);
+}
+
+function syncSettingsFieldDisplaysFromDraft(): void {
+    if (!isHTMLElement(profileMount) || !appState.profileFormDraft) {
+        return;
+    }
+
+    const draft = appState.profileFormDraft;
+
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-photo-label]").forEach((node) => {
+        const photoDataUrl = appState.settingsPhotoPendingAvatarDataUrl ?? draft.avatarDataUrl;
+        updateSettingsFieldDisplay(node, getSettingsPhotoDisplay(photoDataUrl, appState.profileAvatarFileName));
+    });
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-name-label]").forEach((node) => {
+        updateSettingsFieldDisplay(node, getSettingsNameDisplay(draft.fullName));
+    });
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-group-label]").forEach((node) => {
+        updateSettingsFieldDisplay(node, getSettingsGroupDisplay(draft.group));
+    });
+}
+
+function getSettingsEditInput(rowKey: "name" | "group"): HTMLInputElement | null {
+    if (!isHTMLElement(profileMount)) {
+        return null;
+    }
+
+    const inputId = rowKey === "name" ? "profileNameInput" : "profileGroupInput";
+    const input = profileMount.querySelector(`#${inputId}`);
+    return isHTMLInputElement(input) ? input : null;
+}
+
+function getSettingsEditButton(row: HTMLElement): HTMLButtonElement | null {
+    const button = row.querySelector<HTMLButtonElement>("[data-settings-edit]");
+    return button ?? null;
+}
+
+function getSettingsFieldOriginalValue(rowKey: "name" | "group"): string {
+    if (rowKey === "name") {
+        return (appState.profileFormDraft?.fullName ?? getFullNameDisplay()).trim();
+    }
+
+    return normalizeAcademicGroupInput(appState.profileFormDraft?.group ?? getGroupDisplay());
+}
+
+function getSettingsFieldCurrentValue(rowKey: "name" | "group", input: HTMLInputElement): string {
+    if (rowKey === "group") {
+        return normalizeAcademicGroupInput(input.value);
+    }
+
+    return input.value.trim();
+}
+
+function getSettingsPhotoRow(): HTMLElement | null {
+    if (!isHTMLElement(profileMount)) {
+        return null;
+    }
+
+    return profileMount.querySelector<HTMLElement>(".settings-dashboard-main [data-settings-row='photo']");
+}
+
+function getSettingsPhotoFileInput(): HTMLInputElement | null {
+    if (!isHTMLElement(profileMount)) {
+        return null;
+    }
+
+    const input = profileMount.querySelector<HTMLInputElement>("#settingsProfileAvatarInput");
+    return isHTMLInputElement(input) ? input : null;
+}
+
+function setSettingsPhotoError(message: string): void {
+    appState.settingsPhotoErrorMessage = message;
+
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    const errorNode = profileMount.querySelector<HTMLElement>("#settingsPhotoError");
+    if (!errorNode) {
+        return;
+    }
+
+    if (message.trim()) {
+        errorNode.textContent = message;
+        errorNode.hidden = false;
+    } else {
+        errorNode.textContent = "";
+        errorNode.hidden = true;
+    }
+}
+
+function clearSettingsPhotoError(): void {
+    setSettingsPhotoError("");
+}
+
+function resetSettingsPhotoButton(button: HTMLButtonElement): void {
+    button.textContent = SETTINGS_FIELD_SELECT_LABEL;
+    button.disabled = false;
+    button.classList.remove("is-editing-idle", "is-apply-ready");
+}
+
+function updateSettingsPhotoButtonState(row: HTMLElement): void {
+    const button = getSettingsEditButton(row);
+    if (!button || !row.classList.contains("is-editing")) {
+        return;
+    }
+
+    const originalAvatar = appState.settingsPhotoOriginalAvatarDataUrl ?? null;
+    const pendingAvatar = appState.settingsPhotoPendingAvatarDataUrl;
+    const changed = pendingAvatar !== null && (
+        pendingAvatar !== originalAvatar ||
+        appState.profileAvatarFileName !== appState.settingsPhotoOriginalFileName
+    );
+
+    button.textContent = changed ? SETTINGS_FIELD_APPLY_LABEL : SETTINGS_FIELD_SELECT_LABEL;
+    button.disabled = !changed;
+    button.classList.toggle("is-editing-idle", !changed);
+    button.classList.toggle("is-apply-ready", changed);
+}
+
+function exitSettingsPhotoEditRow(row: HTMLElement, revert = true): void {
+    if (revert && appState.profileFormDraft) {
+        appState.profileFormDraft.avatarDataUrl = appState.settingsPhotoOriginalAvatarDataUrl ?? null;
+        appState.profileAvatarFileName = appState.settingsPhotoOriginalFileName;
+    }
+
+    appState.settingsPhotoPendingAvatarDataUrl = null;
+    appState.settingsPhotoOriginalAvatarDataUrl = null;
+    appState.settingsPhotoOriginalFileName = "";
+    clearSettingsPhotoError();
+
+    const avatarInput = getSettingsPhotoFileInput();
+    if (avatarInput) {
+        avatarInput.value = "";
+    }
+
+    row.classList.remove("is-editing");
+
+    const button = getSettingsEditButton(row);
+    if (button) {
+        resetSettingsPhotoButton(button);
+    }
+
+    syncSettingsFieldDisplaysFromDraft();
+}
+
+function beginSettingsPhotoEdit(row: HTMLElement): void {
+    closeSettingsEditRows(row);
+    clearSettingsPhotoError();
+
+    appState.settingsPhotoOriginalAvatarDataUrl = appState.profileFormDraft?.avatarDataUrl ?? null;
+    appState.settingsPhotoOriginalFileName = appState.profileAvatarFileName;
+    appState.settingsPhotoPendingAvatarDataUrl = null;
+
+    row.classList.add("is-editing");
+    updateSettingsPhotoButtonState(row);
+    syncSettingsFieldDisplaysFromDraft();
+
+    getSettingsPhotoFileInput()?.click();
+}
+
+async function applySettingsPhotoEdit(row: HTMLElement): Promise<void> {
+    const pendingAvatar = appState.settingsPhotoPendingAvatarDataUrl;
+    if (!pendingAvatar || !appState.profileFormDraft) {
+        return;
+    }
+
+    if (!isProfileAvatarDataUrlWithinLimit(pendingAvatar)) {
+        setSettingsPhotoError(getProfileAvatarSizeLimitMessage());
+        updateSettingsPhotoButtonState(row);
+        return;
+    }
+
+    appState.profileFormDraft.avatarDataUrl = pendingAvatar;
+    clearSettingsPhotoError();
+
+    const saved = await submitPersonalProfileSave({ silent: true, skipRender: true });
+    if (!saved) {
+        updateSettingsPhotoButtonState(row);
+        return;
+    }
+
+    exitSettingsPhotoEditRow(row, false);
+}
+
+function handleSettingsPhotoFileSelected(file: File, row: HTMLElement): void {
+    if (!isProfileAvatarFileWithinLimit(file)) {
+        const avatarInput = getSettingsPhotoFileInput();
+        if (avatarInput) {
+            avatarInput.value = "";
+        }
+
+        appState.settingsPhotoPendingAvatarDataUrl = null;
+        setSettingsPhotoError(getProfileAvatarSizeLimitMessage());
+        syncSettingsFieldDisplaysFromDraft();
+        updateSettingsPhotoButtonState(row);
+        return;
+    }
+
+    clearSettingsPhotoError();
+    const reader = new FileReader();
+    reader.onload = () => {
+        if (typeof reader.result !== "string") {
+            return;
+        }
+
+        appState.settingsPhotoPendingAvatarDataUrl = reader.result;
+        appState.profileAvatarFileName = file.name;
+
+        const photoRow = getSettingsPhotoRow();
+        if (!photoRow) {
+            return;
+        }
+
+        syncSettingsFieldDisplaysFromDraft();
+        updateSettingsPhotoButtonState(photoRow);
+    };
+    reader.readAsDataURL(file);
+}
+
+function resetSettingsEditButton(button: HTMLButtonElement): void {
+    button.textContent = SETTINGS_FIELD_EDIT_LABEL;
+    button.disabled = false;
+    button.classList.remove("is-editing-idle", "is-apply-ready");
+}
+
+function canApplySettingsFieldEdit(rowKey: "name" | "group", input: HTMLInputElement, originalValue: string): boolean {
+    const currentValue = getSettingsFieldCurrentValue(rowKey, input);
+    if (currentValue === originalValue) {
+        return false;
+    }
+
+    if (rowKey === "group") {
+        return isAcademicGroupValid(currentValue);
+    }
+
+    return true;
+}
+
+function updateSettingsEditButtonState(row: HTMLElement, rowKey: "name" | "group"): void {
+    const button = getSettingsEditButton(row);
+    const input = getSettingsEditInput(rowKey);
+    const originalValue = row.dataset.settingsOriginalValue ?? "";
+
+    if (!button || !input || !row.classList.contains("is-editing")) {
+        return;
+    }
+
+    const changed = getSettingsFieldCurrentValue(rowKey, input) !== originalValue;
+    const canApply = canApplySettingsFieldEdit(rowKey, input, originalValue);
+
+    button.textContent = changed ? SETTINGS_FIELD_APPLY_LABEL : SETTINGS_FIELD_EDIT_LABEL;
+    button.disabled = !canApply;
+    button.classList.toggle("is-editing-idle", !canApply);
+    button.classList.toggle("is-apply-ready", canApply);
+}
+
+function exitSettingsEditRow(row: HTMLElement, revert = true): void {
+    const rowKey = row.dataset.settingsRow;
+    if (rowKey !== "name" && rowKey !== "group") {
+        return;
+    }
+
+    const input = getSettingsEditInput(rowKey);
+    const originalValue = row.dataset.settingsOriginalValue ?? "";
+
+    if (revert && input) {
+        input.value = rowKey === "group" ? normalizeAcademicGroupInput(originalValue) : originalValue;
+        if (appState.profileFormDraft) {
+            if (rowKey === "name") {
+                appState.profileFormDraft.fullName = input.value;
+            } else {
+                appState.profileFormDraft.group = input.value;
+            }
+        }
+    }
+
+    row.classList.remove("is-editing");
+    delete row.dataset.settingsOriginalValue;
+
+    const button = getSettingsEditButton(row);
+    if (button) {
+        resetSettingsEditButton(button);
+    }
+}
+
+function beginSettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): void {
+    closeSettingsEditRows(row);
+
+    const originalValue = getSettingsFieldOriginalValue(rowKey);
+    row.dataset.settingsOriginalValue = originalValue;
+    row.classList.add("is-editing");
+
+    const input = getSettingsEditInput(rowKey);
+    if (input) {
+        input.value = originalValue;
+        input.focus();
+        input.select();
+    }
+
+    updateSettingsEditButtonState(row, rowKey);
+}
+
+async function applySettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): Promise<void> {
+    const input = getSettingsEditInput(rowKey);
+    if (!input || !appState.profileFormDraft) {
+        return;
+    }
+
+    if (rowKey === "name") {
+        appState.profileFormDraft.fullName = input.value.trim();
+    } else {
+        const normalizedGroup = normalizeAcademicGroupInput(input.value);
+        input.value = normalizedGroup;
+        appState.profileFormDraft.group = normalizedGroup;
+
+        if (!isAcademicGroupValid(normalizedGroup)) {
+            setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
+            updateSettingsEditButtonState(row, rowKey);
+            return;
+        }
+    }
+
+    clearStatus();
+    const saved = await submitPersonalProfileSave({ silent: true, skipRender: true });
+    if (!saved) {
+        updateSettingsEditButtonState(row, rowKey);
+        return;
+    }
+
+    exitSettingsEditRow(row, false);
+    syncSettingsFieldDisplaysFromDraft();
+}
+
+function closeSettingsEditRows(exceptRow?: HTMLElement): void {
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    profileMount.querySelectorAll<HTMLElement>(".settings-field-row.is-editing").forEach((row) => {
+        if (row !== exceptRow) {
+            if (row.dataset.settingsRow === "photo") {
+                exitSettingsPhotoEditRow(row, true);
+            } else {
+                exitSettingsEditRow(row, true);
+            }
+        }
+    });
+}
+
+function wireSettingsPageEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.dashboardSection !== "settings") {
+        return;
+    }
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-settings-edit]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const rowKey = button.dataset.settingsEdit;
+            const row = button.closest<HTMLElement>("[data-settings-row]");
+            if (!row || !rowKey) {
+                return;
+            }
+
+            if (rowKey === "photo") {
+                if (button.classList.contains("is-apply-ready")) {
+                    void applySettingsPhotoEdit(row);
+                    return;
+                }
+
+                if (row.classList.contains("is-editing")) {
+                    return;
+                }
+
+                beginSettingsPhotoEdit(row);
+                return;
+            }
+
+            if (rowKey !== "name" && rowKey !== "group") {
+                return;
+            }
+
+            if (button.classList.contains("is-apply-ready")) {
+                void applySettingsFieldEdit(row, rowKey);
+                return;
+            }
+
+            if (row.classList.contains("is-editing")) {
+                getSettingsEditInput(rowKey)?.focus();
+                return;
+            }
+
+            beginSettingsFieldEdit(row, rowKey);
+        });
+    });
+
+    const avatarInput = getSettingsPhotoFileInput();
+    if (avatarInput) {
+        avatarInput.addEventListener("change", () => {
+            const file = avatarInput.files?.[0];
+            const row = getSettingsPhotoRow();
+            if (!file || !row || !row.classList.contains("is-editing")) {
+                return;
+            }
+
+            handleSettingsPhotoFileSelected(file, row);
+        });
+    }
+
+    if (appState.settingsPhotoErrorMessage) {
+        setSettingsPhotoError(appState.settingsPhotoErrorMessage);
+    }
+
+    const personalNameInput = profileMount.querySelector("#profileNameInput");
+    if (isHTMLInputElement(personalNameInput) && appState.profileFormDraft) {
+        personalNameInput.addEventListener("input", () => {
+            appState.profileFormDraft!.fullName = personalNameInput.value;
+            const row = personalNameInput.closest<HTMLElement>("[data-settings-row]");
+            if (row) {
+                updateSettingsEditButtonState(row, "name");
+            }
+        });
+    }
+
+    const personalGroupInput = profileMount.querySelector("#profileGroupInput");
+    if (isHTMLInputElement(personalGroupInput) && appState.profileFormDraft) {
+        personalGroupInput.addEventListener("input", () => {
+            const normalizedValue = normalizeAcademicGroupInput(personalGroupInput.value);
+            personalGroupInput.value = normalizedValue;
+            appState.profileFormDraft!.group = normalizedValue;
+            const row = personalGroupInput.closest<HTMLElement>("[data-settings-row]");
+            if (row) {
+                updateSettingsEditButtonState(row, "group");
+            }
+        });
+    }
+}
+
 function openProfileModal(kind: ProfileModalKind): void {
     appState.teamModal = "none";
     appState.eventsModal = "none";
     appState.profileModal = kind;
 
     if (kind === "personal") {
-        appState.profileFormDraft = {
-            fullName: getFullNameDisplay(),
-            group: getGroupDisplay(),
-            avatarDataUrl: getAvatarDisplay() || null
-        };
+        appState.profileFormDraft = createProfileFormDraftFromDisplay();
     }
 
     render();
@@ -3187,6 +3708,7 @@ function renderProfileModal(): string {
             return renderProfileModalShell({
                 ariaLabel: "Личные данные",
                 closeButtonId: "profileClosePersonalButton",
+                extraModalClass: "profile-modal--form",
                 extraCardClass: "profile-modal-card--form",
                 bodyHtml: `
                     <h2 class="profile-shell-title">ЛИЧНЫЕ ДАННЫЕ</h2>
@@ -3211,7 +3733,6 @@ function renderProfileModal(): string {
                             spellcheck="false"
                         >
                         <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePersonalButton">СОХРАНИТЬ</button>
-                        <button type="button" class="profile-modal-text" id="profileOpenPasswordButton">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</button>
                     </div>
                 `
             });
@@ -3515,12 +4036,17 @@ function renderProfileView(): void {
         return;
     }
 
-    const statusHtml = "";
+    if (!isDesktopDashboardLayout() && appState.dashboardSection === "settings") {
+        appState.dashboardSection = "profile";
+    }
+
+    const statusHtml = renderStatusBlock();
 
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
+    const navSettingsActive = appState.dashboardSection === "settings" ? " is-active" : "";
     const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
     const extraNavHtml = `
                     <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
@@ -3533,7 +4059,13 @@ function renderProfileView(): void {
               ? renderRatingPageMain(statusHtml)
               : appState.dashboardSection === "events"
                 ? renderEventsDashboardMain(statusHtml)
-                : renderProfileMainHtml();
+                : appState.dashboardSection === "settings"
+                  ? renderSettingsPageMain(
+                      statusHtml,
+                      appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
+                      appState.profileAvatarFileName
+                  )
+                  : renderProfileMainHtml();
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
@@ -3559,7 +4091,7 @@ function renderProfileView(): void {
                     ${extraNavHtml}
                 </nav>
                 <nav class="profile-nav-bottom">
-                    <button type="button" class="profile-nav-button" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">НАСТРОЙКИ</span></button>
+                    <button type="button" class="profile-nav-button${navSettingsActive}" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">НАСТРОЙКИ</span></button>
                     <button type="button" class="profile-nav-button" id="profileLogoutButton"><img class="profile-nav-icon" src="${logoutMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПОКИНУТЬ</span></button>
                 </nav>
             </aside>
@@ -4007,7 +4539,7 @@ function wireProfileViewEvents(): void {
     const settingsButton = profileMount.querySelector("#profileSettingsButton");
     if (isHTMLButtonElement(settingsButton)) {
         settingsButton.addEventListener("click", () => {
-            openProfileModal("personal");
+            openSettingsView();
         });
     }
 
@@ -4071,6 +4603,9 @@ function wireProfileViewEvents(): void {
     if (appState.dashboardSection === "team" && isHTMLElement(profileMount)) {
         wireTeamPageEvents(profileMount);
     }
+    if (appState.dashboardSection === "settings") {
+        wireSettingsPageEvents();
+    }
     wireEventsDashboardEvents();
     wireEventsModalEvents();
 
@@ -4098,10 +4633,15 @@ function wireProfileViewEvents(): void {
                 return;
             }
 
+            const numericMemberId = parseVoteTargetUserId(memberId);
+            const hadExistingVote = numericMemberId !== null
+                && appState.teamMyVotes.some((vote) => vote.toUserId === numericMemberId);
+
             void submitTeamVote(memberId, score)
                 .then(() => {
-                    setStatus("Голос сохранен.");
+                    setStatus(hadExistingVote ? "Оценка изменена." : "Голос сохранен.");
                     closeTeamModal();
+                    render();
                 })
                 .catch((error: unknown) => {
                     setStatus(getErrorMessage(error), "error");
@@ -4324,6 +4864,10 @@ function wireProfileViewEvents(): void {
     const avatarInput = profileMount.querySelector("#profileAvatarInput");
     if (isHTMLInputElement(avatarInput) && appState.profileFormDraft) {
         avatarInput.addEventListener("change", () => {
+            if (appState.dashboardSection === "settings") {
+                return;
+            }
+
             const file = avatarInput.files?.[0];
             if (!file) {
                 return;
@@ -4726,9 +5270,16 @@ function syncPersonalFormDraftFromDom(): void {
     }
 }
 
-async function submitPersonalProfileSave(): Promise<void> {
-    if (appState.profileModal !== "personal") {
-        return;
+type PersonalProfileSaveOptions = {
+    silent?: boolean;
+    skipRender?: boolean;
+};
+
+async function submitPersonalProfileSave(options: PersonalProfileSaveOptions = {}): Promise<boolean> {
+    const { silent = false, skipRender = false } = options;
+
+    if (!isPersonalProfileEditingOpen()) {
+        return false;
     }
 
     syncPersonalFormDraftFromDom();
@@ -4736,22 +5287,34 @@ async function submitPersonalProfileSave(): Promise<void> {
     const draft = appState.profileFormDraft;
     const p = appState.profile;
     if (!draft || !p) {
-        setStatus("Откройте форму через «НАСТРОЙКИ» и попробуйте снова.", "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus("Откройте форму через «НАСТРОЙКИ» и попробуйте снова.", "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     draft.group = normalizeAcademicGroupInput(draft.group);
     if (!isAcademicGroupValid(draft.group)) {
-        setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     if (!isProfileAvatarDataUrlWithinLimit(draft.avatarDataUrl)) {
-        setStatus(getProfileAvatarSizeLimitMessage(), "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus(getProfileAvatarSizeLimitMessage(), "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     appState.profileEdits = {
@@ -4765,9 +5328,13 @@ async function submitPersonalProfileSave(): Promise<void> {
     try {
         persistSavedProfileEdits();
     } catch {
-        setStatus(getProfileAvatarSizeLimitMessage(), "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus(getProfileAvatarSizeLimitMessage(), "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     try {
@@ -4784,13 +5351,20 @@ async function submitPersonalProfileSave(): Promise<void> {
         avatarDataUrl: draft.avatarDataUrl
     };
 
-    closeProfileModal();
+    if (appState.profileModal === "personal") {
+        closeProfileModal();
+    } else {
+        appState.profileFormDraft = { ...savedEdits };
+        syncSettingsFieldDisplaysFromDraft();
+    }
 
-    pushUserActivity({
-        kind: "profile_updated",
-        title: "ПРОФИЛЬ ОБНОВЛЁН",
-        description: "Личные данные сохранены."
-    });
+    if (!silent) {
+        pushUserActivity({
+            kind: "profile_updated",
+            title: "ПРОФИЛЬ ОБНОВЛЁН",
+            description: "Личные данные сохранены."
+        });
+    }
 
     if (session) {
         void (async () => {
@@ -4800,17 +5374,28 @@ async function submitPersonalProfileSave(): Promise<void> {
                 appState.profileEdits = savedEdits;
                 applyProfileEditsToInMemoryProfile();
                 persistSavedProfileEdits();
-                setStatus("Данные сохранены на сервере и в этом браузере.");
+                if (!silent) {
+                    setStatus("Данные сохранены на сервере и в этом браузере.");
+                }
             } catch (error) {
-                setStatus(`Сохранено в браузере. Сервер: ${getErrorMessage(error)}`, "error");
+                if (!silent) {
+                    setStatus(`Сохранено в браузере. Сервер: ${getErrorMessage(error)}`, "error");
+                }
             }
-            render();
+            if (!skipRender) {
+                render();
+            }
         })();
-        return;
+        return true;
     }
 
-    setStatus("Сохранено локально (нет активной сессии для сервера).");
-    render();
+    if (!silent) {
+        setStatus("Сохранено локально (нет активной сессии для сервера).");
+    }
+    if (!skipRender) {
+        render();
+    }
+    return true;
 }
 
 if (profileMount instanceof HTMLElement) {

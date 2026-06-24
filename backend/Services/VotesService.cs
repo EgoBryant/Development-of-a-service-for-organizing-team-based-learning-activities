@@ -91,14 +91,23 @@ public class VotesService : IVotesService
             return new VoteCreateResult { Type = VoteCreateResultType.DifferentTeams };
         }
 
-        var duplicateExists = await _dbContext.Votes.AnyAsync(vote =>
+        var existingVote = await _dbContext.Votes.SingleOrDefaultAsync(vote =>
             vote.TeamId == fromUser.TeamId.Value &&
             vote.FromUserId == fromUser.Id &&
             vote.ToUserId == toUser.Id, cancellationToken);
 
-        if (duplicateExists)
+        if (existingVote is not null)
         {
-            return new VoteCreateResult { Type = VoteCreateResultType.DuplicateVote };
+            existingVote.Score = request.Score;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await _krkCalculationService.RecalculateForTeamAsync(fromUser.TeamId.Value, cancellationToken);
+
+            return new VoteCreateResult
+            {
+                Type = VoteCreateResultType.Created,
+                Vote = await LoadVoteResponseAsync(existingVote.Id, cancellationToken)
+            };
         }
 
         var vote = new Vote
@@ -119,14 +128,65 @@ public class VotesService : IVotesService
         return new VoteCreateResult
         {
             Type = VoteCreateResultType.Created,
-            Vote = await _dbContext.Votes
-                .AsNoTracking()
-                .Include(existingVote => existingVote.FromUser)
-                .Include(existingVote => existingVote.ToUser)
-                .Where(existingVote => existingVote.Id == vote.Id)
-                .Select(existingVote => Map(existingVote))
-                .SingleAsync(cancellationToken)
+            Vote = await LoadVoteResponseAsync(vote.Id, cancellationToken)
         };
+    }
+
+    public async Task<VoteUpdateResult> UpdateAsync(int userId, CreateVoteDto request, CancellationToken cancellationToken = default)
+    {
+        var fromUser = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
+        if (fromUser is null)
+        {
+            return new VoteUpdateResult { Type = VoteUpdateResultType.UserNotFound };
+        }
+
+        if (fromUser.TeamId is null)
+        {
+            return new VoteUpdateResult { Type = VoteUpdateResultType.UserHasNoTeam };
+        }
+
+        var toUser = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == request.ToUserId, cancellationToken);
+        if (toUser is null)
+        {
+            return new VoteUpdateResult { Type = VoteUpdateResultType.TargetUserNotFound };
+        }
+
+        if (toUser.TeamId != fromUser.TeamId)
+        {
+            return new VoteUpdateResult { Type = VoteUpdateResultType.DifferentTeams };
+        }
+
+        var vote = await _dbContext.Votes.SingleOrDefaultAsync(existingVote =>
+            existingVote.TeamId == fromUser.TeamId.Value &&
+            existingVote.FromUserId == fromUser.Id &&
+            existingVote.ToUserId == toUser.Id, cancellationToken);
+
+        if (vote is null)
+        {
+            return new VoteUpdateResult { Type = VoteUpdateResultType.VoteNotFound };
+        }
+
+        vote.Score = request.Score;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _krkCalculationService.RecalculateForTeamAsync(fromUser.TeamId.Value, cancellationToken);
+
+        return new VoteUpdateResult
+        {
+            Type = VoteUpdateResultType.Updated,
+            Vote = await LoadVoteResponseAsync(vote.Id, cancellationToken)
+        };
+    }
+
+    private async Task<VoteResponse> LoadVoteResponseAsync(int voteId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.Votes
+            .AsNoTracking()
+            .Include(vote => vote.FromUser)
+            .Include(vote => vote.ToUser)
+            .Where(vote => vote.Id == voteId)
+            .Select(vote => Map(vote))
+            .SingleAsync(cancellationToken);
     }
 
     private static VoteResponse Map(Vote vote)

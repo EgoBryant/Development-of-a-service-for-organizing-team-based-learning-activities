@@ -36,8 +36,8 @@ export function renderActiveTeamBlock(): string {
                 ? `<img src="${escapeHtml(member.avatarUrl)}" alt="" loading="lazy">`
                 : `<span class="team-card-photo-placeholder">Фото</span>`;
 
-            const actionLabel = member.voteScore
-                ? `${member.voteScore}/5`
+            const actionLabel = member.voteScore != null
+                ? "ИЗМЕНИТЬ"
                 : "ГОЛОСОВАТЬ";
 
             return `

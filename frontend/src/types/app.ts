@@ -15,7 +15,7 @@ import type { SignInState, SignUpState, UserProfileResponse } from "./auth";
 import type { RatingUser } from "./rating";
 
 export type View = "home" | "sign-in" | "sign-up" | "password-recovery" | "account";
-export type DashboardSection = "profile" | "team" | "rating" | "events";
+export type DashboardSection = "profile" | "team" | "rating" | "events" | "settings";
 
 export type EventsCalendarScope = "all" | "mine";
 export type EventsFeedTab = "activity" | "news";
@@ -45,6 +45,11 @@ export interface AppState {
     profileFindTeamSelectedId: number | null;
     profileInviteLink: string;
     profileFormDraft: ProfileEdits | null;
+    profileAvatarFileName: string;
+    settingsPhotoOriginalAvatarDataUrl: string | null;
+    settingsPhotoOriginalFileName: string;
+    settingsPhotoPendingAvatarDataUrl: string | null;
+    settingsPhotoErrorMessage: string;
     dashboardSection: DashboardSection;
     teamModal: TeamModalKind;
     teamRescueDraft: TeamRescueDraft | null;
