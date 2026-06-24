@@ -9,10 +9,19 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        ...init,
-        headers
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${API_BASE_URL}${path}`, {
+            ...init,
+            headers
+        });
+    } catch (error) {
+        if (error instanceof TypeError) {
+            throw new Error("Не удалось связаться с сервером. Проверьте, что backend запущен.");
+        }
+
+        throw error;
+    }
 
     if (!response.ok) {
         let message = `Ошибка ${response.status}`;
@@ -49,6 +58,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function getErrorMessage(error: unknown): string {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+        return "Не удалось связаться с сервером. Проверьте, что backend запущен.";
+    }
+
     return error instanceof Error ? error.message : "Не удалось выполнить запрос.";
 }
 
@@ -61,6 +74,9 @@ function translateApiErrorMessage(message: string): string {
         "Team with this invite code was not found.": "Команда с таким кодом приглашения не найдена.",
         "Join request already exists": "Заявка в эту команду уже отправлена.",
         "The current user is not in a team.": "Вы не состоите в команде.",
+        "You must belong to a team before voting.": "Чтобы голосовать, нужно состоять в команде.",
+        "You have already voted for this teammate.": "Вы уже оценили этого участника.",
+        "You have not voted for this teammate yet.": "Вы ещё не оценивали этого участника.",
         "Avatar image payload exceeds the maximum allowed size.": "Фото профиля не должно превышать 2 МБ."
     };
 

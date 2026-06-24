@@ -1,0 +1,211 @@
+.settings-dashboard-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: clamp(22px, 3vh, 34px) clamp(22px, 3vh, 34px) clamp(22px, 3vh, 34px) 0;
+    box-sizing: border-box;
+}
+
+.settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(20px, 2.5vh, 28px);
+    width: 100%;
+    max-width: none;
+}
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 28px;
+    padding: clamp(24px, 3vh, 36px) clamp(28px, 3vw, 42px) calc(clamp(36px, 4.2vh, 52px) + 15px);
+    box-shadow: 0 14px 34px rgba(34, 79, 155, 0.12);
+    box-sizing: border-box;
+}
+
+.settings-card-title {
+    margin: 0 0 64px;
+    text-align: center;
+    font-family: "Montserrat", sans-serif;
+    font-size: clamp(22px, 2vw, 28px);
+    font-weight: 700;
+    line-height: 1.2;
+    color: #172d9d;
+}
+
+.settings-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.settings-field-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-field-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 219px;
+    align-items: stretch;
+    column-gap: 18px;
+    min-height: 56px;
+    padding: 0 0 0 24px;
+    border-radius: 999px;
+    background: rgba(235, 240, 252, 1);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.settings-field-row input[type="file"] {
+    display: none;
+}
+
+.settings-field-value {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    font-family: "Montserrat", sans-serif;
+    font-size: clamp(14px, 1.05vw, 18px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.settings-field-value.is-placeholder {
+    text-transform: uppercase;
+    color: rgba(140, 150, 185, 1);
+}
+
+.settings-field-value.is-filled {
+    text-transform: none;
+    color: #172d9d;
+    font-weight: 600;
+}
+
+.settings-field-input {
+    display: none;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-family: "Montserrat", sans-serif;
+    font-size: clamp(14px, 1vw, 16px);
+    font-weight: 600;
+    color: #172d9d;
+    outline: none;
+}
+
+.settings-field-input::placeholder {
+    color: rgba(140, 150, 185, 0.85);
+}
+
+.settings-field-row.is-editing:not(.settings-field-row--photo) .settings-field-value {
+    display: none;
+}
+
+.settings-field-row.is-editing {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: inset 0 0 0 2px rgba(78, 95, 205, 0.42);
+}
+
+.settings-field-row.is-editing .settings-field-input {
+    display: block;
+}
+
+.settings-field-error {
+    margin: 0;
+    padding: 0 24px;
+    font-family: "Montserrat", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: rgba(223, 46, 128, 1);
+}
+
+.settings-field-error[hidden] {
+    display: none;
+}
+
+.settings-field-action {
+    grid-column: 2;
+    grid-row: 1;
+    border: none;
+    border-radius: 999px;
+    width: 219px;
+    min-width: 219px;
+    max-width: 219px;
+    margin: 0;
+    padding: 0 16px;
+    background: var(--exam-button-gradient);
+    color: rgb(255, 255, 255);
+    font-family: "Montserrat", sans-serif;
+    font-size: clamp(14px, 1vw, 18px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+        0 10px 18px rgba(78, 95, 205, 0.26);
+}
+
+.settings-field-action.is-editing-idle {
+    background: rgba(198, 208, 228, 1);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: none;
+    cursor: default;
+    pointer-events: none;
+    transform: none;
+}
+
+.settings-field-action.is-editing-idle:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.settings-field-action.is-apply-ready {
+    background: var(--exam-button-gradient);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.settings-field-action:not(.is-editing-idle):not(:disabled):hover,
+.settings-field-action.is-apply-ready:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+        0 14px 26px rgba(33, 78, 154, 0.22);
+}
+
+.profile-app--dashboard-profile:has(.settings-dashboard-main) {
+    gap: 60px;
+}
+
+.profile-app--dashboard-profile:has(.settings-dashboard-main) .profile-sidebar .profile-nav-bottom #profileSettingsButton.is-active {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+}
+
+@media (max-width: 767px) {
+    .settings-dashboard-main {
+        display: none;
+    }
+}

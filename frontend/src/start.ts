@@ -24,6 +24,12 @@ import {
     renderTeamPageModals,
     wireTeamPageEvents
 } from "./pages/TeamPage";
+import {
+    getSettingsGroupDisplay,
+    getSettingsNameDisplay,
+    getSettingsPhotoDisplay,
+    renderSettingsPageMain
+} from "./pages/SettingsPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
 import {
@@ -100,6 +106,10 @@ import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
+    mergeSessionTeamIntoRatingTeams,
+    mergeSessionUserIntoRatingUsers
+} from "./services/ratingSessionData";
+import {
     createCheckIn,
     createHelpRequest,
     createTeam as createTeamApi,
@@ -121,6 +131,7 @@ import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
+import { isSameUserId } from "./utils/ratingAvatars";
 
 /** Событие открытия модалки «Спасение» с любого места UI. */
 export const TEAM_RESCUE_OPEN_EVENT = "team-exam:open-rescue";
@@ -151,6 +162,11 @@ const appState: AppState = {
     profileFindTeamSelectedId: null,
     profileInviteLink: "",
     profileFormDraft: null,
+    profileAvatarFileName: "",
+    settingsPhotoOriginalAvatarDataUrl: null,
+    settingsPhotoOriginalFileName: "",
+    settingsPhotoPendingAvatarDataUrl: null,
+    settingsPhotoErrorMessage: "",
     dashboardSection: "profile",
     teamModal: "none",
     teamRescueDraft: null,
@@ -189,6 +205,15 @@ const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
+const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 767px)";
+const DESKTOP_DASHBOARD_QUERY = "(min-width: 768px)";
+const MOBILE_BOTTOM_NAV_CLOSED_HEIGHT = 76;
+const MOBILE_BOTTOM_NAV_OPEN_HEIGHT = 116;
+const MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY = 1.35;
+const MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX = 10;
+const MOBILE_BOTTOM_NAV_FLING_VELOCITY = 0.32;
+const MOBILE_MENU_SNAP_MS = 680;
+const MOBILE_MENU_DRAG_SMOOTHING = 0.38;
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 
 void bootstrap();
@@ -337,10 +362,25 @@ async function submitTeamCheckIn(weekNumber: number, reportText: string): Promis
     await refreshTeamWorkspace();
 }
 
+function parseVoteTargetUserId(memberId: string): number | null {
+    const trimmed = memberId.trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    const prefixedMatch = /^user-(\d+)$/i.exec(trimmed);
+    if (prefixedMatch) {
+        return Number(prefixedMatch[1]);
+    }
+
+    const numericId = Number(trimmed);
+    return Number.isFinite(numericId) && numericId > 0 ? numericId : null;
+}
+
 async function submitTeamVote(memberId: string, score: number): Promise<void> {
     const token = getSessionToken();
-    const numericMemberId = Number(memberId);
-    if (!token || !Number.isFinite(numericMemberId) || numericMemberId <= 0) {
+    const numericMemberId = parseVoteTargetUserId(memberId);
+    if (!token || numericMemberId === null) {
         pushUserActivity({
             kind: "team_achievement",
             title: "ГОЛОС КОМАНДЫ",
@@ -350,7 +390,6 @@ async function submitTeamVote(memberId: string, score: number): Promise<void> {
     }
 
     await createVote(token, numericMemberId, score);
-    appState.teamMyVotes = await fetchMyVotes(token).catch(() => appState.teamMyVotes);
     await refreshTeamWorkspace();
 }
 
@@ -714,6 +753,15 @@ async function bootstrap(): Promise<void> {
         getTeamInviteCode: () => getEffectiveInviteCode(),
         getTeamHistory: getTeamHistoryItems,
         getJoinableTeams: getJoinableTeams,
+        getCurrentUserAvatarUrl: () => getAvatarDisplay(),
+        getCurrentUserId: () => String(appState.profile?.id ?? ""),
+        isCurrentUser: (userId: string) => {
+            const currentId = appState.profile?.id;
+            if (currentId == null) {
+                return false;
+            }
+            return isSameUserId(userId, currentId);
+        },
         joinTeamByInviteCode,
         requestTeamJoin,
         createTeam: createTeamFromBridge,
@@ -724,17 +772,7 @@ async function bootstrap(): Promise<void> {
         openTeamOverlayModal: (kind, memberIndex) => openTeamModal(kind, memberIndex),
         openTeamOnboardingModal: openTeamOnboardingModal,
         openTeamRescue: openRescueModal,
-        navigateToRating: () => {
-            appState.dashboardSection = "rating";
-            persistDashboardSectionToStorage();
-            clearStatus();
-            void refreshRatingWorkspace().then(() => {
-                if (appState.dashboardSection === "rating") {
-                    render();
-                }
-            });
-            render();
-        },
+        navigateToRating: openRatingDashboard,
         navigateToEvents: () => {
             appState.dashboardSection = "events";
             resetEventsCalendarToToday();
@@ -1625,9 +1663,13 @@ function hydrateProfileClientStateFromStorage(): void {
         data.dashboardSection === "profile" ||
         data.dashboardSection === "team" ||
         data.dashboardSection === "rating" ||
-        data.dashboardSection === "events"
+        data.dashboardSection === "events" ||
+        data.dashboardSection === "settings"
     ) {
-        appState.dashboardSection = data.dashboardSection;
+        appState.dashboardSection =
+            data.dashboardSection === "settings" && !isDesktopDashboardLayout()
+                ? "profile"
+                : data.dashboardSection;
         if (data.dashboardSection === "events") {
             resetEventsCalendarToToday();
         }
@@ -2599,6 +2641,18 @@ async function refreshCurrentUserProfile(): Promise<void> {
     hydrateProfileClientStateFromStorage();
 }
 
+function openRatingDashboard(): void {
+    appState.dashboardSection = "rating";
+    persistDashboardSectionToStorage();
+    clearStatus();
+    void refreshRatingWorkspace().then(() => {
+        if (appState.dashboardSection === "rating") {
+            render();
+        }
+    });
+    render();
+}
+
 async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> {
     if (!token) {
         clearRatingData();
@@ -2610,7 +2664,10 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         fetchRatingUsers(token).catch(() => [])
     ]);
 
-    setRatingData(teams, users);
+    setRatingData(
+        mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam),
+        mergeSessionUserIntoRatingUsers(users, appState.profile)
+    );
 }
 
 async function refreshTeamWorkspace(): Promise<void> {
@@ -2629,6 +2686,12 @@ async function refreshTeamWorkspace(): Promise<void> {
         appState.teamJoinRequests = await fetchTeamJoinRequests(token);
     } catch {
         appState.teamJoinRequests = [];
+    }
+
+    try {
+        appState.teamMyVotes = await fetchMyVotes(token);
+    } catch {
+        appState.teamMyVotes = [];
     }
 
     try {
@@ -2736,7 +2799,10 @@ function getTeamRoster(): TeamMemberRow[] {
             id: String(member.id),
             displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
-            avatarUrl: member.avatarUrl,
+            avatarUrl:
+                isSameUserId(member.id, appState.profile?.id ?? "")
+                    ? getAvatarDisplay() || member.avatarUrl || ""
+                    : member.avatarUrl || "",
             isCaptain: member.isCaptain
         }));
     }
@@ -2769,20 +2835,27 @@ function getTeamMembersForView(): TeamMemberView[] {
             id: String(member.id),
             displayName: member.displayName || member.userName || member.email || "УЧАСТНИК",
             roleLabel: member.roleLabel || (member.isCaptain ? "КАПИТАН" : "УЧАСТНИК"),
-            avatarUrl: member.avatarUrl,
+            avatarUrl:
+                isSameUserId(member.id, currentUserId ?? "")
+                    ? getAvatarDisplay() || member.avatarUrl || ""
+                    : member.avatarUrl || "",
             userPoints: member.userPoints,
-            canVote: member.id !== currentUserId && !voteByTarget.has(member.id),
+            canVote: !isSameUserId(member.id, currentUserId ?? ""),
             voteScore: voteByTarget.get(member.id) ?? null
         }));
     }
+
+    const voteByTargetId = new Map(
+        appState.teamMyVotes.map((vote) => [String(vote.toUserId), vote.score])
+    );
 
     return getTeamRoster().map((member) => ({
         id: member.id,
         displayName: member.displayName,
         roleLabel: member.roleLabel,
         avatarUrl: member.avatarUrl,
-        canVote: member.id !== `user-${currentUserId ?? ""}`,
-        voteScore: null
+        canVote: !isSameUserId(member.id, currentUserId ?? ""),
+        voteScore: voteByTargetId.get(member.id) ?? null
     }));
 }
 
@@ -3230,7 +3303,10 @@ function renderTeamModal(): string {
     if (appState.teamModal === "vote") {
         const roster = getTeamRoster();
         const member = roster[appState.teamVoteMemberIndex] ?? roster[0];
-        const existingVote = member ? appState.teamMyVotes.find((vote) => String(vote.toUserId) === member.id) : undefined;
+        const memberUserId = member ? parseVoteTargetUserId(member.id) : null;
+        const existingVote = memberUserId !== null
+            ? appState.teamMyVotes.find((vote) => vote.toUserId === memberUserId)
+            : undefined;
         const voteAvatarInner = member?.avatarUrl
             ? `<img src="${escapeHtml(member.avatarUrl)}" alt="" loading="lazy">`
             : "";
@@ -3242,7 +3318,6 @@ function renderTeamModal(): string {
                     type="button"
                     class="team-vote-score${existingVote?.score === score ? " is-active" : ""}"
                     data-team-vote-score="${score}"
-                    ${existingVote ? "disabled" : ""}
                 >${score}</button>`)
             .join("");
 
@@ -3262,7 +3337,7 @@ function renderTeamModal(): string {
                 <div class="team-vote-score-row" aria-label="Оценка вклада по 5-балльной шкале" data-team-vote-member-id="${escapeHtml(member?.id ?? "")}">
                     ${voteButtons}
                 </div>
-                ${existingVote ? `<p class="team-vote-hint">Ваша оценка уже сохранена.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
+                ${existingVote ? `<p class="team-vote-hint">Вы можете изменить оценку от 1 до 5.</p>` : `<p class="team-vote-hint">Оцените вклад участника от 1 до 5.</p>`}
             `
         });
     }
@@ -3456,17 +3531,496 @@ function tryOpenNoTeamModal(): boolean {
     return true;
 }
 
+function isDesktopDashboardLayout(): boolean {
+    return window.matchMedia(DESKTOP_DASHBOARD_QUERY).matches;
+}
+
+function createProfileFormDraftFromDisplay(): ProfileEdits {
+    return {
+        fullName: getFullNameDisplay(),
+        group: getGroupDisplay(),
+        avatarDataUrl: getAvatarDisplay() || null
+    };
+}
+
+function isPersonalProfileEditingOpen(): boolean {
+    return (
+        appState.profileModal === "personal" ||
+        (appState.dashboardSection === "settings" && isDesktopDashboardLayout())
+    );
+}
+
+function openSettingsView(): void {
+    if (isDesktopDashboardLayout()) {
+        appState.teamModal = "none";
+        appState.eventsModal = "none";
+        appState.profileModal = "none";
+        appState.dashboardSection = "settings";
+        appState.profileFormDraft = createProfileFormDraftFromDisplay();
+        appState.settingsPhotoOriginalAvatarDataUrl = null;
+        appState.settingsPhotoOriginalFileName = "";
+        appState.settingsPhotoPendingAvatarDataUrl = null;
+        appState.settingsPhotoErrorMessage = "";
+        persistDashboardSectionToStorage();
+        clearStatus();
+        render();
+        return;
+    }
+
+    openProfileModal("personal");
+}
+
+const SETTINGS_FIELD_EDIT_LABEL = "ИЗМЕНИТЬ";
+const SETTINGS_FIELD_APPLY_LABEL = "ПРИМЕНИТЬ";
+const SETTINGS_FIELD_SELECT_LABEL = "ВЫБРАТЬ";
+
+function updateSettingsFieldDisplay(node: HTMLElement, display: { text: string; isPlaceholder: boolean }): void {
+    node.textContent = display.text;
+    node.classList.toggle("is-placeholder", display.isPlaceholder);
+    node.classList.toggle("is-filled", !display.isPlaceholder);
+}
+
+function syncSettingsFieldDisplaysFromDraft(): void {
+    if (!isHTMLElement(profileMount) || !appState.profileFormDraft) {
+        return;
+    }
+
+    const draft = appState.profileFormDraft;
+
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-photo-label]").forEach((node) => {
+        const photoDataUrl = appState.settingsPhotoPendingAvatarDataUrl ?? draft.avatarDataUrl;
+        updateSettingsFieldDisplay(node, getSettingsPhotoDisplay(photoDataUrl, appState.profileAvatarFileName));
+    });
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-name-label]").forEach((node) => {
+        updateSettingsFieldDisplay(node, getSettingsNameDisplay(draft.fullName));
+    });
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-group-label]").forEach((node) => {
+        updateSettingsFieldDisplay(node, getSettingsGroupDisplay(draft.group));
+    });
+}
+
+function getSettingsEditInput(rowKey: "name" | "group"): HTMLInputElement | null {
+    if (!isHTMLElement(profileMount)) {
+        return null;
+    }
+
+    const inputId = rowKey === "name" ? "profileNameInput" : "profileGroupInput";
+    const input = profileMount.querySelector(`#${inputId}`);
+    return isHTMLInputElement(input) ? input : null;
+}
+
+function getSettingsEditButton(row: HTMLElement): HTMLButtonElement | null {
+    const button = row.querySelector<HTMLButtonElement>("[data-settings-edit]");
+    return button ?? null;
+}
+
+function getSettingsFieldOriginalValue(rowKey: "name" | "group"): string {
+    if (rowKey === "name") {
+        return (appState.profileFormDraft?.fullName ?? getFullNameDisplay()).trim();
+    }
+
+    return normalizeAcademicGroupInput(appState.profileFormDraft?.group ?? getGroupDisplay());
+}
+
+function getSettingsFieldCurrentValue(rowKey: "name" | "group", input: HTMLInputElement): string {
+    if (rowKey === "group") {
+        return normalizeAcademicGroupInput(input.value);
+    }
+
+    return input.value.trim();
+}
+
+function getSettingsPhotoRow(): HTMLElement | null {
+    if (!isHTMLElement(profileMount)) {
+        return null;
+    }
+
+    return profileMount.querySelector<HTMLElement>(".settings-dashboard-main [data-settings-row='photo']");
+}
+
+function getSettingsPhotoFileInput(): HTMLInputElement | null {
+    if (!isHTMLElement(profileMount)) {
+        return null;
+    }
+
+    const input = profileMount.querySelector<HTMLInputElement>("#settingsProfileAvatarInput");
+    return isHTMLInputElement(input) ? input : null;
+}
+
+function setSettingsPhotoError(message: string): void {
+    appState.settingsPhotoErrorMessage = message;
+
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    const errorNode = profileMount.querySelector<HTMLElement>("#settingsPhotoError");
+    if (!errorNode) {
+        return;
+    }
+
+    if (message.trim()) {
+        errorNode.textContent = message;
+        errorNode.hidden = false;
+    } else {
+        errorNode.textContent = "";
+        errorNode.hidden = true;
+    }
+}
+
+function clearSettingsPhotoError(): void {
+    setSettingsPhotoError("");
+}
+
+function resetSettingsPhotoButton(button: HTMLButtonElement): void {
+    button.textContent = SETTINGS_FIELD_SELECT_LABEL;
+    button.disabled = false;
+    button.classList.remove("is-editing-idle", "is-apply-ready");
+}
+
+function updateSettingsPhotoButtonState(row: HTMLElement): void {
+    const button = getSettingsEditButton(row);
+    if (!button || !row.classList.contains("is-editing")) {
+        return;
+    }
+
+    const originalAvatar = appState.settingsPhotoOriginalAvatarDataUrl ?? null;
+    const pendingAvatar = appState.settingsPhotoPendingAvatarDataUrl;
+    const changed = pendingAvatar !== null && (
+        pendingAvatar !== originalAvatar ||
+        appState.profileAvatarFileName !== appState.settingsPhotoOriginalFileName
+    );
+
+    button.textContent = changed ? SETTINGS_FIELD_APPLY_LABEL : SETTINGS_FIELD_SELECT_LABEL;
+    button.disabled = !changed;
+    button.classList.toggle("is-editing-idle", !changed);
+    button.classList.toggle("is-apply-ready", changed);
+}
+
+function exitSettingsPhotoEditRow(row: HTMLElement, revert = true): void {
+    if (revert && appState.profileFormDraft) {
+        appState.profileFormDraft.avatarDataUrl = appState.settingsPhotoOriginalAvatarDataUrl ?? null;
+        appState.profileAvatarFileName = appState.settingsPhotoOriginalFileName;
+    }
+
+    appState.settingsPhotoPendingAvatarDataUrl = null;
+    appState.settingsPhotoOriginalAvatarDataUrl = null;
+    appState.settingsPhotoOriginalFileName = "";
+    clearSettingsPhotoError();
+
+    const avatarInput = getSettingsPhotoFileInput();
+    if (avatarInput) {
+        avatarInput.value = "";
+    }
+
+    row.classList.remove("is-editing");
+
+    const button = getSettingsEditButton(row);
+    if (button) {
+        resetSettingsPhotoButton(button);
+    }
+
+    syncSettingsFieldDisplaysFromDraft();
+}
+
+function beginSettingsPhotoEdit(row: HTMLElement): void {
+    closeSettingsEditRows(row);
+    clearSettingsPhotoError();
+
+    appState.settingsPhotoOriginalAvatarDataUrl = appState.profileFormDraft?.avatarDataUrl ?? null;
+    appState.settingsPhotoOriginalFileName = appState.profileAvatarFileName;
+    appState.settingsPhotoPendingAvatarDataUrl = null;
+
+    row.classList.add("is-editing");
+    updateSettingsPhotoButtonState(row);
+    syncSettingsFieldDisplaysFromDraft();
+
+    getSettingsPhotoFileInput()?.click();
+}
+
+async function applySettingsPhotoEdit(row: HTMLElement): Promise<void> {
+    const pendingAvatar = appState.settingsPhotoPendingAvatarDataUrl;
+    if (!pendingAvatar || !appState.profileFormDraft) {
+        return;
+    }
+
+    if (!isProfileAvatarDataUrlWithinLimit(pendingAvatar)) {
+        setSettingsPhotoError(getProfileAvatarSizeLimitMessage());
+        updateSettingsPhotoButtonState(row);
+        return;
+    }
+
+    appState.profileFormDraft.avatarDataUrl = pendingAvatar;
+    clearSettingsPhotoError();
+
+    const saved = await submitPersonalProfileSave({ silent: true, skipRender: true });
+    if (!saved) {
+        updateSettingsPhotoButtonState(row);
+        return;
+    }
+
+    exitSettingsPhotoEditRow(row, false);
+}
+
+function handleSettingsPhotoFileSelected(file: File, row: HTMLElement): void {
+    if (!isProfileAvatarFileWithinLimit(file)) {
+        const avatarInput = getSettingsPhotoFileInput();
+        if (avatarInput) {
+            avatarInput.value = "";
+        }
+
+        appState.settingsPhotoPendingAvatarDataUrl = null;
+        setSettingsPhotoError(getProfileAvatarSizeLimitMessage());
+        syncSettingsFieldDisplaysFromDraft();
+        updateSettingsPhotoButtonState(row);
+        return;
+    }
+
+    clearSettingsPhotoError();
+    const reader = new FileReader();
+    reader.onload = () => {
+        if (typeof reader.result !== "string") {
+            return;
+        }
+
+        appState.settingsPhotoPendingAvatarDataUrl = reader.result;
+        appState.profileAvatarFileName = file.name;
+
+        const photoRow = getSettingsPhotoRow();
+        if (!photoRow) {
+            return;
+        }
+
+        syncSettingsFieldDisplaysFromDraft();
+        updateSettingsPhotoButtonState(photoRow);
+    };
+    reader.readAsDataURL(file);
+}
+
+function resetSettingsEditButton(button: HTMLButtonElement): void {
+    button.textContent = SETTINGS_FIELD_EDIT_LABEL;
+    button.disabled = false;
+    button.classList.remove("is-editing-idle", "is-apply-ready");
+}
+
+function canApplySettingsFieldEdit(rowKey: "name" | "group", input: HTMLInputElement, originalValue: string): boolean {
+    const currentValue = getSettingsFieldCurrentValue(rowKey, input);
+    if (currentValue === originalValue) {
+        return false;
+    }
+
+    if (rowKey === "group") {
+        return isAcademicGroupValid(currentValue);
+    }
+
+    return true;
+}
+
+function updateSettingsEditButtonState(row: HTMLElement, rowKey: "name" | "group"): void {
+    const button = getSettingsEditButton(row);
+    const input = getSettingsEditInput(rowKey);
+    const originalValue = row.dataset.settingsOriginalValue ?? "";
+
+    if (!button || !input || !row.classList.contains("is-editing")) {
+        return;
+    }
+
+    const changed = getSettingsFieldCurrentValue(rowKey, input) !== originalValue;
+    const canApply = canApplySettingsFieldEdit(rowKey, input, originalValue);
+
+    button.textContent = changed ? SETTINGS_FIELD_APPLY_LABEL : SETTINGS_FIELD_EDIT_LABEL;
+    button.disabled = !canApply;
+    button.classList.toggle("is-editing-idle", !canApply);
+    button.classList.toggle("is-apply-ready", canApply);
+}
+
+function exitSettingsEditRow(row: HTMLElement, revert = true): void {
+    const rowKey = row.dataset.settingsRow;
+    if (rowKey !== "name" && rowKey !== "group") {
+        return;
+    }
+
+    const input = getSettingsEditInput(rowKey);
+    const originalValue = row.dataset.settingsOriginalValue ?? "";
+
+    if (revert && input) {
+        input.value = rowKey === "group" ? normalizeAcademicGroupInput(originalValue) : originalValue;
+        if (appState.profileFormDraft) {
+            if (rowKey === "name") {
+                appState.profileFormDraft.fullName = input.value;
+            } else {
+                appState.profileFormDraft.group = input.value;
+            }
+        }
+    }
+
+    row.classList.remove("is-editing");
+    delete row.dataset.settingsOriginalValue;
+
+    const button = getSettingsEditButton(row);
+    if (button) {
+        resetSettingsEditButton(button);
+    }
+}
+
+function beginSettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): void {
+    closeSettingsEditRows(row);
+
+    const originalValue = getSettingsFieldOriginalValue(rowKey);
+    row.dataset.settingsOriginalValue = originalValue;
+    row.classList.add("is-editing");
+
+    const input = getSettingsEditInput(rowKey);
+    if (input) {
+        input.value = originalValue;
+        input.focus();
+        input.select();
+    }
+
+    updateSettingsEditButtonState(row, rowKey);
+}
+
+async function applySettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): Promise<void> {
+    const input = getSettingsEditInput(rowKey);
+    if (!input || !appState.profileFormDraft) {
+        return;
+    }
+
+    if (rowKey === "name") {
+        appState.profileFormDraft.fullName = input.value.trim();
+    } else {
+        const normalizedGroup = normalizeAcademicGroupInput(input.value);
+        input.value = normalizedGroup;
+        appState.profileFormDraft.group = normalizedGroup;
+
+        if (!isAcademicGroupValid(normalizedGroup)) {
+            setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
+            updateSettingsEditButtonState(row, rowKey);
+            return;
+        }
+    }
+
+    clearStatus();
+    const saved = await submitPersonalProfileSave({ silent: true, skipRender: true });
+    if (!saved) {
+        updateSettingsEditButtonState(row, rowKey);
+        return;
+    }
+
+    exitSettingsEditRow(row, false);
+    syncSettingsFieldDisplaysFromDraft();
+}
+
+function closeSettingsEditRows(exceptRow?: HTMLElement): void {
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    profileMount.querySelectorAll<HTMLElement>(".settings-field-row.is-editing").forEach((row) => {
+        if (row !== exceptRow) {
+            if (row.dataset.settingsRow === "photo") {
+                exitSettingsPhotoEditRow(row, true);
+            } else {
+                exitSettingsEditRow(row, true);
+            }
+        }
+    });
+}
+
+function wireSettingsPageEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.dashboardSection !== "settings") {
+        return;
+    }
+
+    profileMount.querySelectorAll<HTMLButtonElement>("[data-settings-edit]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const rowKey = button.dataset.settingsEdit;
+            const row = button.closest<HTMLElement>("[data-settings-row]");
+            if (!row || !rowKey) {
+                return;
+            }
+
+            if (rowKey === "photo") {
+                if (button.classList.contains("is-apply-ready")) {
+                    void applySettingsPhotoEdit(row);
+                    return;
+                }
+
+                if (row.classList.contains("is-editing")) {
+                    return;
+                }
+
+                beginSettingsPhotoEdit(row);
+                return;
+            }
+
+            if (rowKey !== "name" && rowKey !== "group") {
+                return;
+            }
+
+            if (button.classList.contains("is-apply-ready")) {
+                void applySettingsFieldEdit(row, rowKey);
+                return;
+            }
+
+            if (row.classList.contains("is-editing")) {
+                getSettingsEditInput(rowKey)?.focus();
+                return;
+            }
+
+            beginSettingsFieldEdit(row, rowKey);
+        });
+    });
+
+    const avatarInput = getSettingsPhotoFileInput();
+    if (avatarInput) {
+        avatarInput.addEventListener("change", () => {
+            const file = avatarInput.files?.[0];
+            const row = getSettingsPhotoRow();
+            if (!file || !row || !row.classList.contains("is-editing")) {
+                return;
+            }
+
+            handleSettingsPhotoFileSelected(file, row);
+        });
+    }
+
+    if (appState.settingsPhotoErrorMessage) {
+        setSettingsPhotoError(appState.settingsPhotoErrorMessage);
+    }
+
+    const personalNameInput = profileMount.querySelector("#profileNameInput");
+    if (isHTMLInputElement(personalNameInput) && appState.profileFormDraft) {
+        personalNameInput.addEventListener("input", () => {
+            appState.profileFormDraft!.fullName = personalNameInput.value;
+            const row = personalNameInput.closest<HTMLElement>("[data-settings-row]");
+            if (row) {
+                updateSettingsEditButtonState(row, "name");
+            }
+        });
+    }
+
+    const personalGroupInput = profileMount.querySelector("#profileGroupInput");
+    if (isHTMLInputElement(personalGroupInput) && appState.profileFormDraft) {
+        personalGroupInput.addEventListener("input", () => {
+            const normalizedValue = normalizeAcademicGroupInput(personalGroupInput.value);
+            personalGroupInput.value = normalizedValue;
+            appState.profileFormDraft!.group = normalizedValue;
+            const row = personalGroupInput.closest<HTMLElement>("[data-settings-row]");
+            if (row) {
+                updateSettingsEditButtonState(row, "group");
+            }
+        });
+    }
+}
+
 function openProfileModal(kind: ProfileModalKind): void {
     appState.teamModal = "none";
     appState.eventsModal = "none";
     appState.profileModal = kind;
 
     if (kind === "personal") {
-        appState.profileFormDraft = {
-            fullName: getFullNameDisplay(),
-            group: getGroupDisplay(),
-            avatarDataUrl: getAvatarDisplay() || null
-        };
+        appState.profileFormDraft = createProfileFormDraftFromDisplay();
     }
 
     render();
@@ -3540,6 +4094,7 @@ function renderProfileModal(): string {
             return renderProfileModalShell({
                 ariaLabel: "Личные данные",
                 closeButtonId: "profileClosePersonalButton",
+                extraModalClass: "profile-modal--form",
                 extraCardClass: "profile-modal-card--form",
                 bodyHtml: `
                     <h2 class="profile-shell-title">ЛИЧНЫЕ ДАННЫЕ</h2>
@@ -3564,7 +4119,6 @@ function renderProfileModal(): string {
                             spellcheck="false"
                         >
                         <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePersonalButton">СОХРАНИТЬ</button>
-                        <button type="button" class="profile-modal-text" id="profileOpenPasswordButton">ВОССТАНОВЛЕНИЕ ПАРОЛЯ</button>
                     </div>
                 `
             });
@@ -3829,7 +4383,7 @@ function renderProfileMainHtml(): string {
                 <div class="profile-hero-card">
                     <div class="profile-top">
                         <div class="profile-photo-col">
-                            <div class="profile-photo">${photoContent}</div>
+                            <div class="profile-photo" id="profileOwnPhoto">${photoContent}</div>
                         </div>
                         <div class="profile-stats-col" aria-label="Сводка: лига, баллы, рейтинг">
                             <div class="profile-stat-track">
@@ -3868,12 +4422,17 @@ function renderProfileView(): void {
         return;
     }
 
-    const statusHtml = "";
+    if (!isDesktopDashboardLayout() && appState.dashboardSection === "settings") {
+        appState.dashboardSection = "profile";
+    }
+
+    const statusHtml = renderStatusBlock();
 
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
+    const navSettingsActive = appState.dashboardSection === "settings" ? " is-active" : "";
     const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
     const extraNavHtml = `
                     <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
@@ -3886,7 +4445,13 @@ function renderProfileView(): void {
               ? renderRatingPageMain(statusHtml)
               : appState.dashboardSection === "events"
                 ? renderEventsDashboardMain(statusHtml)
-                : renderProfileMainHtml();
+                : appState.dashboardSection === "settings"
+                  ? renderSettingsPageMain(
+                      statusHtml,
+                      appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
+                      appState.profileAvatarFileName
+                  )
+                  : renderProfileMainHtml();
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
@@ -3903,7 +4468,8 @@ function renderProfileView(): void {
                 <span aria-hidden="true"></span>
             </button>
             <div class="profile-menu-backdrop" data-profile-menu-close aria-hidden="true"></div>
-            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы">
+            <aside class="profile-sidebar profile-sidebar--dashboard" id="profileDashboardMenu" aria-label="Разделы" aria-expanded="false">
+                <div class="profile-sidebar-swipe-handle" aria-hidden="true"></div>
                 <nav class="profile-nav-top">
                     <button type="button" class="profile-nav-button${navProfileActive}" data-dashboard="profile"><img class="profile-nav-icon" src="${profileMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПРОФИЛЬ</span></button>
                     <button type="button" class="profile-nav-button${navTeamActive}" data-dashboard="team"><img class="profile-nav-icon" src="${teamMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">КОМАНДА</span></button>
@@ -3911,7 +4477,7 @@ function renderProfileView(): void {
                     ${extraNavHtml}
                 </nav>
                 <nav class="profile-nav-bottom">
-                    <button type="button" class="profile-nav-button" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">НАСТРОЙКИ</span></button>
+                    <button type="button" class="profile-nav-button${navSettingsActive}" id="profileSettingsButton"><img class="profile-nav-icon" src="${settingsMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">НАСТРОЙКИ</span></button>
                     <button type="button" class="profile-nav-button" id="profileLogoutButton"><img class="profile-nav-icon" src="${logoutMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ПОКИНУТЬ</span></button>
                 </nav>
             </aside>
@@ -3952,86 +4518,168 @@ function wireMobileProfileMenu(): void {
     const menuButton = profileMount.querySelector("#profileMobileMenuButton");
     const backdrop = profileMount.querySelector("[data-profile-menu-close]");
     const sidebar = profileMount.querySelector<HTMLElement>("#profileDashboardMenu");
-    const navTop = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-top");
     const navBottom = profileMount.querySelector<HTMLElement>(".profile-sidebar .profile-nav-bottom");
 
-    if (!profileApp || !isHTMLButtonElement(menuButton) || !sidebar || !navTop || !navBottom) {
+    if (!profileApp || !sidebar || !navBottom) {
         return;
     }
 
+    let startX = 0;
     let startY = 0;
     let activePointerId: number | null = null;
     let dragMode: "open" | "close" | null = null;
     let dragHeights: { closed: number; open: number } | null = null;
     let dragStartedOpen = false;
     let isDragging = false;
+    let suppressNavClickUntil = 0;
+    let lastProgress = 0;
+    let displayedProgress = 0;
+    let targetProgress = 0;
+    let snapTimer: number | null = null;
+    let dragFrameId: number | null = null;
+    let lastDragFrameTime = 0;
+    let lastMoveY = 0;
+    let lastMoveTime = 0;
+    let velocityY = 0;
 
-    const clearDragStyles = (): void => {
-        profileApp.classList.remove("is-mobile-menu-dragging");
-        sidebar.style.removeProperty("height");
-        sidebar.style.removeProperty("min-height");
-        sidebar.style.removeProperty("max-height");
-        sidebar.style.removeProperty("grid-template-rows");
-        sidebar.style.removeProperty("gap");
-        sidebar.style.removeProperty("transform");
-        navBottom.style.removeProperty("max-height");
-        navBottom.style.removeProperty("opacity");
-        navBottom.style.removeProperty("transform");
-        navBottom.style.removeProperty("pointer-events");
+    const isBottomNavLayout = (): boolean => window.matchMedia(MOBILE_BOTTOM_NAV_QUERY).matches;
+
+    const getMenuHeights = (): { closed: number; open: number } => ({
+        closed: MOBILE_BOTTOM_NAV_CLOSED_HEIGHT,
+        open: MOBILE_BOTTOM_NAV_OPEN_HEIGHT
+    });
+
+    const clampProgress = (value: number): number => Math.min(Math.max(value, 0), 1);
+
+    const updateMenuAria = (isOpen: boolean): void => {
+        if (isHTMLButtonElement(menuButton)) {
+            menuButton.setAttribute("aria-expanded", String(isOpen));
+            menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
+        }
+        sidebar.setAttribute("aria-expanded", String(isOpen));
+    };
+
+    const clearInlineMenuProgress = (): void => {
+        profileApp.style.removeProperty("--menu-progress");
         profileApp.style.removeProperty("touch-action");
         sidebar.style.removeProperty("touch-action");
     };
 
-    const applyMenuDragState = (height: number, heights: { closed: number; open: number }): void => {
-        const delta = Math.max(heights.open - heights.closed, 1);
-        const progress = Math.min(Math.max((height - heights.closed) / delta, 0), 1);
-        const topHeight = Math.max(Math.round(navTop.getBoundingClientRect().height), 38);
-        const bottomHeight = Math.max(Math.round(navBottom.scrollHeight), 38);
-        const bottomVisibleHeight = Math.round(bottomHeight * progress);
-
+    const applyMenuProgress = (progress: number): void => {
+        lastProgress = clampProgress(progress);
         profileApp.classList.add("is-mobile-menu-dragging");
-        sidebar.style.height = `${height}px`;
-        sidebar.style.minHeight = `${height}px`;
-        sidebar.style.maxHeight = `${height}px`;
-        sidebar.style.gridTemplateRows = `${topHeight}px ${bottomVisibleHeight}px`;
-        sidebar.style.gap = `${12 * progress}px`;
-        sidebar.style.transform = `translateY(${18 * (1 - progress)}px)`;
-        navBottom.style.maxHeight = `${bottomVisibleHeight}px`;
-        navBottom.style.opacity = progress.toFixed(3);
-        navBottom.style.transform = `translateY(${8 * (1 - progress)}px)`;
-        navBottom.style.pointerEvents = progress > 0.98 ? "auto" : "none";
+        profileApp.style.setProperty("--menu-progress", lastProgress.toFixed(4));
         profileApp.style.touchAction = "none";
+        sidebar.style.touchAction = "none";
     };
 
-    const getMenuHeights = (): { closed: number; open: number } => {
-        const wasOpen = profileApp.classList.contains("is-mobile-menu-open");
-        const currentHeight = Math.round(sidebar.getBoundingClientRect().height);
+    const stopDragAnimation = (): void => {
+        if (dragFrameId !== null) {
+            window.cancelAnimationFrame(dragFrameId);
+            dragFrameId = null;
+        }
+    };
 
-        if (wasOpen) {
-            profileApp.classList.remove("is-mobile-menu-dragging");
-            clearDragStyles();
-            profileApp.classList.remove("is-mobile-menu-open");
-            const closedHeight = Math.round(sidebar.getBoundingClientRect().height);
-            profileApp.classList.add("is-mobile-menu-open");
-            return { closed: closedHeight, open: currentHeight };
+    const runDragAnimation = (timestamp: number): void => {
+        if (lastDragFrameTime === 0) {
+            lastDragFrameTime = timestamp;
         }
 
-        profileApp.classList.add("is-mobile-menu-open");
-        const openHeight = Math.round(sidebar.getBoundingClientRect().height);
-        profileApp.classList.remove("is-mobile-menu-open");
-        return { closed: currentHeight, open: openHeight };
+        const frameDelta = Math.min(Math.max(timestamp - lastDragFrameTime, 8), 32);
+        lastDragFrameTime = timestamp;
+        const smoothing = 1 - Math.pow(1 - MOBILE_MENU_DRAG_SMOOTHING, frameDelta / 16.67);
+        displayedProgress += (targetProgress - displayedProgress) * smoothing;
+
+        if (Math.abs(targetProgress - displayedProgress) < 0.001) {
+            displayedProgress = targetProgress;
+            applyMenuProgress(displayedProgress);
+            dragFrameId = null;
+            lastDragFrameTime = 0;
+            return;
+        }
+
+        applyMenuProgress(displayedProgress);
+        dragFrameId = window.requestAnimationFrame(runDragAnimation);
     };
 
-    const setMenuOpen = (isOpen: boolean): void => {
-        clearDragStyles();
+    const setTargetProgress = (progress: number): void => {
+        targetProgress = clampProgress(progress);
+        if (dragFrameId === null) {
+            lastDragFrameTime = 0;
+            dragFrameId = window.requestAnimationFrame(runDragAnimation);
+        }
+    };
+
+    const readCurrentMenuProgress = (): number => {
+        const inlineProgress = profileApp.style.getPropertyValue("--menu-progress");
+        if (inlineProgress) {
+            const parsed = Number.parseFloat(inlineProgress);
+            if (Number.isFinite(parsed)) {
+                return clampProgress(parsed);
+            }
+        }
+
+        return profileApp.classList.contains("is-mobile-menu-open") ? 1 : 0;
+    };
+
+    const cancelSnapAnimation = (): void => {
+        if (snapTimer !== null) {
+            window.clearTimeout(snapTimer);
+            snapTimer = null;
+        }
+
+        profileApp.classList.remove("is-mobile-menu-snapping");
+    };
+
+    const setMenuOpenInstant = (isOpen: boolean): void => {
+        cancelSnapAnimation();
+        stopDragAnimation();
+        profileApp.classList.remove("is-mobile-menu-dragging");
+        profileApp.classList.remove("is-mobile-menu-snapping");
         profileApp.classList.toggle("is-mobile-menu-open", isOpen);
-        menuButton.setAttribute("aria-expanded", String(isOpen));
-        menuButton.setAttribute("aria-label", isOpen ? "Закрыть меню" : "Открыть меню");
+        updateMenuAria(isOpen);
+        clearInlineMenuProgress();
+        lastProgress = isOpen ? 1 : 0;
+        displayedProgress = lastProgress;
+        targetProgress = lastProgress;
     };
 
-    menuButton.addEventListener("click", () => {
-        setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
-    });
+    const snapMenuTo = (targetProgressValue: number): void => {
+        cancelSnapAnimation();
+        stopDragAnimation();
+
+        const target = clampProgress(targetProgressValue);
+        profileApp.classList.remove("is-mobile-menu-dragging");
+        profileApp.classList.add("is-mobile-menu-snapping");
+        profileApp.style.setProperty("--menu-progress", displayedProgress.toFixed(4));
+
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                profileApp.style.setProperty("--menu-progress", target.toFixed(4));
+            });
+        });
+
+        snapTimer = window.setTimeout(() => {
+            snapTimer = null;
+            setMenuOpenInstant(target >= 0.5);
+        }, MOBILE_MENU_SNAP_MS);
+    };
+
+    const setMenuOpen = (isOpen: boolean, animate = true): void => {
+        const target = isOpen ? 1 : 0;
+        if (!animate || Math.abs(lastProgress - target) < 0.02) {
+            setMenuOpenInstant(isOpen);
+            return;
+        }
+
+        snapMenuTo(target);
+    };
+
+    if (isHTMLButtonElement(menuButton)) {
+        menuButton.addEventListener("click", () => {
+            setMenuOpen(!profileApp.classList.contains("is-mobile-menu-open"));
+        });
+    }
 
     if (backdrop instanceof HTMLElement) {
         backdrop.addEventListener("click", () => {
@@ -4040,13 +4688,117 @@ function wireMobileProfileMenu(): void {
     }
 
     profileMount.querySelectorAll<HTMLButtonElement>(".profile-sidebar .profile-nav-button").forEach((button) => {
-        button.addEventListener("click", () => {
-            setMenuOpen(false);
+        button.addEventListener("click", (event) => {
+            if (Date.now() < suppressNavClickUntil) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+            }
+
+            if (profileApp.classList.contains("is-mobile-menu-open")) {
+                setMenuOpen(false);
+            }
         });
     });
 
-    profileApp.addEventListener("pointerdown", (event: PointerEvent) => {
-        if (!window.matchMedia(MOBILE_AUTH_QUERY).matches || event.pointerType === "mouse" || event.button !== 0) {
+    const resetGesture = (): void => {
+        activePointerId = null;
+        dragMode = null;
+        dragHeights = null;
+        isDragging = false;
+    };
+
+    const updateGesture = (clientX: number, clientY: number, preventDefault?: () => void): void => {
+        if (!dragMode || !dragHeights) {
+            return;
+        }
+
+        const deltaY = startY - clientY;
+        const deltaX = clientX - startX;
+
+        if (!isDragging) {
+            if (Math.abs(deltaY) < 4) {
+                return;
+            }
+
+            if (Math.abs(deltaY) <= Math.abs(deltaX) * 0.85) {
+                return;
+            }
+
+            isDragging = true;
+            preventDefault?.();
+        }
+
+        preventDefault?.();
+
+        const now = performance.now();
+        if (lastMoveTime > 0) {
+            const moveDelta = now - lastMoveTime;
+            if (moveDelta > 0) {
+                velocityY = (lastMoveY - clientY) / moveDelta;
+            }
+        }
+        lastMoveY = clientY;
+        lastMoveTime = now;
+
+        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
+        const distance = Math.max(rawDistance, 0) * MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY;
+        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
+        const progress =
+            dragMode === "open"
+                ? clampProgress(distance / maxDistance)
+                : clampProgress(1 - distance / maxDistance);
+
+        setTargetProgress(progress);
+    };
+
+    const finishGesture = (clientX: number, clientY: number): void => {
+        if (activePointerId === null) {
+            return;
+        }
+
+        if (!dragMode || !dragHeights) {
+            activePointerId = null;
+            return;
+        }
+
+        stopDragAnimation();
+        displayedProgress = targetProgress;
+        lastProgress = displayedProgress;
+
+        const deltaY = startY - clientY;
+        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
+        const distance = Math.max(rawDistance, 0) * MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY;
+        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
+        const progress = clampProgress(distance / maxDistance);
+
+        if (isDragging) {
+            suppressNavClickUntil = Date.now() + 450;
+        }
+
+        let shouldOpen = dragStartedOpen;
+        if (isDragging && dragMode === "open") {
+            shouldOpen =
+                velocityY >= MOBILE_BOTTOM_NAV_FLING_VELOCITY ||
+                distance >= MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX ||
+                progress >= 0.2 ||
+                lastProgress >= 0.55;
+        } else if (isDragging && dragMode === "close") {
+            shouldOpen = !(
+                velocityY <= -MOBILE_BOTTOM_NAV_FLING_VELOCITY ||
+                distance >= MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX ||
+                progress >= 0.2 ||
+                lastProgress <= 0.45
+            );
+        }
+
+        activePointerId = null;
+        resetGesture();
+        setMenuOpen(shouldOpen, isDragging);
+    };
+
+    const onPointerDown = (event: PointerEvent): void => {
+        if (!isBottomNavLayout() || event.pointerType === "mouse" && event.button !== 0) {
             return;
         }
 
@@ -4055,90 +4807,44 @@ function wireMobileProfileMenu(): void {
         }
 
         const target = event.target;
-        if (!(target instanceof Element)) {
-            return;
-        }
-
-        if (target.closest(".profile-nav-button, .profile-modal, button, input, textarea, select, a")) {
+        if (!(target instanceof Element) || target.closest(".profile-modal")) {
             return;
         }
 
         const isOpen = profileApp.classList.contains("is-mobile-menu-open");
-        const appRect = profileApp.getBoundingClientRect();
-        const sidebarRect = sidebar.getBoundingClientRect();
-        const isNearBottom = event.clientY >= appRect.bottom - 160;
-        const isInsideSidebar = event.clientY >= sidebarRect.top - 18;
+        cancelSnapAnimation();
+        stopDragAnimation();
 
-        if ((!isOpen && !isNearBottom) || (isOpen && !isInsideSidebar)) {
-            return;
-        }
-
+        startX = event.clientX;
         startY = event.clientY;
         activePointerId = event.pointerId;
         dragStartedOpen = isOpen;
         dragMode = isOpen ? "close" : "open";
         dragHeights = getMenuHeights();
         isDragging = false;
-        profileApp.style.touchAction = "none";
-        sidebar.style.touchAction = "none";
-        event.preventDefault();
-        sidebar.setPointerCapture(event.pointerId);
-    });
+        lastMoveY = event.clientY;
+        lastMoveTime = 0;
+        velocityY = 0;
+        lastProgress = readCurrentMenuProgress();
+        displayedProgress = lastProgress;
+        targetProgress = lastProgress;
 
-    profileApp.addEventListener("pointermove", (event: PointerEvent) => {
-        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
-            return;
+        try {
+            sidebar.setPointerCapture(event.pointerId);
+        } catch {
+            // Ignore capture errors on unsupported targets.
         }
-
-        const deltaY = startY - event.clientY;
-        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
-        const distance = Math.max(rawDistance, 0);
-        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
-        const nextHeight =
-            dragMode === "open"
-                ? Math.min(dragHeights.closed + distance, dragHeights.open)
-                : Math.max(dragHeights.open - distance, dragHeights.closed);
-
-        if (distance > 4) {
-            isDragging = true;
-            event.preventDefault();
-        }
-
-        applyMenuDragState(nextHeight, dragHeights);
-
-        if (distance >= maxDistance) {
-            applyMenuDragState(dragMode === "open" ? dragHeights.open : dragHeights.closed, dragHeights);
-        }
-    });
-
-    const finishSwipe = (event: PointerEvent): void => {
-        if (activePointerId !== event.pointerId || !dragMode || !dragHeights) {
-            return;
-        }
-
-        const deltaY = startY - event.clientY;
-        const rawDistance = dragMode === "open" ? deltaY : -deltaY;
-        const distance = Math.max(rawDistance, 0);
-        const maxDistance = Math.max(dragHeights.open - dragHeights.closed, 1);
-        const shouldOpen =
-            dragMode === "open"
-                ? isDragging && distance / maxDistance > 0.35
-                : !(isDragging && distance / maxDistance > 0.35);
-
-        if (sidebar.hasPointerCapture(event.pointerId)) {
-            sidebar.releasePointerCapture(event.pointerId);
-        }
-
-        activePointerId = null;
-        dragMode = null;
-        dragHeights = null;
-        dragStartedOpen = false;
-        isDragging = false;
-        setMenuOpen(shouldOpen);
     };
 
-    profileApp.addEventListener("pointerup", finishSwipe);
-    profileApp.addEventListener("pointercancel", (event: PointerEvent) => {
+    const onPointerMove = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        updateGesture(event.clientX, event.clientY, () => event.preventDefault());
+    };
+
+    const onPointerUp = (event: PointerEvent): void => {
         if (activePointerId !== event.pointerId) {
             return;
         }
@@ -4147,14 +4853,26 @@ function wireMobileProfileMenu(): void {
             sidebar.releasePointerCapture(event.pointerId);
         }
 
-        activePointerId = null;
-        dragMode = null;
-        dragHeights = null;
-        const fallbackOpenState = dragStartedOpen;
-        dragStartedOpen = false;
-        isDragging = false;
-        setMenuOpen(fallbackOpenState);
-    });
+        finishGesture(event.clientX, event.clientY);
+    };
+
+    const onPointerCancel = (event: PointerEvent): void => {
+        if (activePointerId !== event.pointerId) {
+            return;
+        }
+
+        if (sidebar.hasPointerCapture(event.pointerId)) {
+            sidebar.releasePointerCapture(event.pointerId);
+        }
+
+        setMenuOpenInstant(dragStartedOpen);
+        resetGesture();
+    };
+
+    sidebar.addEventListener("pointerdown", onPointerDown, { passive: false });
+    sidebar.addEventListener("pointermove", onPointerMove, { passive: false });
+    sidebar.addEventListener("pointerup", onPointerUp, { passive: false });
+    sidebar.addEventListener("pointercancel", onPointerCancel, { passive: false });
 }
 
 function wireProfileViewEvents(): void {
@@ -4164,15 +4882,21 @@ function wireProfileViewEvents(): void {
 
     wireMobileProfileMenu();
 
-    const photoEl = profileMount.querySelector(".profile-photo");
-    if (photoEl instanceof HTMLElement) {
-        const src = getAvatarDisplay();
-        if (src) {
-            photoEl.classList.add("has-image");
-            photoEl.style.backgroundImage = `url(${JSON.stringify(src)})`;
-        } else {
-            photoEl.classList.remove("has-image");
-            photoEl.style.removeProperty("background-image");
+    if (appState.dashboardSection === "profile") {
+        const photoEl = profileMount.querySelector("#profileOwnPhoto");
+        if (photoEl instanceof HTMLElement) {
+            const src = getAvatarDisplay();
+            const img = photoEl.querySelector(".profile-photo-image");
+            if (src) {
+                photoEl.classList.add("has-image");
+                photoEl.style.removeProperty("background-image");
+                if (img instanceof HTMLImageElement) {
+                    img.src = src;
+                }
+            } else {
+                photoEl.classList.remove("has-image");
+                photoEl.style.removeProperty("background-image");
+            }
         }
     }
     profileAchievementScrollResizeObserver?.disconnect();
@@ -4207,7 +4931,7 @@ function wireProfileViewEvents(): void {
     const settingsButton = profileMount.querySelector("#profileSettingsButton");
     if (isHTMLButtonElement(settingsButton)) {
         settingsButton.addEventListener("click", () => {
-            openProfileModal("personal");
+            openSettingsView();
         });
     }
 
@@ -4228,10 +4952,7 @@ function wireProfileViewEvents(): void {
     const ratingTrackButton = profileMount.querySelector("#profileRatingTrackButton");
     if (isHTMLButtonElement(ratingTrackButton)) {
         ratingTrackButton.addEventListener("click", () => {
-            appState.dashboardSection = "rating";
-            persistDashboardSectionToStorage();
-            clearStatus();
-            render();
+            openRatingDashboard();
         });
     }
 
@@ -4255,6 +4976,11 @@ function wireProfileViewEvents(): void {
                 resetEventsCalendarToToday();
             }
 
+            if (section === "rating") {
+                openRatingDashboard();
+                return;
+            }
+
             appState.dashboardSection = section;
             persistDashboardSectionToStorage();
             clearStatus();
@@ -4274,6 +5000,9 @@ function wireProfileViewEvents(): void {
     }
     if (appState.dashboardSection === "team" && isHTMLElement(profileMount)) {
         wireTeamPageEvents(profileMount);
+    }
+    if (appState.dashboardSection === "settings") {
+        wireSettingsPageEvents();
     }
     wireEventsDashboardEvents();
     wireEventsModalEvents();
@@ -4302,10 +5031,15 @@ function wireProfileViewEvents(): void {
                 return;
             }
 
+            const numericMemberId = parseVoteTargetUserId(memberId);
+            const hadExistingVote = numericMemberId !== null
+                && appState.teamMyVotes.some((vote) => vote.toUserId === numericMemberId);
+
             void submitTeamVote(memberId, score)
                 .then(() => {
-                    setStatus("Голос сохранен.");
+                    setStatus(hadExistingVote ? "Оценка изменена." : "Голос сохранен.");
                     closeTeamModal();
+                    render();
                 })
                 .catch((error: unknown) => {
                     setStatus(getErrorMessage(error), "error");
@@ -4528,6 +5262,10 @@ function wireProfileViewEvents(): void {
     const avatarInput = profileMount.querySelector("#profileAvatarInput");
     if (isHTMLInputElement(avatarInput) && appState.profileFormDraft) {
         avatarInput.addEventListener("change", () => {
+            if (appState.dashboardSection === "settings") {
+                return;
+            }
+
             const file = avatarInput.files?.[0];
             if (!file) {
                 return;
@@ -4930,9 +5668,16 @@ function syncPersonalFormDraftFromDom(): void {
     }
 }
 
-async function submitPersonalProfileSave(): Promise<void> {
-    if (appState.profileModal !== "personal") {
-        return;
+type PersonalProfileSaveOptions = {
+    silent?: boolean;
+    skipRender?: boolean;
+};
+
+async function submitPersonalProfileSave(options: PersonalProfileSaveOptions = {}): Promise<boolean> {
+    const { silent = false, skipRender = false } = options;
+
+    if (!isPersonalProfileEditingOpen()) {
+        return false;
     }
 
     syncPersonalFormDraftFromDom();
@@ -4940,22 +5685,34 @@ async function submitPersonalProfileSave(): Promise<void> {
     const draft = appState.profileFormDraft;
     const p = appState.profile;
     if (!draft || !p) {
-        setStatus("Откройте форму через «НАСТРОЙКИ» и попробуйте снова.", "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus("Откройте форму через «НАСТРОЙКИ» и попробуйте снова.", "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     draft.group = normalizeAcademicGroupInput(draft.group);
     if (!isAcademicGroupValid(draft.group)) {
-        setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus("Поле «АКАДЕМ. ГРУППА» заполните в формате РИ-150909.", "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     if (!isProfileAvatarDataUrlWithinLimit(draft.avatarDataUrl)) {
-        setStatus(getProfileAvatarSizeLimitMessage(), "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus(getProfileAvatarSizeLimitMessage(), "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     appState.profileEdits = {
@@ -4969,9 +5726,13 @@ async function submitPersonalProfileSave(): Promise<void> {
     try {
         persistSavedProfileEdits();
     } catch {
-        setStatus(getProfileAvatarSizeLimitMessage(), "error");
-        render();
-        return;
+        if (!silent) {
+            setStatus(getProfileAvatarSizeLimitMessage(), "error");
+        }
+        if (!skipRender) {
+            render();
+        }
+        return false;
     }
 
     try {
@@ -4988,13 +5749,20 @@ async function submitPersonalProfileSave(): Promise<void> {
         avatarDataUrl: draft.avatarDataUrl
     };
 
-    closeProfileModal();
+    if (appState.profileModal === "personal") {
+        closeProfileModal();
+    } else {
+        appState.profileFormDraft = { ...savedEdits };
+        syncSettingsFieldDisplaysFromDraft();
+    }
 
-    pushUserActivity({
-        kind: "profile_updated",
-        title: "ПРОФИЛЬ ОБНОВЛЁН",
-        description: "Личные данные сохранены."
-    });
+    if (!silent) {
+        pushUserActivity({
+            kind: "profile_updated",
+            title: "ПРОФИЛЬ ОБНОВЛЁН",
+            description: "Личные данные сохранены."
+        });
+    }
 
     if (session) {
         void (async () => {
@@ -5004,17 +5772,28 @@ async function submitPersonalProfileSave(): Promise<void> {
                 appState.profileEdits = savedEdits;
                 applyProfileEditsToInMemoryProfile();
                 persistSavedProfileEdits();
-                setStatus("Данные сохранены на сервере и в этом браузере.");
+                if (!silent) {
+                    setStatus("Данные сохранены на сервере и в этом браузере.");
+                }
             } catch (error) {
-                setStatus(`Сохранено в браузере. Сервер: ${getErrorMessage(error)}`, "error");
+                if (!silent) {
+                    setStatus(`Сохранено в браузере. Сервер: ${getErrorMessage(error)}`, "error");
+                }
             }
-            render();
+            if (!skipRender) {
+                render();
+            }
         })();
-        return;
+        return true;
     }
 
-    setStatus("Сохранено локально (нет активной сессии для сервера).");
-    render();
+    if (!silent) {
+        setStatus("Сохранено локально (нет активной сессии для сервера).");
+    }
+    if (!skipRender) {
+        render();
+    }
+    return true;
 }
 
 if (profileMount instanceof HTMLElement) {

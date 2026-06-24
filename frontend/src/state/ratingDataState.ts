@@ -3,23 +3,34 @@ import type { RatingTeam, RatingUser } from "../types/rating";
 
 let ratingTeams: RatingTeam[] = [];
 let ratingUsers: RatingUser[] = [];
+let ratingUsesSessionData = false;
 
 export function setRatingData(teams: RatingTeam[], users: RatingUser[]): void {
     ratingTeams = teams;
     ratingUsers = users;
+    ratingUsesSessionData = true;
 }
 
 export function clearRatingData(): void {
     ratingTeams = [];
     ratingUsers = [];
+    ratingUsesSessionData = false;
 }
 
 export function getRatingTeams(): RatingTeam[] {
-    return ratingTeams.length ? ratingTeams : DEMO_RATING_TEAMS.map(normalizeTeam);
+    if (ratingUsesSessionData) {
+        return ratingTeams;
+    }
+
+    return DEMO_RATING_TEAMS.map(normalizeTeam);
 }
 
 export function getRatingUsers(): RatingUser[] {
-    return ratingUsers.length ? ratingUsers : DEMO_RATING_USERS.map(normalizeUser);
+    if (ratingUsesSessionData) {
+        return ratingUsers;
+    }
+
+    return DEMO_RATING_USERS.map(normalizeUser);
 }
 
 export function getRatingTeamById(teamId: string): RatingTeam | undefined {
@@ -27,9 +38,8 @@ export function getRatingTeamById(teamId: string): RatingTeam | undefined {
 }
 
 export function getRatingUserById(userId: string): RatingUser | undefined {
-    return getRatingUsers().find((user) => user.id === userId);
+    return getRatingUsers().find((item) => item.id === userId);
 }
-
 function normalizeTeam(team: RatingTeam): RatingTeam {
     return {
         league: "ПРОФИ",
@@ -50,6 +60,7 @@ function normalizeUser(user: RatingUser): RatingUser {
         teamName: "",
         groupTitle: "",
         isCaptain: false,
+        avatarUrl: "",
         ...user
     };
 }

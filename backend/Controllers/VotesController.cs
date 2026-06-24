@@ -113,4 +113,56 @@ public class VotesController : ApiControllerBase
                 statusCode: StatusCodes.Status500InternalServerError)
         };
     }
+
+    /// <summary>
+    /// Изменяет ранее отданный голос за участника своей команды.
+    /// </summary>
+    /// <param name="request">Идентификатор участника и новая оценка по 5-балльной шкале.</param>
+    /// <param name="cancellationToken">Токен отмены запроса.</param>
+    /// <returns>Обновлённый голос.</returns>
+    [HttpPut]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType<VoteResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<VoteResponse>> Update(CreateVoteDto request, CancellationToken cancellationToken)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _votesService.UpdateAsync(userId.Value, request, cancellationToken);
+        return result.Type switch
+        {
+            VoteUpdateResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            VoteUpdateResultType.UserHasNoTeam => Conflict(Problem(
+                title: "Team required",
+                detail: "You must belong to a team before voting.",
+                statusCode: StatusCodes.Status409Conflict)),
+            VoteUpdateResultType.TargetUserNotFound => NotFound(Problem(
+                title: "Target user not found",
+                detail: "The selected teammate was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            VoteUpdateResultType.DifferentTeams => BadRequest(Problem(
+                title: "Invalid vote target",
+                detail: "You can vote only for members of your own team.",
+                statusCode: StatusCodes.Status400BadRequest)),
+            VoteUpdateResultType.VoteNotFound => NotFound(Problem(
+                title: "Vote not found",
+                detail: "You have not voted for this teammate yet.",
+                statusCode: StatusCodes.Status404NotFound)),
+            VoteUpdateResultType.Updated when result.Vote is not null => Ok(result.Vote),
+            _ => Problem(
+                title: "Vote update failed",
+                detail: "The vote could not be updated.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
 }

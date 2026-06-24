@@ -21,6 +21,9 @@ export interface AppBridge {
     getTeamInviteCode: () => string;
     getTeamHistory: () => TeamHistoryItem[];
     getJoinableTeams: () => TeamSearchItem[];
+    getCurrentUserAvatarUrl: () => string;
+    getCurrentUserId: () => string;
+    isCurrentUser: (userId: string) => boolean;
     joinTeamByInviteCode: (code: string) => Promise<JoinTeamResult>;
     requestTeamJoin: (teamId: number) => Promise<void>;
     createTeam: (name: string, direction: string) => Promise<void>;

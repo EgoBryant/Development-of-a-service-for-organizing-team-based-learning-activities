@@ -2,10 +2,11 @@
 FROM node:20-alpine AS webbuild
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm install
+RUN npm install -g typescript vite \
+    && npm install --include=dev
 COPY frontend/ ./
-ENV NODE_ENV=production
 RUN npm run build
+ENV NODE_ENV=production
 
 # ---- API publish ----
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build

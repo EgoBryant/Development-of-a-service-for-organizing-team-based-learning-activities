@@ -925,6 +925,192 @@
     min-height: 38px;
 }
 
+.profile-app--dashboard-profile:has(.rating-dashboard-main) .profile-sidebar {
+    align-self: stretch;
+    min-height: 0;
+}
+
+.profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-dashboard-main {
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+.profile-app--dashboard-profile:has(.rating-dashboard-main) .rating-leaderboard {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-hero-card,
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-achievements {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-top {
+    display: grid;
+    grid-template-columns: minmax(220px, 290px) minmax(0, 1fr);
+    align-items: start;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-photo {
+    aspect-ratio: 0.86;
+    max-height: clamp(270px, 42vh, 345px);
+    border-radius: 26px;
+    background: rgba(240, 245, 255, 1);
+    box-shadow: 0 18px 38px rgba(24, 76, 163, 0.22);
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-stats-col {
+    justify-content: space-around;
+    gap: clamp(16px, 4vh, 100px);
+    padding: 15px clamp(34px, 3vw, 58px) 0 0;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-stat-track {
+    min-height: clamp(66px, 8.2vh, 78px);
+    display: grid;
+    grid-template-columns: minmax(190px, 0.42fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0;
+    padding: 0 22px 0 12px;
+    border-radius: 999px;
+    background: rgba(240, 245, 255, 1);
+    box-shadow: 0 12px 24px rgba(34, 79, 155, 0.12);
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team {
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    gap: clamp(28px, 4vh, 52px);
+    padding: 0 clamp(22px, 3vh, 34px) 0 0;
+    box-sizing: border-box;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-upper {
+    flex: 0 0 auto;
+    gap: clamp(18px, 2.2vh, 32px);
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-lower {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-top: clamp(8px, 1.2vh, 16px);
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-topbar {
+    padding: 0;
+    gap: 28px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-topbar-tabs,
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-topbar-krk {
+    min-height: 58px;
+    border-radius: 999px;
+    background: rgba(240, 245, 255, 0.96);
+    box-shadow: 0 9px 18px rgba(33, 78, 154, 0.14);
+    box-sizing: border-box;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-topbar-tabs {
+    flex: 1 1 0;
+    display: grid;
+    grid-template-columns: 1fr 0.72fr;
+    gap: 0;
+    padding: 0 12px;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-topbar-krk {
+    flex: 1 1 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap {
+    min-height: 280px;
+    align-items: flex-start;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
+    gap: 40px;
+    padding: 0 0 0 10px;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-arrow {
+    width: 40px;
+    height: 40px;
+    margin-top: 118px;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-panel {
+    flex: 0 0 auto;
+    height: clamp(320px, 38vh, 420px);
+    min-height: 320px;
+    max-height: 420px;
+    margin-top: clamp(4px, 0.8vh, 10px);
+    padding: 24px 30px 18px;
+    border-radius: 28px;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-title {
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card {
+    width: 172px;
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    align-items: center;
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-avatar {
+    aspect-ratio: 3 / 4;
+    border-radius: 24px;
+    background: rgba(240, 245, 255, 1);
+    box-shadow: 0 12px 28px rgba(60, 80, 200, 0.22);
+}
+
+.profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-role {
+    width: 100%;
+    margin-top: -20px;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    background: rgba(255, 255, 255, 1);
+    color: rgba(78, 95, 205, 1);
+    box-shadow: 0 10px 20px rgba(60, 80, 200, 0.22);
+}
+
 .start-pill-button,
 .auth-submit-pill,
 .profile-nav-button,

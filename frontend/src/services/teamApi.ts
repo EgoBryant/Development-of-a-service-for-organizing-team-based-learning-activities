@@ -175,3 +175,15 @@ export function createVote(
         body: JSON.stringify({ toUserId, score })
     });
 }
+
+export function updateVote(
+    token: string,
+    toUserId: number,
+    score: number
+): Promise<VoteResponse> {
+    return request<VoteResponse>("/api/votes", {
+        method: "PUT",
+        headers: authHeaders(token),
+        body: JSON.stringify({ toUserId, score })
+    });
+}

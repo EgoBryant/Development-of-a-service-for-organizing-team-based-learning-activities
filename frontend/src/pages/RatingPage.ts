@@ -1,9 +1,8 @@
 import { getAppBridge } from "../app/bridge";
 import { isRescueDraftComplete, renderRescueModal } from "../components/modals/RescueModal";
-import { renderUserProfileCard, handleUserProfileTeamOpen } from "../components/profile/UserProfileCard";
-import { handleTeamMemberClick, handleTeamRescueOpen, renderTeamProfileCard } from "../components/profile/TeamProfileCard";
-import { renderTeamsRatingBlock } from "../components/rating/TeamsRatingBlock";
-import { renderUsersRatingBlock } from "../components/rating/UsersRatingBlock";
+import { renderRatingLeaderboardBlock } from "../components/rating/RatingLeaderboardBlock";
+import { handleTeamMemberClick, renderPublicTeamProfile } from "../components/rating/PublicTeamProfile";
+import { renderPublicUserProfile } from "../components/rating/PublicUserProfile";
 import {
     backToRatingLeaderboard,
     closeRatingRescueModal,
@@ -22,23 +21,29 @@ import {
 
 function renderRatingBody(): string {
     if (ratingFlowState.view === "user" && ratingFlowState.selectedUserId) {
-        return renderUserProfileCard(ratingFlowState.selectedUserId);
+        return renderPublicUserProfile(ratingFlowState.selectedUserId);
     }
 
     if (ratingFlowState.view === "team" && ratingFlowState.selectedTeamId) {
-        return renderTeamProfileCard(ratingFlowState.selectedTeamId);
+        return renderPublicTeamProfile(ratingFlowState.selectedTeamId);
     }
 
-    return `
-        <div class="rating-panels-stack">
-            ${renderTeamsRatingBlock()}
-            ${renderUsersRatingBlock()}
-        </div>`;
+    return renderRatingLeaderboardBlock();
+}
+
+function resolveRatingMainClass(): string {
+    if (ratingFlowState.view === "user") {
+        return "profile-main rating-dashboard-main rating-page rating-page--public-user";
+    }
+    if (ratingFlowState.view === "team") {
+        return "profile-main team-dashboard-main team-page rating-page rating-page--public-team";
+    }
+    return "profile-main rating-dashboard-main rating-page";
 }
 
 export function renderRatingPageMain(statusHtml: string): string {
     return `
-        <section class="profile-main rating-dashboard-main rating-page">
+        <section class="${resolveRatingMainClass()}">
             ${statusHtml}
             ${renderRatingBody()}
         </section>`;
@@ -73,45 +78,55 @@ function syncRescueDraftFromForm(root: HTMLElement): void {
 }
 
 function restoreSearchFocus(root: HTMLElement): void {
-    if (ratingFlowState.usersSearchFocus) {
-        ratingFlowState.usersSearchFocus = false;
-        const input = root.querySelector("#ratingUsersSearchInput");
-        if (isHTMLInputElement(input)) {
-            const cursor = input.value.length;
-            input.focus();
-            input.setSelectionRange(cursor, cursor);
-        }
+    const tab = ratingFlowState.leaderboardTab;
+    const shouldFocus =
+        (tab === "users" && ratingFlowState.usersSearchFocus) ||
+        (tab === "teams" && ratingFlowState.teamsSearchFocus);
+
+    if (!shouldFocus) {
         return;
     }
 
-    if (ratingFlowState.teamsSearchFocus) {
+    if (tab === "users") {
+        ratingFlowState.usersSearchFocus = false;
+    } else {
         ratingFlowState.teamsSearchFocus = false;
-        const input = root.querySelector("#ratingTeamsSearchInput");
-        if (isHTMLInputElement(input)) {
-            const cursor = input.value.length;
-            input.focus();
-            input.setSelectionRange(cursor, cursor);
-        }
+    }
+
+    const input = root.querySelector("#ratingLeaderboardSearchInput");
+    if (isHTMLInputElement(input)) {
+        const cursor = input.value.length;
+        input.focus();
+        input.setSelectionRange(cursor, cursor);
     }
 }
 
 export function wireRatingPageEvents(root: HTMLElement): void {
     const bridge = getAppBridge();
 
-    const usersSearch = root.querySelector("#ratingUsersSearchInput");
-    if (isHTMLInputElement(usersSearch)) {
-        usersSearch.addEventListener("input", () => {
-            ratingFlowState.usersSearch = usersSearch.value;
-            ratingFlowState.usersSearchFocus = true;
+    root.querySelectorAll<HTMLButtonElement>("[data-rating-leaderboard-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const tab = button.dataset.ratingLeaderboardTab;
+            if (tab !== "teams" && tab !== "users") {
+                return;
+            }
+            ratingFlowState.leaderboardTab = tab;
+            ratingFlowState.usersFilterOpen = false;
+            ratingFlowState.teamsFilterOpen = false;
             bridge.render();
         });
-    }
+    });
 
-    const teamsSearch = root.querySelector("#ratingTeamsSearchInput");
-    if (isHTMLInputElement(teamsSearch)) {
-        teamsSearch.addEventListener("input", () => {
-            ratingFlowState.teamsSearch = teamsSearch.value;
-            ratingFlowState.teamsSearchFocus = true;
+    const leaderboardSearch = root.querySelector("#ratingLeaderboardSearchInput");
+    if (isHTMLInputElement(leaderboardSearch)) {
+        leaderboardSearch.addEventListener("input", () => {
+            if (ratingFlowState.leaderboardTab === "users") {
+                ratingFlowState.usersSearch = leaderboardSearch.value;
+                ratingFlowState.usersSearchFocus = true;
+            } else {
+                ratingFlowState.teamsSearch = leaderboardSearch.value;
+                ratingFlowState.teamsSearchFocus = true;
+            }
             bridge.render();
         });
     }
@@ -181,37 +196,19 @@ export function wireRatingPageEvents(root: HTMLElement): void {
         });
     }
 
-    root.querySelectorAll<HTMLButtonElement>("[data-rating-user-tab]").forEach((button) => {
+    root.querySelectorAll<HTMLButtonElement>("[data-rating-open-team]").forEach((button) => {
         button.addEventListener("click", () => {
-            const tab = button.dataset.ratingUserTab;
-            if (tab === "rating" || tab === "achievements") {
-                ratingFlowState.userProfileTab = tab;
-                bridge.render();
+            const teamId = button.dataset.ratingOpenTeam ?? "";
+            if (!teamId) {
+                return;
             }
-        });
-    });
-
-    root.querySelectorAll<HTMLButtonElement>("[data-rating-invite-user]").forEach((button) => {
-        button.addEventListener("click", () => {
-            bridge.pushActivity({
-                kind: "invite_sent",
-                title: "ПРИГЛАШЕНИЕ",
-                description: "Приглашение в команду отправлено."
-            });
-            bridge.setStatus("Приглашение отправлено (демо).");
+            openRatingTeamProfile(teamId);
             bridge.render();
         });
     });
 
-    root.querySelectorAll<HTMLButtonElement>("[data-rating-open-team]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const teamId = button.dataset.ratingOpenTeam ?? "";
-            handleUserProfileTeamOpen(teamId);
-        });
-    });
-
     if (ratingFlowState.view === "team") {
-        root.querySelectorAll<HTMLButtonElement>(".rating-team-member-row[data-rating-user-id]").forEach((button) => {
+        root.querySelectorAll<HTMLButtonElement>(".rating-team-member-card[data-rating-user-id]").forEach((button) => {
             button.addEventListener("click", () => {
                 const userId = button.dataset.ratingUserId;
                 if (!userId) {
@@ -221,11 +218,28 @@ export function wireRatingPageEvents(root: HTMLElement): void {
                 bridge.render();
             });
         });
+
+        const carousel = root.querySelector<HTMLElement>("#ratingTeamCarousel");
+        const carouselPrev = root.querySelector("#ratingTeamCarouselPrev");
+        const carouselNext = root.querySelector("#ratingTeamCarouselNext");
+
+        if (isHTMLButtonElement(carouselPrev) && carousel) {
+            carouselPrev.addEventListener("click", () => {
+                carousel.scrollBy({ left: -212, behavior: "smooth" });
+            });
+        }
+
+        if (isHTMLButtonElement(carouselNext) && carousel) {
+            carouselNext.addEventListener("click", () => {
+                carousel.scrollBy({ left: 212, behavior: "smooth" });
+            });
+        }
     }
 
     root.querySelectorAll<HTMLButtonElement>("[data-rating-open-rescue]").forEach((button) => {
         button.addEventListener("click", () => {
-            handleTeamRescueOpen();
+            ratingFlowState.rescueOpen = true;
+            bridge.render();
         });
     });
 

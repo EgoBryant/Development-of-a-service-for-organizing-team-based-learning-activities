@@ -43,10 +43,14 @@
     background: rgba(240, 245, 255, 1);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 32px 20px;
     box-sizing: border-box;
     gap: 28px;
+}
+
+.profile-sidebar-swipe-handle {
+    display: none;
 }
 
 .profile-nav-top,
@@ -54,6 +58,10 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+
+.profile-nav-bottom {
+    margin-top: auto;
 }
 
 .profile-nav-button {
@@ -1391,7 +1399,8 @@
 
 .profile-app--dashboard-profile .profile-main,
 .profile-app--dashboard-profile .team-dashboard-main,
-.profile-app--dashboard-profile .rating-dashboard-main {
+.profile-app--dashboard-profile .rating-dashboard-main,
+.profile-app--dashboard-profile .settings-dashboard-main {
     position: relative;
     margin: 0;
     padding: 0;
