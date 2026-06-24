@@ -2309,6 +2309,7 @@
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-topbar {
+        --team-topbar-side-inset: clamp(7px, calc(9 / 360 * 100vw), 9px);
         --team-topbar-gap: clamp(8px, calc(14 / 360 * 100vw), 14px);
         --team-topbar-height: clamp(32px, calc(35 / 360 * 100vw), 35px);
         --team-topbar-action: calc(var(--team-topbar-height) * 27 / 35);
@@ -2322,9 +2323,10 @@
         grid-template-columns: minmax(0, 174fr) minmax(0, 109fr);
         align-items: center;
         gap: var(--team-topbar-gap);
-        width: 100%;
-        max-width: 100%;
+        width: calc(100% - 2 * var(--team-topbar-side-inset));
+        max-width: calc(100% - 2 * var(--team-topbar-side-inset));
         min-width: 0;
+        margin-inline: var(--team-topbar-side-inset);
         padding: 0;
         background: transparent;
         box-shadow: none;
