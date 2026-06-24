@@ -1076,6 +1076,49 @@
         margin-top: calc(var(--team-rescue-title-field-gap, 40px) - 10px);
     }
 
+    .team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page {
+        --checkin-podium-circle-size: 80px;
+        --checkin-podium-slot-width: 92px;
+        --checkin-podium-gap: 10px;
+        --checkin-podium-outset: 10px;
+        --checkin-podium-surface: rgba(240, 245, 255, 1);
+        gap: 8px;
+    }
+
+    .team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-purpose.team-rescue-purpose {
+        font-size: 15px;
+        letter-spacing: 0.01em;
+        line-height: 1.3;
+    }
+
+    .team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-form.team-rescue-form--team-page .team-checkin-textarea-wrap .team-checkin-textarea.team-rescue-textarea--description::placeholder {
+        font-size: 12px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-card.team-rescue-card--team-page.profile-modal-card {
+        padding-bottom: 36px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-podium {
+        min-height: 108px;
+        margin-bottom: 4px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-podium-slot--first {
+        transform: translateY(-4px);
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-podium-score {
+        min-width: 52px;
+        margin-top: -8px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page .team-rescue-submit {
+        margin-top: 10px;
+    }
+
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--name,
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-name-row .team-rescue-field--name,
     .team-rescue-modal.team-overlay-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-rescue-form--team-page .team-rescue-field--team,
@@ -3100,6 +3143,12 @@
         display: block;
     }
 
+    .profile-app--dashboard-profile:has(.team-dashboard-main) > .team-rescue-mobile-action:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
     .profile-app:has(.team-dashboard-main) .profile-sidebar,
     .profile-app:not(.profile-app--dashboard-profile) .profile-sidebar,
     .profile-app--dashboard-profile .profile-sidebar,
@@ -3234,6 +3283,49 @@
         min-width: var(--team-rescue-duo-btn-width);
         max-width: var(--team-rescue-duo-btn-width);
         margin-top: calc(var(--team-rescue-title-field-gap, 40px) - 8px);
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page {
+        --checkin-podium-circle-size: 80px;
+        --checkin-podium-slot-width: 92px;
+        --checkin-podium-gap: 10px;
+        --checkin-podium-outset: 10px;
+        --checkin-podium-surface: rgba(240, 245, 255, 1);
+        gap: 8px;
+    }
+
+    .team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-purpose.team-rescue-purpose {
+        font-size: 15px;
+        letter-spacing: 0.01em;
+        line-height: 1.3;
+    }
+
+    .team-checkin-modal.team-overlay-modal.team-rescue-modal:not(.event-create-modal):not(.event-success-modal):not(.news-create-modal) .team-checkin-form.team-rescue-form--team-page .team-checkin-textarea-wrap .team-checkin-textarea.team-rescue-textarea--description::placeholder {
+        font-size: 12px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-card.team-rescue-card--team-page.profile-modal-card {
+        padding-bottom: 32px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-podium {
+        min-height: 108px;
+        margin-bottom: 4px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-podium-slot--first {
+        transform: translateY(-4px);
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-podium-score {
+        min-width: 52px;
+        margin-top: -8px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .team-checkin-modal.team-overlay-modal .team-checkin-form.team-rescue-form--team-page .team-rescue-submit {
+        margin-top: 8px;
     }
 }
 

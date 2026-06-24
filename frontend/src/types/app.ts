@@ -5,10 +5,12 @@ import type {
     HelpRequestResponse,
     LocalCreatedTeam,
     MyVoteResponse,
+    TeamActivityFeedItem,
     TeamJoinRequestResponse,
     TeamModalKind,
     TeamRescueDraft,
-    TeamResponse
+    TeamResponse,
+    TeamWeeklyStats
 } from "./team";
 import type { ProfileEdits } from "./profile";
 import type { SignInState, SignUpState, UserProfileResponse } from "./auth";
@@ -84,6 +86,8 @@ export interface AppState {
     teamCatalog: TeamResponse[];
     teamCheckIns: CheckInResponse[];
     teamHelpRequests: HelpRequestResponse[];
+    teamActivityFeed: TeamActivityFeedItem[];
+    teamWeeklyStats: TeamWeeklyStats | null;
     teamJoinRequests: TeamJoinRequestResponse[];
     teamMyVotes: MyVoteResponse[];
     statusMessage: string;

@@ -7,6 +7,7 @@ public enum HelpRequestCreateResultType
     Created,
     UserNotFound,
     UserHasNoTeam,
+    NotCaptain,
     TargetTeamNotFound,
     SameTeam
 }
