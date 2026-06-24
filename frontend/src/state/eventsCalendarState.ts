@@ -8,7 +8,8 @@ import {
     getWeekOffsetForDate,
     parseEventDateTimeLocal
 } from "../utils/calendarEvents";
-export const EVENTS_WEEK_ANCHOR = getMondayOfWeek(new Date(2026, 3, 20));
+/** Понедельник 1 июня 2026 — якорь недели из макета «События». */
+export const EVENTS_WEEK_ANCHOR = getMondayOfWeek(new Date(2026, 5, 1));
 
 const USER_EVENTS_STORAGE_KEY = "team-exam-user-calendar-events";
 

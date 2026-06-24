@@ -13,6 +13,7 @@ export interface CalendarEventItem {
     format: string;
     description: string;
     dateTime: string;
+    endDateTime?: string;
     isMine: boolean;
 }
 

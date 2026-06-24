@@ -1,5 +1,6 @@
 import { teamFlowState } from "../../state/teamFlowState";
 import type { EventCreateDraft } from "../../types/event";
+import { renderProfileModalShell } from "../profile/ProfileModalShell";
 import { renderEventCreateFormFields } from "./eventCreateForm";
 
 export { isEventCreateDraftComplete as isTeamEventDraftComplete } from "./eventCreateForm";
@@ -10,19 +11,21 @@ export function renderCreateEventModal(): string {
         ? `<p class="team-validation-error team-validation-error--modal" role="alert">ЗАПОЛНИТЕ ВСЕ ПОЛЯ</p>`
         : "";
 
-    return `
-        <div class="profile-modal team-overlay-modal team-rescue-modal event-create-modal team-page-event-modal" role="dialog" aria-modal="true" aria-label="Создание события">
-            <div class="profile-modal-backdrop team-rescue-backdrop" data-close-team-event-modal="1"></div>
-            <div class="profile-modal-card team-rescue-card">
-                <button type="button" class="team-rescue-close" id="teamEventCloseCreateButton" aria-label="Закрыть"></button>
-                <h2 class="team-rescue-title">СОБЫТИЕ</h2>
-                ${errorHtml}
-                <form id="teamEventCreateForm" class="team-rescue-form" novalidate>
-                    ${renderEventCreateFormFields("teamEventCreate", draft)}
-                    <button type="submit" class="team-rescue-submit">СОЗДАТЬ</button>
-                </form>
-            </div>
-        </div>`;
+    return renderProfileModalShell({
+        ariaLabel: "Создание события",
+        closeButtonId: "teamEventCloseCreateButton",
+        backdropCloseAttr: 'data-close-team-event-modal="1"',
+        extraModalClass: "team-overlay-modal event-create-modal team-page-event-modal",
+        extraCardClass: "profile-modal-card--form",
+        bodyHtml: `
+            <h2 class="profile-shell-title">СОБЫТИЕ</h2>
+            ${errorHtml}
+            <form id="teamEventCreateForm" class="team-rescue-form profile-modal-card-body" novalidate>
+                ${renderEventCreateFormFields("teamEventCreate", draft)}
+                <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">СОЗДАТЬ</button>
+            </form>
+        `
+    });
 }
 
 export function renderEventsDashboardCreateModal(
@@ -33,17 +36,19 @@ export function renderEventsDashboardCreateModal(
         ? `<p class="team-validation-error team-validation-error--modal" role="alert">ЗАПОЛНИТЕ ВСЕ ПОЛЯ</p>`
         : "";
 
-    return `
-        <div class="profile-modal team-overlay-modal team-rescue-modal event-create-modal" role="dialog" aria-modal="true" aria-label="Создание события">
-            <div class="profile-modal-backdrop team-rescue-backdrop" data-close-events-modal="1"></div>
-            <div class="profile-modal-card team-rescue-card">
-                <button type="button" class="team-rescue-close" id="eventsCloseCreateButton" aria-label="Закрыть"></button>
-                <h2 class="team-rescue-title">СОБЫТИЕ</h2>
-                ${errorHtml}
-                <form id="eventCreateForm" class="team-rescue-form" novalidate>
-                    ${renderEventCreateFormFields("eventCreate", draft)}
-                    <button type="submit" class="team-rescue-submit">СОЗДАТЬ</button>
-                </form>
-            </div>
-        </div>`;
+    return renderProfileModalShell({
+        ariaLabel: "Создание события",
+        closeButtonId: "eventsCloseCreateButton",
+        backdropCloseAttr: 'data-close-events-modal="1"',
+        extraModalClass: "team-overlay-modal event-create-modal",
+        extraCardClass: "profile-modal-card--form",
+        bodyHtml: `
+            <h2 class="profile-shell-title">СОБЫТИЕ</h2>
+            ${errorHtml}
+            <form id="eventCreateForm" class="team-rescue-form profile-modal-card-body" novalidate>
+                ${renderEventCreateFormFields("eventCreate", draft)}
+                <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">СОЗДАТЬ</button>
+            </form>
+        `
+    });
 }

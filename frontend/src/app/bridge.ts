@@ -29,8 +29,10 @@ export interface AppBridge {
     createTeamRescueRequest: (draft: TeamRescueDraft) => Promise<void>;
     updateTeamHelpRequestStatus: (id: number, status: string) => Promise<void>;
     openTeamOverlayModal: (kind: "vote" | "requests" | "rescue" | "checkIn", memberIndex?: number) => void;
+    openTeamOnboardingModal: (step: "intro" | "find" | "create") => void;
     openTeamRescue: () => void;
     navigateToRating: () => void;
+    navigateToEvents: () => void;
     addCalendarEventFromDraft: (draft: EventCreateDraft) => boolean;
     pushActivity: (input: ActivityFeedPushInput) => void;
 }

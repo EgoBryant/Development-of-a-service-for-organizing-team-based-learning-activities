@@ -83,18 +83,14 @@ export function wireTeamPageEvents(root: HTMLElement): void {
         const openCreateForm = root.querySelector("#teamOpenCreateFormButton");
         if (isHTMLButtonElement(openCreateForm)) {
             openCreateForm.addEventListener("click", () => {
-                teamFlowState.noTeamView = "create-form";
-                teamFlowState.inviteCodeError = "";
-                bridge.render();
+                bridge.openTeamOnboardingModal("create");
             });
         }
 
         const openSearch = root.querySelector("#teamOpenSearchButton");
         if (isHTMLButtonElement(openSearch)) {
             openSearch.addEventListener("click", () => {
-                teamFlowState.noTeamView = "search";
-                teamFlowState.inviteCodeError = "";
-                bridge.render();
+                bridge.openTeamOnboardingModal("find");
             });
         }
 
@@ -122,9 +118,19 @@ export function wireTeamPageEvents(root: HTMLElement): void {
         const confirmCreate = root.querySelector("#teamConfirmCreateButton");
         if (isHTMLButtonElement(confirmCreate)) {
             confirmCreate.addEventListener("click", async () => {
+                const nameInput = root.querySelector("#teamCreateNameInput");
+                const directionInput = root.querySelector("#teamCreateDirectionInput");
+                if (isHTMLInputElement(nameInput)) {
+                    teamFlowState.createTeamDraft.name = nameInput.value;
+                }
+                if (isHTMLInputElement(directionInput)) {
+                    teamFlowState.createTeamDraft.direction = directionInput.value;
+                }
+
                 const name = teamFlowState.createTeamDraft.name.trim() || "КОМАНДА";
                 const direction = teamFlowState.createTeamDraft.direction.trim();
                 try {
+                    confirmCreate.disabled = true;
                     await bridge.createTeam(name, direction);
                     teamFlowState.noTeamView = "landing";
                     teamFlowState.createTeamDraft = { name: "", direction: "" };
@@ -133,6 +139,8 @@ export function wireTeamPageEvents(root: HTMLElement): void {
                 } catch (error) {
                     bridge.setStatus(error instanceof Error ? error.message : "Не удалось создать команду.", "error");
                     bridge.render();
+                } finally {
+                    confirmCreate.disabled = false;
                 }
             });
         }
@@ -200,11 +208,26 @@ export function wireTeamPageEvents(root: HTMLElement): void {
         return;
     }
 
-    const openCreateEvent = root.querySelector("#teamOpenCreateEventButton");
-    if (isHTMLButtonElement(openCreateEvent)) {
-        openCreateEvent.addEventListener("click", () => {
-            openTeamEventCreateModal();
-            bridge.render();
+    const goToEvents = root.querySelector("#teamGoToEventsButton");
+    if (isHTMLButtonElement(goToEvents)) {
+        goToEvents.addEventListener("click", () => {
+            bridge.navigateToEvents();
+        });
+    }
+
+    const carousel = root.querySelector<HTMLElement>("#teamCarousel");
+    const carouselPrev = root.querySelector("#teamCarouselPrev");
+    const carouselNext = root.querySelector("#teamCarouselNext");
+
+    if (isHTMLButtonElement(carouselPrev) && carousel) {
+        carouselPrev.addEventListener("click", () => {
+            carousel.scrollBy({ left: -212, behavior: "smooth" });
+        });
+    }
+
+    if (isHTMLButtonElement(carouselNext) && carousel) {
+        carouselNext.addEventListener("click", () => {
+            carousel.scrollBy({ left: 212, behavior: "smooth" });
         });
     }
 

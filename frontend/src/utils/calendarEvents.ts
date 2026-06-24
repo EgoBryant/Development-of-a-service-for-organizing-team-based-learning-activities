@@ -100,6 +100,16 @@ export function formatEventCardTime(dateTime: string): string {
     });
 }
 
+export function formatEventTimeRange(dateTime: string, endDateTime?: string): string {
+    const start = formatEventCardTime(dateTime);
+    if (!start) {
+        return "";
+    }
+
+    const end = endDateTime ? formatEventCardTime(endDateTime) : "";
+    return end ? `${start} — ${end}` : start;
+}
+
 export function getEventTagModifier(tag: string): string {
     const normalized = tag.trim().toLowerCase();
 

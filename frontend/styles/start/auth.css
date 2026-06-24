@@ -413,7 +413,7 @@
         height: clamp(35.73px, 3.49vw, 67px);
         align-self: center;
         border-radius: 100px;
-        background: linear-gradient(180deg, #787CFE 0%, #00E2E0 100%);
+        background: var(--exam-button-gradient);
         border: none;
         cursor: pointer;
         outline: none;
@@ -438,7 +438,7 @@
     }
 
     .auth-submit-pill:disabled {
-        background: linear-gradient(180deg, #787CFE 0%, #00E2E0 100%);
+        background: var(--exam-button-gradient);
         box-shadow: 0 8px 16px rgba(120, 124, 254, 0.4);
         opacity: 0.4;
         cursor: not-allowed;
@@ -1280,7 +1280,7 @@
         align-self: center;
         border: none;
         border-radius: 100px;
-        background: linear-gradient(180deg, #787CFE 0%, #00E2E0 100%);
+        background: var(--exam-button-gradient);
         box-shadow: 0 8px 16px rgba(120, 124, 254, 0.4);
         color: #F0F5FF;
         cursor: pointer;

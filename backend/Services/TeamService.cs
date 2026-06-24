@@ -411,6 +411,63 @@ public class TeamService : ITeamService
         };
     }
 
+    public async Task<DisbandTeamResult> DisbandAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return new DisbandTeamResult { Type = DisbandTeamResultType.UserNotFound };
+        }
+
+        if (user.TeamId is null)
+        {
+            return new DisbandTeamResult { Type = DisbandTeamResultType.NotInTeam };
+        }
+
+        var team = await _dbContext.Teams
+            .Include(existingTeam => existingTeam.Members)
+            .SingleOrDefaultAsync(existingTeam => existingTeam.Id == user.TeamId, cancellationToken);
+        if (team is null)
+        {
+            user.TeamId = null;
+            if (user.Role == Roles.Captain)
+            {
+                user.Role = Roles.Student;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return new DisbandTeamResult { Type = DisbandTeamResultType.NotInTeam };
+        }
+
+        if (team.CaptainId != userId)
+        {
+            return new DisbandTeamResult { Type = DisbandTeamResultType.NotCaptain };
+        }
+
+        var relatedHelpRequests = await _dbContext.HelpRequests
+            .Where(request => request.FromTeamId == team.Id || request.ToTeamId == team.Id)
+            .ToListAsync(cancellationToken);
+        if (relatedHelpRequests.Count > 0)
+        {
+            _dbContext.HelpRequests.RemoveRange(relatedHelpRequests);
+        }
+
+        foreach (var member in team.Members.ToList())
+        {
+            member.TeamId = null;
+            if (member.Role == Roles.Captain)
+            {
+                member.Role = Roles.Student;
+            }
+        }
+
+        team.CaptainId = null;
+        _dbContext.Teams.Remove(team);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new DisbandTeamResult { Type = DisbandTeamResultType.Disbanded };
+    }
+
     public async Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default)
     {
         var team = await _dbContext.Teams
@@ -530,6 +587,7 @@ public class TeamService : ITeamService
             UserId = request.UserId,
             UserName = request.User?.UserName ?? string.Empty,
             DisplayName = FormatUser(request.User),
+            AvatarUrl = request.User?.AvatarUrl ?? string.Empty,
             Message = request.Message,
             Status = request.Status,
             CreatedAtUtc = request.CreatedAtUtc,

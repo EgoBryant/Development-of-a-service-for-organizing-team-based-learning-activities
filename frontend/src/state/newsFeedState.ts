@@ -50,7 +50,8 @@ export function loadPersistedNewsFeed(): void {
                 body: item.body ?? "",
                 authorName: item.authorName ?? "Организатор",
                 createdAt: item.createdAt ?? new Date().toISOString(),
-                colorVariant: item.colorVariant ?? "pink"
+                colorVariant: item.colorVariant ?? "pink",
+                pointsLabel: item.pointsLabel
             });
         }
     } catch {
@@ -66,14 +67,16 @@ function seedDemoNewsFeedIfEmpty(): void {
     const now = Date.now();
     const seeds: NewsPostPushInput[] = [
         {
-            title: "ДЕДЛАЙН ЧЕЛЛЕНДЖА",
-            body: "Сдача отчёта по командному челленджу — до пятницы 18:00. После дедлайна баллы не начисляются.",
-            authorName: "Организатор"
+            title: "Воркшоп команды",
+            body: "Команда «Организаторы» провела воркшоп «АГИТДУР» и получила бонусные баллы за активность.",
+            authorName: "Организатор",
+            pointsLabel: "50 баллов"
         },
         {
-            title: "КОНСУЛЬТАЦИИ ПО КРК",
-            body: "В среду 14:00 — открытая консультация по формуле КРК в ауд. 201. Запись не нужна.",
-            authorName: "Куратор"
+            title: "Челлендж недели",
+            body: "Челлендж «Неделя сплочённости» выполнила команда «Синхрон» — начислены дополнительные баллы.",
+            authorName: "Куратор",
+            pointsLabel: "25 баллов"
         }
     ];
 
@@ -84,7 +87,8 @@ function seedDemoNewsFeedIfEmpty(): void {
             body: seed.body,
             authorName: seed.authorName ?? "Организатор",
             createdAt: new Date(now - index * 86400_000).toISOString(),
-            colorVariant: COLOR_CYCLE[index % COLOR_CYCLE.length]
+            colorVariant: COLOR_CYCLE[index % COLOR_CYCLE.length],
+            pointsLabel: seed.pointsLabel
         });
     });
 

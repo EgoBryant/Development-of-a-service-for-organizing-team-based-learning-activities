@@ -103,11 +103,9 @@
     }
 
     .profile-app:not(.profile-app--dashboard-profile) .profile-main,
-    .profile-app--dashboard-profile .profile-main,
-    .profile-main,
-    .team-dashboard-main,
-    .rating-dashboard-main,
-    .events-dashboard-main {
+    .profile-app:not(.profile-app--dashboard-profile) .team-dashboard-main,
+    .profile-app:not(.profile-app--dashboard-profile) .rating-dashboard-main,
+    .profile-app:not(.profile-app--dashboard-profile) .events-dashboard-main {
         width: 100%;
         min-width: 0;
         min-height: 0;
@@ -116,6 +114,25 @@
         padding: 16px 12px;
         border-radius: 24px;
         overflow: visible;
+        box-sizing: border-box;
+    }
+
+    .profile-app--dashboard-profile .profile-main,
+    .profile-app--dashboard-profile .team-dashboard-main,
+    .profile-app--dashboard-profile .rating-dashboard-main,
+    .profile-app--dashboard-profile .events-dashboard-main {
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        overflow: hidden;
         box-sizing: border-box;
     }
 
@@ -279,6 +296,14 @@
 
     .team-dashboard-main,
     .team-active-wrap {
+        gap: clamp(12px, 1.6vh, 16px);
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-wrap {
+        padding: clamp(16px, 2.4vh, 22px) 0 clamp(8px, 1.2vh, 12px) 12px;
+    }
+
+    .team-active-upper {
         gap: 12px;
     }
 
@@ -535,6 +560,12 @@
         gap: 12px;
     }
 
+    .profile-app--dashboard-profile .events-panels-stack {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+    }
+
     .events-panels-stack {
         flex: 0 0 auto;
         display: flex;
@@ -548,34 +579,30 @@
         flex: 0 0 auto;
         min-height: 0;
         max-height: none;
-        padding: 14px;
-        border-radius: 22px;
         overflow: visible;
     }
 
-    .events-calendar-toolbar,
-    .events-calendar-toolbar-end {
-        flex-direction: column;
-        align-items: stretch;
+    .events-feed-block {
+        padding: 14px;
+        border-radius: 22px;
+    }
+
+    .events-calendar-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 
-    .events-calendar-month-group,
-    .events-calendar-week-nav {
-        justify-content: space-between;
+    .events-calendar-toolbar-start,
+    .events-calendar-scope {
+        min-height: 48px;
+        padding: 5px;
     }
 
-    .events-calendar-month-pill,
-    .events-calendar-scope,
+    .events-calendar-month-label,
     .events-calendar-create-btn,
-    .events-news-add-btn,
-    .team-rescue-pill {
-        width: 100%;
-    }
-
-    .events-calendar-week-nav-btn {
-        width: 38px;
-        height: 38px;
+    .events-calendar-scope-btn {
+        font-size: 11px;
+        letter-spacing: 0.06em;
     }
 
     .events-calendar-grid {
@@ -605,8 +632,7 @@
         overflow: visible;
     }
 
-    .events-activity-list,
-    .events-news-list {
+    .events-feed-list {
         width: 100%;
         min-width: 0;
     }
@@ -618,40 +644,44 @@
         line-height: 1.15;
     }
 
-    .events-activity-card {
+    .events-feed-feature {
+        grid-template-columns: 1fr;
+    }
+
+    .events-feed-list-item {
         flex-direction: column;
-        gap: 10px;
-        padding: 14px;
-        border-radius: 18px;
+        align-items: flex-start;
     }
 
-    .events-activity-card-badge {
-        align-self: flex-start;
-        white-space: normal;
-    }
-
-    .events-news-toolbar {
-        justify-content: stretch;
-    }
-
-    .events-news-title,
-    .events-news-body,
-    .events-activity-card-title,
-    .events-activity-card-text {
+    .events-feed-list-text,
+    .events-feed-feature-text {
         overflow-wrap: anywhere;
     }
 
-    .profile-modal {
+    .events-news-toolbar {
         padding: 12px;
         align-items: flex-start;
         overflow-y: auto;
     }
 
-    .profile-modal-card,
-    .team-rescue-card,
-    .event-create-modal .team-rescue-card,
-    .event-success-card,
-    .team-requests-card {
+    .profile-modal--shell,
+    .profile-modal--achievement,
+    .profile-modal--team {
+        inset: 12px;
+        left: 12px;
+        padding: 12px;
+    }
+
+    .profile-modal--shell .profile-modal-backdrop,
+    .profile-modal--achievement .profile-modal-backdrop,
+    .profile-modal--team .profile-modal-backdrop {
+        border-radius: 24px;
+    }
+
+    .profile-modal-card:not(.profile-modal-card--shell),
+    .team-rescue-card:not(.profile-modal-card--shell),
+    .event-success-card:not(.profile-modal-card--shell),
+    .team-requests-card:not(.profile-modal-card--shell) {
         width: 100%;
         max-width: calc(100vw - 24px);
         max-height: calc(100dvh - 24px);
@@ -659,6 +689,60 @@
         border-radius: 24px;
         overflow-y: auto;
         box-sizing: border-box;
+    }
+
+    .profile-modal-card.profile-modal-card--shell,
+    .profile-modal-card-achievement {
+        width: min(calc(100vw - 24px), calc(100dvh - 24px), 500px);
+        height: min(calc(100vw - 24px), calc(100dvh - 24px), 500px);
+        min-width: 0;
+        min-height: 0;
+        max-width: min(calc(100vw - 24px), calc(100dvh - 24px), 500px);
+        max-height: min(calc(100vw - 24px), calc(100dvh - 24px), 500px);
+        aspect-ratio: 1 / 1;
+        padding: 48px 20px 36px;
+    }
+
+    .profile-modal-card.profile-modal-card--shell.profile-modal-card--team-success {
+        width: min(calc(100vw - 24px), 500px);
+        height: min(calc(100dvh - 24px), 600px);
+        min-width: 0;
+        min-height: 0;
+        max-width: min(calc(100vw - 24px), 500px);
+        max-height: min(calc(100dvh - 24px), 600px);
+        aspect-ratio: auto;
+        overflow-y: hidden;
+    }
+
+    .profile-modal-card.profile-modal-card--shell.team-requests-card--filled {
+        width: min(calc(100vw - 24px), 500px);
+        height: min(calc(100dvh - 24px), 640px);
+        min-width: 0;
+        min-height: 0;
+        max-width: min(calc(100vw - 24px), 500px);
+        max-height: min(calc(100dvh - 24px), 640px);
+        aspect-ratio: auto;
+        overflow: hidden;
+    }
+
+    .profile-modal-card.profile-modal-card--shell.team-requests-card--empty {
+        width: min(calc(100vw - 24px), 500px);
+        height: min(calc(100dvh - 24px), 470px);
+        min-width: 0;
+        min-height: 0;
+        max-width: min(calc(100vw - 24px), 500px);
+        max-height: min(calc(100dvh - 24px), 470px);
+        aspect-ratio: auto;
+        overflow: hidden;
+    }
+
+    .profile-team-create-body {
+        gap: 16px;
+    }
+
+    .profile-modal-card--shell .profile-team-flow-input--create,
+    .profile-modal-card--shell .profile-team-flow-btn {
+        min-height: 52px;
     }
 
     .team-rescue-title,
@@ -1040,14 +1124,24 @@
         font-size: 11px;
     }
 
-    .profile-main,
     .profile-app:not(.profile-app--dashboard-profile) .profile-main,
-    .profile-app--dashboard-profile .profile-main,
-    .team-dashboard-main,
-    .rating-dashboard-main,
-    .events-dashboard-main {
+    .profile-app:not(.profile-app--dashboard-profile) .team-dashboard-main,
+    .profile-app:not(.profile-app--dashboard-profile) .rating-dashboard-main,
+    .profile-app:not(.profile-app--dashboard-profile) .events-dashboard-main {
         padding: 14px 10px;
         border-radius: 22px;
+    }
+
+    .profile-app--dashboard-profile .profile-main,
+    .profile-app--dashboard-profile .team-dashboard-main,
+    .profile-app--dashboard-profile .rating-dashboard-main,
+    .profile-app--dashboard-profile .events-dashboard-main {
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .profile-stat-track,

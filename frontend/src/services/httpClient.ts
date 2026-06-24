@@ -41,6 +41,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
         throw apiError;
     }
 
+    if (response.status === 204) {
+        return undefined as T;
+    }
+
     return await response.json() as T;
 }
 
@@ -51,7 +55,13 @@ export function getErrorMessage(error: unknown): string {
 function translateApiErrorMessage(message: string): string {
     const known: Record<string, string> = {
         "User with this email already exists.": "Пользователь с таким email уже зарегистрирован.",
-        "Invalid email or password.": "Неверная почта или пароль."
+        "Invalid email or password.": "Неверная почта или пароль.",
+        "User already belongs to a team.": "Вы уже состоите в команде.",
+        "Team membership conflict": "Вы уже состоите в команде.",
+        "Team with this invite code was not found.": "Команда с таким кодом приглашения не найдена.",
+        "Join request already exists": "Заявка в эту команду уже отправлена.",
+        "The current user is not in a team.": "Вы не состоите в команде.",
+        "Avatar image payload exceeds the maximum allowed size.": "Фото профиля не должно превышать 2 МБ."
     };
 
     return known[message] ?? message;

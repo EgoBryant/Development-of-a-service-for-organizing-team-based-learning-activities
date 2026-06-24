@@ -101,6 +101,7 @@ export interface TeamJoinRequestResponse {
     userId: number;
     userName: string;
     displayName: string;
+    avatarUrl: string;
     message: string;
     status: string;
     createdAtUtc: string;

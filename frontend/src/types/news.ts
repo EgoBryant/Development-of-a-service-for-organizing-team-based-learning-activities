@@ -7,12 +7,14 @@ export interface NewsPost {
     authorName: string;
     createdAt: string;
     colorVariant: NewsColorVariant;
+    pointsLabel?: string;
 }
 
 export interface NewsPostPushInput {
     title: string;
     body: string;
     authorName?: string;
+    pointsLabel?: string;
 }
 
 export interface NewsCreateDraft {

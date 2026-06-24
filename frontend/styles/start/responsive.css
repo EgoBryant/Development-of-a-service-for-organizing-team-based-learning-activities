@@ -99,7 +99,8 @@
     }
 
     .events-calendar-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
     }
 
     .profile-app--dashboard-profile {
@@ -172,7 +173,7 @@
         grid-template-columns: 1fr;
     }
 
-    .rating-dashboard-main {
+    .profile-app:not(.profile-app--dashboard-profile) .rating-dashboard-main {
         padding: 20px 16px;
     }
 
@@ -231,7 +232,7 @@
         font-size: 9px;
     }
 
-    .events-dashboard-main {
+    .profile-app:not(.profile-app--dashboard-profile) .events-dashboard-main {
         padding: 20px 16px;
     }
 
@@ -241,10 +242,11 @@
     }
 
     .events-calendar-toolbar {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
 
+    .events-calendar-toolbar-start,
     .events-calendar-scope {
         width: 100%;
     }

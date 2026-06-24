@@ -58,7 +58,7 @@
     cursor: pointer;
     outline: none;
 
-    background: linear-gradient(180deg, #787CFE 0%, #00E2E0 100%);
+    background: var(--exam-button-gradient);
 
     font-family: 'Montserrat', sans-serif;
     font-weight: bold;

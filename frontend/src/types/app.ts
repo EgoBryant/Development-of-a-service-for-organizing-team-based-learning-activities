@@ -12,6 +12,7 @@ import type {
 } from "./team";
 import type { ProfileEdits } from "./profile";
 import type { SignInState, SignUpState, UserProfileResponse } from "./auth";
+import type { RatingUser } from "./rating";
 
 export type View = "home" | "sign-in" | "sign-up" | "password-recovery" | "account";
 export type DashboardSection = "profile" | "team" | "rating" | "events";
@@ -25,6 +26,7 @@ export type ProfileModalKind =
     | "personal"
     | "password"
     | "noTeam"
+    | "findTeam"
     | "createTeam"
     | "teamSuccess"
     | "achievement";
@@ -39,6 +41,8 @@ export interface AppState {
     profileAchievementId: string;
     profileCreateTeamName: string;
     profileCreateTeamDirection: string;
+    profileFindTeamQuery: string;
+    profileFindTeamSelectedId: number | null;
     profileInviteLink: string;
     profileFormDraft: ProfileEdits | null;
     dashboardSection: DashboardSection;
@@ -54,7 +58,10 @@ export interface AppState {
     newsCreateDraft: NewsCreateDraft | null;
     newsShowValidationError: boolean;
     teamVoteMemberIndex: number;
+    teamRequestsCurrentIndex: number;
     teamRequestsInviteLink: string;
+    teamRequestsApplicantRequestId: number | null;
+    teamRequestsApplicantRating: RatingUser | null;
     localCreatedTeam: LocalCreatedTeam | null;
     currentTeam: TeamResponse | null;
     teamCatalog: TeamResponse[];

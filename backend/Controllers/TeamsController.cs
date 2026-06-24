@@ -291,6 +291,57 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Расформировывает команду текущего капитана (временный сценарий для MVP).
+    /// </summary>
+    [HttpPost("me/disband")]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<IActionResult> DisbandMyTeamPost()
+    {
+        return DisbandMyTeam();
+    }
+
+    /// <summary>
+    /// Расформировывает команду текущего капитана (временный сценарий для MVP).
+    /// </summary>
+    [HttpDelete("me")]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DisbandMyTeam()
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.DisbandAsync(userId.Value, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            DisbandTeamResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            DisbandTeamResultType.NotInTeam => NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not in a team.",
+                statusCode: StatusCodes.Status404NotFound)),
+            DisbandTeamResultType.NotCaptain => Forbid(),
+            DisbandTeamResultType.Disbanded => NoContent(),
+            _ => Problem(
+                title: "Team disband failed",
+                detail: "The team could not be disbanded.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    /// <summary>
     /// Возвращает команду текущего пользователя.
     /// </summary>
     /// <returns>Текущая команда пользователя.</returns>

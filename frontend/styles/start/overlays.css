@@ -9,13 +9,55 @@
     -webkit-backdrop-filter: blur(4px);
 }
 
+.team-rescue-card.profile-modal-card.profile-modal-card--shell,
+.event-success-card.profile-modal-card.profile-modal-card--shell,
+.team-vote-card.profile-modal-card.profile-modal-card--shell {
+    width: 500px;
+    height: 500px;
+    min-width: 500px;
+    min-height: 500px;
+    max-width: 500px;
+    max-height: 500px;
+    aspect-ratio: 1 / 1;
+    border-radius: 40px;
+    background: rgba(240, 245, 255, 1);
+    padding: 56px 36px 40px;
+}
+
+.team-requests-card.profile-modal-card.profile-modal-card--shell {
+    width: 500px;
+    min-width: 500px;
+    max-width: 500px;
+    aspect-ratio: auto;
+    border-radius: 40px;
+    background: rgba(240, 245, 255, 1);
+    padding: 48px 36px 32px;
+}
+
+.team-requests-card.profile-modal-card.profile-modal-card--shell.team-requests-card--filled {
+    height: 640px;
+    min-height: 640px;
+    max-height: 640px;
+}
+
+.team-requests-card.profile-modal-card.profile-modal-card--shell.team-requests-card--empty {
+    height: 470px;
+    min-height: 470px;
+    max-height: 470px;
+}
+
+.team-requests-card.profile-modal-card--shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    overflow: hidden;
+    transition: height 0.22s ease, min-height 0.22s ease, max-height 0.22s ease;
+}
+
 .team-rescue-card {
     position: relative;
-    width: min(100%, 420px);
-    border-radius: 28px;
-    background: #ffffff;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
-    padding: 34px 28px 30px;
     gap: 18px;
 }
 
@@ -287,42 +329,10 @@
     min-height: 148px;
 }
 
-.events-calendar-toolbar-end {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.events-calendar-create-btn {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: 50%;
-    padding: 0;
-    background: rgba(160, 160, 160, 1);
-    color: #ffffff;
-    font-size: 24px;
-    font-weight: 800;
-    line-height: 1;
-    cursor: pointer;
-    transition: transform 0.15s ease, background 0.15s ease;
-}
-
-.events-calendar-create-btn:hover {
-    transform: scale(1.06);
-    background: rgba(140, 140, 140, 1);
-}
-
 .event-success-card {
     position: relative;
     align-items: stretch;
     gap: 16px;
-    padding-top: 38px;
-    width: min(100%, 420px);
-    border-radius: 28px;
-    background: #ffffff;
 }
 
 .event-success-title {
@@ -491,7 +501,7 @@
 
 .team-vote-score:hover:not(:disabled),
 .team-vote-score.is-active {
-    background: linear-gradient(95deg, #52f0ff 0%, #2474ff 52%, #7648ff 100%);
+    background: var(--exam-button-gradient);
     color: #ffffff;
     transform: translateY(-1px);
     box-shadow: 0 10px 22px rgba(27, 96, 222, 0.2);

@@ -1,0 +1,112 @@
+<svg viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920.000000" height="1080.000000" fill="none">
+	<defs>
+		<linearGradient id="paint_linear_12" x1="1037.73389" x2="1037.73389" y1="0" y2="1254.3667" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(53,115,220)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(53,115,220)" offset="0.5" stop-opacity="1" />
+			<stop stop-color="rgb(45,102,206)" offset="0.75" stop-opacity="1" />
+			<stop stop-color="rgb(45,102,206)" offset="0.875" stop-opacity="1" />
+			<stop stop-color="rgb(23,45,157)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<g id="pixso_custom_effect_0">
+			<effect visibility="visible" effectType="" stdDeviation="4" />
+		</g>
+		<filter id="filter_0" width="2090.731201" height="2228.331299" x="-1374.042236" y="-139.999756" filterUnits="userSpaceOnUse" customEffect="url(#pixso_custom_effect_0)" color-interpolation-filters="sRGB">
+			<feFlood flood-opacity="0" result="BackgroundImageFix" />
+			<feBlend result="shape" in="SourceGraphic" in2="BackgroundImageFix" mode="normal" />
+		</filter>
+		<linearGradient id="paint_linear_13" x1="966.672852" x2="966.672852" y1="0" y2="1144.17236" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(68,136,238)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(68,136,238)" offset="0.5" stop-opacity="1" />
+			<stop stop-color="rgb(34,181,237)" offset="0.875" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_14" x1="299" x2="299" y1="-214.999756" y2="463.000244" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(68,136,238)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_15" x1="286" x2="286" y1="-215" y2="399" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(68,136,238)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_16" x1="353.734863" x2="353.734863" y1="0" y2="164" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="0" />
+		</linearGradient>
+		<linearGradient id="paint_linear_17" x1="262.283936" x2="262.283936" y1="0" y2="164" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="0" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_18" x1="259.914429" x2="259.914429" y1="0" y2="164" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="0" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_19" x1="6.10351562e-05" x2="707.469727" y1="82" y2="82" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(53,115,220)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(23,45,157)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_20" x1="6.10351562e-05" x2="707.469727" y1="116.275879" y2="116.275879" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(53,115,220)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(23,45,157)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_21" x1="1678" x2="1678" y1="701" y2="1379" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(68,136,238)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_22" x1="805.460266" x2="0.000793457031" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="0" />
+		</linearGradient>
+		<linearGradient id="paint_linear_23" x1="7.50579202e-05" x2="870.010132" y1="221.469971" y2="221.469971" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(53,115,220)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(23,45,157)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_24" x1="805.460266" x2="0.000793457031" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="0" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_25" x1="1385" x2="2021" y1="1080" y2="1080" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(68,136,238)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_26" x1="402.730469" x2="402.730469" y1="4.99999952" y2="-5.00000048" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="0" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<linearGradient id="paint_linear_27" x1="1678" x2="1678" y1="36" y2="196" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,226,224)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(0,226,224)" offset="1" stop-opacity="0" />
+		</linearGradient>
+		<linearGradient id="paint_linear_28" x1="393.5" x2="393.5" y1="851" y2="1011" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(23,45,157)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(68,136,238)" offset="1" stop-opacity="1" />
+		</linearGradient>
+	</defs>
+	<rect id="Main" width="1920.000000" height="1080.000000" x="0.000000" y="0.000000" fill="rgb(68,136,238)" />
+	<rect id="Прямоугольник 7" width="2075.467773" height="1254.366699" x="0.000000" y="0.000000" rx="100.000000" fill="url(#paint_linear_12)" transform="matrix(0.614532,0.788892,-0.788892,0.614532,1285.47,-1008.03)" />
+	<g filter="url(#filter_0)">
+		<rect id="Прямоугольник 8" width="1933.345703" height="1144.172363" x="0.000000" y="0.000000" rx="100.000000" fill="url(#paint_linear_13)" transform="matrix(0.614532,0.788892,0.788892,-0.614532,-1374.04,563.131)" />
+	</g>
+	<ellipse id="Эллипс 1" rx="368.000000" ry="339.000000" cx="299" cy="124.000244" fill="rgb(68,136,238)" fill-opacity="0" />
+	<ellipse id="Эллипс 1" rx="363.000000" ry="334.000000" cx="299" cy="124.000244" stroke="url(#paint_linear_14)" stroke-width="10.000000" />
+	<ellipse id="Эллипс 3" rx="328.000000" ry="307.000000" cx="286" cy="92" fill="rgb(68,136,238)" fill-opacity="0" />
+	<ellipse id="Эллипс 3" rx="323.000000" ry="302.000000" cx="286" cy="92" stroke="url(#paint_linear_15)" stroke-width="10.000000" />
+	<rect id="Прямоугольник 1" width="707.469727" height="164.000000" x="0.000000" y="0.000000" rx="82.000000" fill="rgb(68,136,238)" transform="matrix(0.615661,0.788011,-0.788011,0.615661,617.604,650.883)" />
+	<rect id="Прямоугольник 1" width="697.469727" height="154.000000" x="5.000000" y="5.000000" rx="77.000000" stroke="url(#paint_linear_16)" stroke-width="10.000000" transform="matrix(0.615661,0.788011,-0.788011,0.615661,617.604,650.883)" />
+	<rect id="Прямоугольник 2" width="524.567871" height="164.000000" x="0.000000" y="0.000000" rx="82.000000" fill="rgb(68,136,238)" fill-opacity="0" transform="matrix(0.615661,0.788011,-0.788011,0.615661,770.884,696.705)" />
+	<rect id="Прямоугольник 2" width="514.567871" height="154.000000" x="5.000000" y="5.000000" rx="77.000000" stroke="url(#paint_linear_17)" stroke-width="10.000000" transform="matrix(0.615661,0.788011,-0.788011,0.615661,770.884,696.705)" />
+	<rect id="Прямоугольник 3" width="519.828857" height="164.000000" x="0.000000" y="0.000000" rx="82.000000" fill="rgb(68,136,238)" fill-opacity="0" transform="matrix(0.615661,0.788011,-0.788011,0.615661,980.567,754.939)" />
+	<rect id="Прямоугольник 3" width="509.828857" height="154.000000" x="5.000000" y="5.000000" rx="77.000000" stroke="url(#paint_linear_18)" stroke-width="10.000000" transform="matrix(0.615661,0.788011,-0.788011,0.615661,980.567,754.939)" />
+	<rect id="Прямоугольник 4" width="707.469727" height="164.000000" x="0.000000" y="0.000000" rx="82.000000" fill="url(#paint_linear_19)" transform="matrix(0.615661,0.788011,-0.788011,0.615661,940.604,-259.117)" />
+	<rect id="Прямоугольник 5" width="707.469727" height="232.551758" x="0.000000" y="0.000000" rx="100.000000" fill="url(#paint_linear_20)" transform="matrix(-0.615661,-0.788011,0.788011,-0.615661,1976.56,1212.67)" />
+	<ellipse id="Эллипс 2" rx="368.000000" ry="339.000000" cx="1678" cy="1040" fill="rgb(68,136,238)" fill-opacity="0" />
+	<ellipse id="Эллипс 2" rx="363.000000" ry="334.000000" cx="1678" cy="1040" stroke="url(#paint_linear_21)" stroke-width="10.000000" />
+	<line id="Линия 1" x1="0" x2="805.459473" y1="0" y2="0" stroke="url(#paint_linear_22)" stroke-width="10.000000" transform="matrix(0.615662,0.788011,-0.788011,0.615662,522,-39)" />
+	<rect id="Прямоугольник 6" width="870.010193" height="442.939941" x="0.000000" y="0.000000" rx="100.000000" fill="url(#paint_linear_23)" transform="matrix(0.614532,0.788892,-0.788892,0.614532,1820.6,-363.956)" />
+	<line id="Линия 2" x1="0" x2="805.459473" y1="0" y2="0" stroke="url(#paint_linear_24)" stroke-width="10.000000" transform="matrix(0.615662,0.788011,-0.788011,0.615662,1540,445)" />
+	<ellipse id="Эллипс 4" rx="318.000000" ry="289.000000" cx="1703" cy="1080" fill="rgb(68,136,238)" fill-opacity="0" />
+	<ellipse id="Эллипс 4" rx="313.000000" ry="284.000000" cx="1703" cy="1080" stroke="url(#paint_linear_25)" stroke-width="10.000000" />
+	<path id="Линия 3" d="M0 0L805.459 0" stroke="url(#paint_linear_26)" stroke-width="10.000000" transform="matrix(0.615662,0.788011,-0.788011,0.615662,481.609,-171.211)" />
+	<path id="" d="M1597.71 66.3477L1563.96 191.75L1552.92 191.75L1586.67 66.3477L1597.71 66.3477ZM1649.05 66.3477L1615.3 191.75L1604.26 191.75L1638.01 66.3477L1649.05 66.3477ZM1700.39 66.3477L1666.64 191.75L1655.6 191.75L1689.35 66.3477L1700.39 66.3477ZM1751.73 66.3477L1717.98 191.75L1706.94 191.75L1740.69 66.3477L1751.73 66.3477ZM1803.07 66.3477L1769.32 191.75L1758.28 191.75L1792.03 66.3477L1803.07 66.3477Z" fill="url(#paint_linear_27)" fill-rule="nonzero" />
+	<path id="" d="M313.206 881.348L279.456 1006.75L268.417 1006.75L302.167 881.348L313.206 881.348ZM364.547 881.348L330.797 1006.75L319.758 1006.75L353.508 881.348L364.547 881.348ZM415.888 881.348L382.138 1006.75L371.099 1006.75L404.849 881.348L415.888 881.348ZM467.229 881.348L433.479 1006.75L422.44 1006.75L456.19 881.348L467.229 881.348ZM518.57 881.348L484.82 1006.75L473.781 1006.75L507.531 881.348L518.57 881.348Z" fill="url(#paint_linear_28)" fill-rule="nonzero" />
+</svg>
+

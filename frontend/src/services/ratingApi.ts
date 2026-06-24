@@ -16,3 +16,9 @@ export function fetchRatingUsers(token: string, limit = 100): Promise<RatingUser
         headers: authHeaders(token)
     });
 }
+
+export function fetchRatingUserById(token: string, userId: number): Promise<RatingUser> {
+    return request<RatingUser>(`/api/ratings/users/${userId}`, {
+        headers: authHeaders(token)
+    });
+}

@@ -8,8 +8,11 @@ namespace TeamExamProject.Services;
 
 public class ProfileService : IProfileService
 {
-    /// <summary>~12M символов ≈ типичный потолок для data URL крупного JPEG после base64.</summary>
-    private const int MaxAvatarUrlChars = 12_000_000;
+    /// <summary>Максимальный размер файла аватара после декодирования data URL (2 МБ).</summary>
+    private const int MaxAvatarFileBytes = 2 * 1024 * 1024;
+
+    /// <summary>Запас по длине строки data URL (~2.8M символов для 2 МБ JPEG).</summary>
+    private const int MaxAvatarUrlChars = 2_800_000;
 
     private readonly AppDbContext _dbContext;
 
@@ -91,6 +94,11 @@ public class ProfileService : IProfileService
 
         var avatar = request.AvatarUrl.Trim();
         if (avatar.Length > MaxAvatarUrlChars)
+        {
+            return new ProfileUpdateResult { Type = ProfileUpdateResultType.AvatarPayloadTooLarge };
+        }
+
+        if (!IsAvatarPayloadWithinSizeLimit(avatar))
         {
             return new ProfileUpdateResult { Type = ProfileUpdateResultType.AvatarPayloadTooLarge };
         }
@@ -230,5 +238,34 @@ public class ProfileService : IProfileService
             .SingleAsync(existingUser => existingUser.Id == userId, cancellationToken);
 
         return await MapToProfileResponseAsync(user, cancellationToken);
+    }
+
+    private static bool IsAvatarPayloadWithinSizeLimit(string avatar)
+    {
+        if (string.IsNullOrWhiteSpace(avatar))
+        {
+            return true;
+        }
+
+        if (!avatar.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var commaIndex = avatar.IndexOf(',');
+        if (commaIndex < 0 || commaIndex >= avatar.Length - 1)
+        {
+            return false;
+        }
+
+        try
+        {
+            var bytes = Convert.FromBase64String(avatar[(commaIndex + 1)..]);
+            return bytes.Length <= MaxAvatarFileBytes;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }

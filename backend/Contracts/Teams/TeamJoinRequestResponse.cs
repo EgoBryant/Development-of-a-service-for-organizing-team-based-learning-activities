@@ -8,6 +8,7 @@ public class TeamJoinRequestResponse
     public int UserId { get; set; }
     public string UserName { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }

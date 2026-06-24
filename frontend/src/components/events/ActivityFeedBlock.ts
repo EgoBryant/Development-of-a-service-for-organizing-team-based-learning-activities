@@ -1,47 +1,25 @@
-import { getActivityFeedItems } from "../../state/activityFeedState";
-import type { ActivityFeedItem } from "../../types/activity";
+import postImageUrl from "../../assets/icons/Post.png";
 import { escapeHtml } from "../../utils/html";
 
-function formatActivityTime(iso: string): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) {
-        return "";
-    }
-
-    return date.toLocaleString("ru-RU", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
-}
-
-function renderActivityCard(item: ActivityFeedItem): string {
-    const badgeHtml = item.badge
-        ? `<span class="events-activity-card-badge">${escapeHtml(item.badge)}</span>`
-        : "";
-
+function renderActivityFeatured(): string {
     return `
-        <article
-            class="events-activity-card events-activity-card--${item.colorVariant}"
-            role="listitem"
-            data-activity-kind="${escapeHtml(item.kind)}"
-        >
-            <div class="events-activity-card-copy">
-                <h4 class="events-activity-card-title">${escapeHtml(item.title)}</h4>
-                <p class="events-activity-card-text">${escapeHtml(item.description)}</p>
-                <time class="events-activity-card-time" datetime="${escapeHtml(item.createdAt)}">${escapeHtml(formatActivityTime(item.createdAt))}</time>
+        <article class="events-feed-feature-card" aria-label="Что такое КРК">
+            <div class="events-feed-feature">
+                <div class="events-feed-feature-media">
+                    <img src="${escapeHtml(postImageUrl)}" alt="" loading="lazy">
+                </div>
+                <div class="events-feed-feature-copy">
+                    <h3 class="events-feed-feature-title gradient-text">ЧТО ТАКОЕ КРК?</h3>
+                    <p class="events-feed-feature-text">
+                        Привет! Ты уже в игре, а значит, пришло время узнать, как устроен наш главный
+                        показатель — КРК, или Командный Рейтинговый Коэффициент.
+                    </p>
+                </div>
             </div>
-            ${badgeHtml}
         </article>`;
 }
 
 export function renderActivityFeedPanel(isVisible: boolean): string {
-    const items = getActivityFeedItems();
-    const rowsHtml = items.length
-        ? items.map(renderActivityCard).join("")
-        : `<p class="events-activity-empty">Пока нет событий — действия появятся здесь автоматически.</p>`;
-
     return `
         <div
             class="events-feed-panel events-feed-panel--activity"
@@ -50,8 +28,6 @@ export function renderActivityFeedPanel(isVisible: boolean): string {
             aria-labelledby="eventsFeedTabActivity"
             ${isVisible ? "" : "hidden"}
         >
-            <div class="events-activity-list" role="list">
-                ${rowsHtml}
-            </div>
+            ${renderActivityFeatured()}
         </div>`;
 }

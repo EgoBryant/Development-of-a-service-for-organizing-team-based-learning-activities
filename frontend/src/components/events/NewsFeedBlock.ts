@@ -2,36 +2,26 @@ import { getNewsFeedItems } from "../../state/newsFeedState";
 import type { NewsPost } from "../../types/news";
 import { escapeHtml } from "../../utils/html";
 
-function formatNewsTime(iso: string): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) {
-        return "";
-    }
+function renderNewsRow(item: NewsPost): string {
+    const text = item.body.trim() || item.title.trim();
+    const badgeHtml = item.pointsLabel
+        ? `<span class="events-feed-list-badge">${escapeHtml(item.pointsLabel)}</span>`
+        : "";
 
-    return date.toLocaleString("ru-RU", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
-}
-
-function renderNewsCard(item: NewsPost): string {
     return `
-        <article class="events-news-card events-news-card--${item.colorVariant}" role="listitem">
-            <div class="events-news-copy">
-                <h3 class="events-news-title">${escapeHtml(item.title)}</h3>
-                <p class="events-news-body">${escapeHtml(item.body)}</p>
-                <p class="events-news-meta">${escapeHtml(item.authorName)} · ${escapeHtml(formatNewsTime(item.createdAt))}</p>
-            </div>
-        </article>`;
+        <li class="events-feed-list-item" role="listitem">
+            <p class="events-feed-list-text">${escapeHtml(text)}</p>
+            ${badgeHtml}
+        </li>`;
 }
 
 export function renderNewsFeedPanel(isVisible: boolean): string {
     const items = getNewsFeedItems();
-    const cardsHtml = items.length
-        ? items.map(renderNewsCard).join("")
-        : `<p class="events-news-empty">Пока нет новостей. Нажмите «Добавить», чтобы опубликовать рассылку.</p>`;
+    const rowsHtml = items.length
+        ? items.map(renderNewsRow).join("")
+        : `<li class="events-feed-list-item events-feed-list-item--empty" role="listitem">
+                <p class="events-feed-list-text">Пока нет новостей.</p>
+           </li>`;
 
     return `
         <div
@@ -41,11 +31,11 @@ export function renderNewsFeedPanel(isVisible: boolean): string {
             aria-labelledby="eventsFeedTabNews"
             ${isVisible ? "" : "hidden"}
         >
+            <ul class="events-feed-list" role="list">
+                ${rowsHtml}
+            </ul>
             <div class="events-news-toolbar">
                 <button type="button" class="events-news-add-btn" id="eventsOpenCreateNewsButton">+ ДОБАВИТЬ</button>
-            </div>
-            <div class="events-news-list" role="list">
-                ${cardsHtml}
             </div>
         </div>`;
 }

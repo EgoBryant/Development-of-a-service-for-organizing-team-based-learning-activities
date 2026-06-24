@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#787CFE" />
+      <stop offset="100%" stop-color="#00A9F2" />
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#grad1)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 45,35 L 105,35 C 105,65 95,78 75,78 C 55,78 45,65 45,35 Z" />
+    <path d="M 75,78 C 75,95 63,103 63,110 L 87,110 C 87,103 75,95 75,78 Z" />
+    <path d="M 50,115 L 100,115" />
+    <path d="M 45,43 C 32,43 32,60 44,65" />
+    <path d="M 105,43 C 118,43 118,60 106,65" />
+  </g>
+  <text x="75" y="61" fill="url(#grad1)" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="bold" text-anchor="middle">2</text>
+</svg>
+
+
+
+
+
+
+
+
+
+
