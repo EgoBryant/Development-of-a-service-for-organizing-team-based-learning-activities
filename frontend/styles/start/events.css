@@ -186,29 +186,6 @@
     max-height: 100%;
     align-items: start;
     padding: 2px 0;
-    will-change: transform;
-}
-
-.events-calendar-grid--slide-track {
-    display: flex;
-    justify-content: flex-start;
-    gap: 0;
-}
-
-.events-calendar-grid--slide-track .events-calendar-col:first-child {
-    margin-left: var(--events-calendar-slide-inset, 0);
-}
-
-.events-calendar-grid--slide-track .events-calendar-col:not(:last-child) {
-    margin-right: var(--events-calendar-slide-gap, var(--events-calendar-gap));
-}
-
-.events-calendar-grid--slide-track .events-calendar-col:last-child {
-    margin-right: var(--events-calendar-slide-trail-inset, var(--events-calendar-slide-inset, 0));
-}
-
-.events-calendar-carousel-wrap--animating .events-calendar-arrow {
-    pointer-events: none;
 }
 
 .events-calendar-arrow {
