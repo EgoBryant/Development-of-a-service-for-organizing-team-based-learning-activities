@@ -30,7 +30,9 @@ import {
     getSettingsPhotoDisplay,
     renderSettingsPageMain
 } from "./pages/SettingsPage";
+import { renderTasksPageMain, wireTasksPageEvents } from "./pages/TasksPage";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
+import { ratingFlowState } from "./state/ratingFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
 import {
     bindEventCreateFormSubmit,
@@ -53,7 +55,13 @@ import {
     getUserEventsForDateKey,
     loadPersistedUserEvents
 } from "./state/eventsCalendarState";
-import { loadPersistedActivityFeed, pushActivityFeedItem } from "./state/activityFeedState";
+import { normalizePersonalLeague } from "./utils/personalLeague";
+import { loadPersistedActivityFeed, pushActivityFeedItem, getActivityFeedItems } from "./state/activityFeedState";
+import {
+    computeCheckInWeeklyStats,
+    mapApiWeeklyStats,
+    type CheckInWeeklyStats
+} from "./utils/checkInWeeklyStats";
 import { loadPersistedNewsFeed, pushNewsPost } from "./state/newsFeedState";
 import type { ActivityFeedPushInput } from "./types/activity";
 import type {
@@ -64,6 +72,7 @@ import type {
     EventsModalKind,
     ExternalProfileView,
     ProfileModalKind,
+    TasksKrcTier,
     View
 } from "./types/app";
 import type { AuthResponse, UserProfileResponse } from "./types/auth";
@@ -103,12 +112,17 @@ import {
 } from "./components/profile/ProfileTeamModals";
 import { renderProfileModalShell } from "./components/profile/ProfileModalShell";
 import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
+import { renderTeamCheckInModal, wireTeamCheckInModal } from "./components/modals/TeamCheckInModal";
+import { renderTeamLeaveModal, wireTeamLeaveModal } from "./components/modals/TeamLeaveModal";
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
-import { renderPublicAchievementsStrip } from "./components/rating/PublicUserProfile";
 import { getProfileAchievementById } from "./data/profileAchievements";
+import { fetchAchievementsCatalog, fetchMyAchievements, fetchUserAchievements } from "./services/achievementsApi";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
+    collectKnownUserAvatars,
+    enrichRatingTeamsWithKnownAvatars,
+    enrichRatingUsersWithKnownAvatars,
     mergeSessionTeamIntoRatingTeams,
     mergeSessionUserIntoRatingUsers
 } from "./services/ratingSessionData";
@@ -122,9 +136,12 @@ import {
     fetchHelpRequests,
     fetchMyTeam,
     fetchMyVotes,
+    fetchTeamActivity,
+    fetchTeamWeeklyStats,
     fetchTeams,
     fetchTeamJoinRequests,
     joinTeam as joinTeamApi,
+    leaveMyTeam,
     searchTeams,
     updateHelpRequestStatus,
     updateTeamJoinRequestStatus
@@ -134,6 +151,14 @@ import { queueRescueAssignmentTask } from "./services/rescueAssignmentsQueue";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
+import {
+    clearAchievementsData,
+    getMyProfileAchievements,
+    getUserProfileAchievements,
+    setAchievementsCatalog,
+    setMyAchievements,
+    setUserAchievements
+} from "./state/achievementsState";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
 import { isSameUserId, resolveUserAvatarUrl } from "./utils/ratingAvatars";
 import { getRescueCalendarMonthKey } from "./utils/rescueFormUi";
@@ -184,6 +209,7 @@ const appState: AppState = {
     eventsShareLink: "",
     newsCreateDraft: null,
     newsShowValidationError: false,
+    tasksKrcTier: "pro",
     teamVoteMemberIndex: 0,
     teamRequestsCurrentIndex: 0,
     teamRequestsInviteLink: "",
@@ -194,6 +220,8 @@ const appState: AppState = {
     teamCatalog: [],
     teamCheckIns: [],
     teamHelpRequests: [],
+    teamActivityFeed: [],
+    teamWeeklyStats: null,
     teamJoinRequests: [],
     teamMyVotes: [],
     statusMessage: "",
@@ -210,8 +238,8 @@ const authModalCard = document.getElementById("authModalCard");
 const authSwitchColumn = document.getElementById("authSwitchColumn");
 const formContent = document.getElementById("formContent");
 const MOBILE_AUTH_QUERY = "(max-width: 1023px)";
-const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 767px)";
-const DESKTOP_DASHBOARD_QUERY = "(min-width: 768px)";
+const MOBILE_BOTTOM_NAV_QUERY = "(max-width: 1024px)";
+const DESKTOP_DASHBOARD_QUERY = "(min-width: 1025px)";
 const MOBILE_BOTTOM_NAV_CLOSED_HEIGHT = 76;
 const MOBILE_BOTTOM_NAV_OPEN_HEIGHT = 116;
 const MOBILE_BOTTOM_NAV_SWIPE_SENSITIVITY = 1.35;
@@ -220,6 +248,8 @@ const MOBILE_BOTTOM_NAV_FLING_VELOCITY = 0.32;
 const MOBILE_MENU_SNAP_MS = 680;
 const MOBILE_MENU_DRAG_SMOOTHING = 0.38;
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
+const MIN_PASSWORD_LENGTH = 6;
+const SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE = `Пароль не короче ${MIN_PASSWORD_LENGTH} символов (требование сервера).`;
 
 void bootstrap();
 
@@ -340,7 +370,7 @@ function ensureTeamRescueDraft(): TeamRescueDraft {
 }
 
 function openRescueModal(): void {
-    if (appState.view !== "account") {
+    if (appState.view !== "account" || !isTeamCaptain()) {
         return;
     }
     appState.dashboardSection = "team";
@@ -418,6 +448,10 @@ async function submitTeamRescueDraftToAssignments(draft: TeamRescueDraft): Promi
 }
 
 async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
+    if (!isTeamCaptain()) {
+        throw new Error("Запрос спасения может отправить только капитан команды.");
+    }
+
     const token = getSessionToken();
     const toTeamId = Number(draft.targetTeamId);
     if (!token || !Number.isFinite(toTeamId) || toTeamId <= 0) {
@@ -508,7 +542,14 @@ async function submitProfileTeamCreate(button?: HTMLButtonElement): Promise<void
     const nameInputEl = isHTMLElement(profileMount) ? profileMount.querySelector("#profileTeamNameInput") : null;
     const name = (
         isHTMLInputElement(nameInputEl) ? nameInputEl.value : appState.profileCreateTeamName
-    ).trim() || "КОМАНДА";
+    ).trim();
+
+    if (name.length < 3) {
+        setStatus("Название команды должно содержать не менее 3 символов.", "error");
+        render();
+        return;
+    }
+
     const direction = appState.profileCreateTeamDirection.trim();
 
     appState.profileCreateTeamName = name;
@@ -526,9 +567,23 @@ async function submitProfileTeamCreate(button?: HTMLButtonElement): Promise<void
         render();
     } finally {
         if (button) {
-            button.disabled = false;
+            syncProfileCreateTeamButtonState();
         }
     }
+}
+
+function syncProfileCreateTeamButtonState(): void {
+    if (!isHTMLElement(profileMount) || appState.profileModal !== "createTeam") {
+        return;
+    }
+
+    const nameInput = profileMount.querySelector("#profileTeamNameInput");
+    const confirmButton = profileMount.querySelector("#profileConfirmCreateTeamButton");
+    if (!isHTMLInputElement(nameInput) || !isHTMLButtonElement(confirmButton)) {
+        return;
+    }
+
+    confirmButton.disabled = nameInput.value.trim().length < 3;
 }
 
 async function submitTeamJoinRequestStatus(id: number, status: string): Promise<void> {
@@ -642,6 +697,19 @@ function openExternalUserProfile(view: ExternalProfileView): void {
         })
         .catch(() => {
             // Профиль отображается по данным команды или заявки.
+        });
+
+    void fetchUserAchievements(token, view.userId)
+        .then((items) => {
+            if (appState.externalProfileView?.userId !== view.userId) {
+                return;
+            }
+
+            setUserAchievements(view.userId, items);
+            render();
+        })
+        .catch(() => {
+            setUserAchievements(view.userId, []);
         });
 }
 
@@ -890,6 +958,7 @@ async function bootstrap(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshMyAchievementsWorkspace(session.token);
         await refreshTeamWorkspace();
         await refreshRatingWorkspace();
         appState.view = "account";
@@ -1185,14 +1254,15 @@ function renderAuthView(): void {
                 <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
                     <div class="auth-password-row">
-                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="${MIN_PASSWORD_LENGTH}" ${appState.signUp.email.trim() ? "" : "disabled"}>
                         <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
                             <span class="auth-password-peek-icon" aria-hidden="true"></span>
                         </button>
                     </div>
+                    <p class="auth-signup-password-hint hidden" id="signUpPasswordHint" role="alert" aria-live="polite" aria-hidden="true"></p>
                 </div>
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
-                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
+                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="${MIN_PASSWORD_LENGTH}" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
                 ${renderStatusBlock()}
                 <button class="auth-submit-pill" type="submit" ${signUpSubmitDisabled ? "disabled" : ""}>
@@ -1310,12 +1380,43 @@ function isSignInReady(): boolean {
     return appState.signIn.email.trim().length > 0 && appState.signIn.password.length > 0;
 }
 
+function getSignUpPasswordLengthError(password: string): string | null {
+    if (password.length > 0 && password.length < MIN_PASSWORD_LENGTH) {
+        return SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE;
+    }
+
+    return null;
+}
+
 function isSignUpReady(): boolean {
+    const email = appState.signUp.email.trim();
+    const password = appState.signUp.password;
+
     return (
-        appState.signUp.email.trim().length > 0 &&
-        appState.signUp.password.length > 0 &&
-        appState.signUp.password === appState.signUp.passwordConfirm
+        email.length > 0 &&
+        password.length >= MIN_PASSWORD_LENGTH &&
+        password === appState.signUp.passwordConfirm
     );
+}
+
+function syncSignUpPasswordHint(passwordInput: HTMLInputElement, hintNode: HTMLElement | null): void {
+    if (!hintNode) {
+        return;
+    }
+
+    const message = getSignUpPasswordLengthError(passwordInput.value);
+    if (message) {
+        hintNode.textContent = message;
+        hintNode.classList.remove("hidden");
+        hintNode.hidden = false;
+        hintNode.setAttribute("aria-hidden", "false");
+        return;
+    }
+
+    hintNode.textContent = "";
+    hintNode.classList.add("hidden");
+    hintNode.hidden = true;
+    hintNode.setAttribute("aria-hidden", "true");
 }
 
 function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTMLInputElement): () => void {
@@ -1377,6 +1478,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
     const passwordPeekButton = signUpForm.querySelector("[data-signup-password-peek]");
     const passwordRow = signUpForm.querySelector(".auth-password-row");
+    const passwordHint = signUpForm.querySelector<HTMLElement>("#signUpPasswordHint");
     const submitButton = signUpForm.querySelector(".auth-submit-pill");
 
     if (
@@ -1419,8 +1521,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         }
 
         const hasPassword = Boolean(passwordInput.value);
-        const passwordsMatch = hasPassword && passwordInput.value === passwordConfirmInput.value;
-        const shouldShowConfirm = hasPassword && !passwordsMatch;
+        const shouldShowConfirm = hasPassword;
 
         if (!hasPassword) {
             appState.signUp.passwordConfirm = "";
@@ -1433,6 +1534,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         confirmShell.classList.toggle("hidden", !shouldShowConfirm);
         confirmShell.hidden = !shouldShowConfirm;
         passwordConfirmInput.disabled = !shouldShowConfirm;
+        syncSignUpPasswordHint(passwordInput, passwordHint);
         resetPasswordVisibility();
 
         if (isHTMLButtonElement(passwordPeekButton)) {
@@ -1526,8 +1628,11 @@ function resetProfileUi(): void {
     appState.teamCatalog = [];
     appState.teamCheckIns = [];
     appState.teamHelpRequests = [];
+    appState.teamActivityFeed = [];
+    appState.teamWeeklyStats = null;
     appState.teamJoinRequests = [];
     appState.teamMyVotes = [];
+    clearAchievementsData();
     clearRatingData();
 }
 
@@ -1591,6 +1696,12 @@ function getEffectiveTeamScore(): string {
     }
 
     return appState.profile?.teamScore ? String(appState.profile.teamScore) : "—";
+}
+
+function getEffectiveTeamScoreNumber(): number {
+    const raw = getEffectiveTeamScore();
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function buildTeamInviteLink(): string {
@@ -1728,6 +1839,14 @@ function persistDashboardSectionToStorage(): void {
     writeClientProfileBlob(p.id, { dashboardSection: appState.dashboardSection });
 }
 
+function navigateToProfileDashboard(): void {
+    appState.dashboardSection = "profile";
+    appState.profileModal = "none";
+    appState.teamModal = "none";
+    teamFlowState.noTeamView = "landing";
+    persistDashboardSectionToStorage();
+}
+
 function hydrateProfileClientStateFromStorage(): void {
     const p = appState.profile;
     if (!p) {
@@ -1753,6 +1872,7 @@ function hydrateProfileClientStateFromStorage(): void {
         data.dashboardSection === "profile" ||
         data.dashboardSection === "team" ||
         data.dashboardSection === "rating" ||
+        data.dashboardSection === "tasks" ||
         data.dashboardSection === "events" ||
         data.dashboardSection === "settings"
     ) {
@@ -2714,6 +2834,46 @@ function getSessionToken(): string | null {
     return loadSession()?.token ?? null;
 }
 
+async function refreshMyAchievementsWorkspace(token = getSessionToken()): Promise<void> {
+    if (!token) {
+        clearAchievementsData();
+        return;
+    }
+
+    const [catalog, earned] = await Promise.all([
+        fetchAchievementsCatalog(token).catch(() => null),
+        fetchMyAchievements(token).catch(() => [])
+    ]);
+
+    if (catalog) {
+        setAchievementsCatalog(catalog);
+    }
+    setMyAchievements(earned, appState.profile?.id);
+}
+
+async function refreshAchievementsForUsers(token: string, userIds: readonly string[]): Promise<void> {
+    const numericUserIds = Array.from(new Set(userIds))
+        .map((userId) => Number(userId))
+        .filter((userId) => Number.isInteger(userId) && userId > 0);
+
+    if (numericUserIds.length === 0) {
+        return;
+    }
+
+    const catalog = await fetchAchievementsCatalog(token).catch(() => null);
+    if (catalog) {
+        setAchievementsCatalog(catalog);
+    }
+
+    await Promise.all(
+        numericUserIds.map((userId) =>
+            fetchUserAchievements(token, userId)
+                .then((items) => setUserAchievements(userId, items))
+                .catch(() => setUserAchievements(userId, []))
+        )
+    );
+}
+
 async function refreshCurrentUserProfile(): Promise<void> {
     const token = getSessionToken();
     if (!token) {
@@ -2722,17 +2882,20 @@ async function refreshCurrentUserProfile(): Promise<void> {
 
     appState.profile = await fetchCurrentUser(token);
     hydrateProfileClientStateFromStorage();
+    await refreshMyAchievementsWorkspace(token);
 }
 
 function openRatingDashboard(): void {
     appState.dashboardSection = "rating";
     persistDashboardSectionToStorage();
     clearStatus();
-    void refreshRatingWorkspace().then(() => {
-        if (appState.dashboardSection === "rating") {
-            render();
-        }
-    });
+    void refreshTeamWorkspace()
+        .then(() => refreshRatingWorkspace())
+        .then(() => {
+            if (appState.dashboardSection === "rating") {
+                render();
+            }
+        });
     render();
 }
 
@@ -2742,15 +2905,44 @@ async function refreshRatingWorkspace(token = getSessionToken()): Promise<void> 
         return;
     }
 
+    if (!appState.teamCatalog.length) {
+        try {
+            appState.teamCatalog = await fetchTeams(token);
+        } catch {
+            appState.teamCatalog = [];
+        }
+    }
+
     const [teams, users] = await Promise.all([
         fetchRatingTeams(token).catch(() => []),
         fetchRatingUsers(token).catch(() => [])
     ]);
 
-    setRatingData(
-        mergeSessionTeamIntoRatingTeams(teams, appState.profile, appState.currentTeam, appState.localCreatedTeam),
-        mergeSessionUserIntoRatingUsers(users, appState.profile)
+    const avatarLookup = collectKnownUserAvatars({
+        teamCatalog: appState.teamCatalog,
+        currentTeam: appState.currentTeam,
+        joinRequests: appState.teamJoinRequests,
+        ratingTeams: teams
+    });
+
+    const enrichedUsers = enrichRatingUsersWithKnownAvatars(users, avatarLookup);
+    const enrichedTeams = enrichRatingTeamsWithKnownAvatars(teams, avatarLookup);
+
+    const mergedTeams = mergeSessionTeamIntoRatingTeams(
+        enrichedTeams,
+        appState.profile,
+        appState.currentTeam,
+        appState.localCreatedTeam
     );
+    const mergedUsers = mergeSessionUserIntoRatingUsers(enrichedUsers, appState.profile);
+
+    setRatingData(mergedTeams, mergedUsers);
+
+    const userIds = [
+        ...mergedUsers.map((user) => user.id),
+        ...mergedTeams.flatMap((team) => team.members.map((member) => member.id))
+    ];
+    await refreshAchievementsForUsers(token, userIds);
 }
 
 async function refreshTeamWorkspace(): Promise<void> {
@@ -2815,6 +3007,37 @@ async function refreshTeamWorkspace(): Promise<void> {
             appState.currentTeam = null;
         }
     }
+
+    if (appState.currentTeam || appState.profile?.teamId) {
+        try {
+            appState.teamCheckIns = await fetchCheckIns(token);
+        } catch {
+            appState.teamCheckIns = [];
+        }
+
+        try {
+            appState.teamHelpRequests = await fetchHelpRequests(token);
+        } catch {
+            appState.teamHelpRequests = [];
+        }
+
+        try {
+            appState.teamActivityFeed = await fetchTeamActivity(token);
+        } catch {
+            appState.teamActivityFeed = [];
+        }
+
+        try {
+            appState.teamWeeklyStats = await fetchTeamWeeklyStats(token);
+        } catch {
+            appState.teamWeeklyStats = null;
+        }
+    } else {
+        appState.teamCheckIns = [];
+        appState.teamHelpRequests = [];
+        appState.teamActivityFeed = [];
+        appState.teamWeeklyStats = null;
+    }
 }
 
 function isTeamCaptain(): boolean {
@@ -2830,7 +3053,22 @@ function isTeamCaptain(): boolean {
         return true;
     }
 
-    return Boolean(appState.localCreatedTeam);
+    if (appState.localCreatedTeam) {
+        const profileId = String(appState.profile.id);
+        const selfRowId = `user-${profileId}`;
+        const members = appState.localCreatedTeam.members;
+        const selfMember = members.find(
+            (member) => member.id === selfRowId || member.id === profileId
+        );
+
+        if (selfMember) {
+            return selfMember.isCaptain;
+        }
+
+        return members.length === 0;
+    }
+
+    return false;
 }
 
 function buildSelfTeamMemberRow(): TeamMemberRow | null {
@@ -3019,7 +3257,8 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
         label: "CHECK-IN",
         title: `Команда завершила check-in ${checkIn.weekNumber} недели.`,
         meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc),
-        pointsLabel: "15"
+        pointsLabel: "15",
+        occurredAtUtc: checkIn.submittedAtUtc ?? checkIn.createdAtUtc
     }));
 
     const rescues = appState.teamHelpRequests.map<TeamHistoryItem>((request) => ({
@@ -3028,24 +3267,25 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
             ? `Команда «${request.fromTeamName}» отправила запрос на помощь по теме «${request.topic || "Спасение"}».`
             : `Запрос на помощь по теме «${request.topic || "Спасение"}».`,
         meta: `${request.fromTeamName} → ${request.toTeamName}`,
-        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined
+        pointsLabel: request.bonusPoints > 0 ? String(request.bonusPoints) : undefined,
+        occurredAtUtc: request.createdAtUtc
     }));
 
     const joinRequests = appState.teamJoinRequests.map<TeamHistoryItem>((request) => ({
         label: "ЗАЯВКА",
         title: `${request.displayName || request.userName || "Участник"} подал заявку на вступление в команду.`,
-        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc)
+        meta: formatShortDate(request.decidedAtUtc ?? request.createdAtUtc),
+        occurredAtUtc: request.decidedAtUtc ?? request.createdAtUtc
     }));
 
     const votes = appState.teamMyVotes.map<TeamHistoryItem>((vote) => ({
         label: "ГОЛОС",
         title: `Вы оценили вклад участника ${vote.toUserName || "участника"} на ${vote.score}/5.`,
-        meta: formatShortDate(vote.createdAtUtc)
+        meta: formatShortDate(vote.createdAtUtc),
+        occurredAtUtc: vote.createdAtUtc
     }));
 
     const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
-    // TEMP: переключить на false после проверки вёрстки истории
-    const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
     if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
         return getTempTeamHistoryPreview();
     }
@@ -3059,6 +3299,28 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
                   meta: "MVP"
               }
           ];
+}
+
+const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
+
+function resolveCheckInWeeklyStats(): CheckInWeeklyStats {
+    const computed = computeCheckInWeeklyStats({
+        history: getTeamHistoryItems(),
+        helpRequests: appState.teamHelpRequests,
+        activityItems: [...appState.teamActivityFeed, ...getActivityFeedItems()],
+        currentTeamId: appState.currentTeam?.id ?? appState.profile?.teamId ?? null,
+        includeUndatedHistory: USE_TEMP_TEAM_HISTORY_PREVIEW
+    });
+
+    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
+        return computed;
+    }
+
+    if (appState.teamWeeklyStats) {
+        return mapApiWeeklyStats(appState.teamWeeklyStats);
+    }
+
+    return computed;
 }
 
 function getJoinableTeams(searchQuery?: string): TeamSearchItem[] {
@@ -3106,6 +3368,39 @@ function persistLocalTeam(): void {
     };
 
     localStorage.setItem(localTeamStorageKey(p.id), JSON.stringify(payload));
+}
+
+function clearPersistedLocalTeam(): void {
+    appState.localCreatedTeam = null;
+
+    const profile = appState.profile;
+    if (profile) {
+        localStorage.removeItem(localTeamStorageKey(profile.id));
+    }
+}
+
+function clearTeamMembershipState(): void {
+    clearPersistedLocalTeam();
+    appState.currentTeam = null;
+    appState.teamCheckIns = [];
+    appState.teamHelpRequests = [];
+    appState.teamActivityFeed = [];
+    appState.teamWeeklyStats = null;
+    appState.teamMyVotes = [];
+
+    if (!appState.profile) {
+        return;
+    }
+
+    appState.profile = {
+        ...appState.profile,
+        teamId: null,
+        teamName: "",
+        teamInviteCode: "",
+        isCaptain: false,
+        teamScore: 0,
+        role: appState.profile.role === "Captain" ? "Student" : appState.profile.role
+    };
 }
 
 function hydrateLocalTeamFromStorage(): void {
@@ -3223,11 +3518,31 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     appState.teamVoteMemberIndex = safeIndex;
 
     if (kind === "requests") {
+        if (!isTeamCaptain()) {
+            appState.teamModal = "none";
+            render();
+            return;
+        }
+
         appState.teamRequestsInviteLink = buildTeamInviteLink();
         appState.teamRequestsCurrentIndex = 0;
     }
 
+    if (kind === "leaveTeam") {
+        if (isTeamCaptain()) {
+            appState.teamModal = "none";
+            render();
+            return;
+        }
+    }
+
     if (kind === "rescue") {
+        if (!isTeamCaptain()) {
+            appState.teamModal = "none";
+            render();
+            return;
+        }
+
         ensureTeamRescueDraft();
         teamFlowState.rescueLeagueDropdownOpen = false;
         teamFlowState.rescueTagDropdownOpen = false;
@@ -3238,6 +3553,9 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     if (kind === "checkIn") {
         teamFlowState.checkInWeek = teamFlowState.checkInWeek || String(Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
         teamFlowState.checkInError = "";
+        teamFlowState.checkInProductivity = 0;
+        teamFlowState.checkInCommunication = 0;
+        teamFlowState.checkInSatisfaction = 0;
     }
 
     if (kind === "vote") {
@@ -3261,6 +3579,16 @@ function closeTeamModal(): void {
     teamFlowState.rescueTagDropdownOpen = false;
     teamFlowState.rescueDeadlineCalendarOpen = false;
     render();
+}
+
+function isDashboardNavigationBlocked(): boolean {
+    return (
+        appState.profileModal !== "none" ||
+        appState.teamModal !== "none" ||
+        appState.eventsModal !== "none" ||
+        teamFlowState.eventModal !== "none" ||
+        ratingFlowState.rescueOpen
+    );
 }
 
 function syncTeamRescueDraftFromForm(): void {
@@ -3355,6 +3683,106 @@ function wireTeamVoteModalEvents(): void {
     }
 }
 
+function wireTeamCheckInModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "checkIn") {
+        return;
+    }
+
+    wireTeamCheckInModal(profileMount, {
+        onClose: () => {
+            closeTeamModal();
+        },
+        onRender: () => {
+            render();
+        },
+        onSubmit: ({ weekNumber, reportText }) => {
+            void submitTeamCheckIn(weekNumber, reportText)
+                .then(() => {
+                    teamFlowState.checkInWeek = "";
+                    teamFlowState.checkInReport = "";
+                    teamFlowState.checkInError = "";
+                    teamFlowState.checkInProductivity = 0;
+                    teamFlowState.checkInCommunication = 0;
+                    teamFlowState.checkInSatisfaction = 0;
+                    setStatus("Check-in отправлен.");
+                    closeTeamModal();
+                })
+                .catch((error: unknown) => {
+                    teamFlowState.checkInError = getErrorMessage(error);
+                    render();
+                });
+        }
+    });
+}
+
+function wireTeamLeaveModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "leaveTeam") {
+        return;
+    }
+
+    wireTeamLeaveModal(profileMount, {
+        onCancel: closeTeamModal,
+        onConfirm: () => {
+            void submitLeaveTeam();
+        }
+    });
+}
+
+async function submitLeaveTeam(): Promise<void> {
+    if (appState.isSubmitting || appState.teamModal !== "leaveTeam") {
+        return;
+    }
+
+    const session = loadSession();
+    if (!session) {
+        setStatus("Сессия не найдена.", "error");
+        render();
+        return;
+    }
+
+    if (isTeamCaptain()) {
+        setStatus("Капитан не может покинуть команду. Расформируйте её.", "error");
+        render();
+        return;
+    }
+
+    const hasServerTeam = Boolean(appState.profile?.teamId ?? appState.currentTeam?.id);
+
+    appState.isSubmitting = true;
+
+    try {
+        if (hasServerTeam) {
+            await leaveMyTeam(session.token);
+        }
+
+        clearTeamMembershipState();
+
+        try {
+            appState.profile = await fetchCurrentUser(session.token);
+        } catch {
+            /* локально уже сбросили членство */
+        }
+
+        hydrateProfileClientStateFromStorage();
+        await refreshTeamWorkspace();
+
+        if (hasTeamAccess()) {
+            setStatus("Не удалось покинуть команду.", "error");
+            render();
+            return;
+        }
+
+        navigateToProfileDashboard();
+        closeTeamModal();
+        setStatus("Вы покинули команду.");
+    } catch (error) {
+        setStatus(getErrorMessage(error), "error");
+    } finally {
+        appState.isSubmitting = false;
+        render();
+    }
+}
+
 function wireTeamRescueModalEvents(): void {
     if (!isHTMLElement(profileMount) || appState.teamModal !== "rescue") {
         return;
@@ -3367,6 +3795,12 @@ function wireTeamRescueModalEvents(): void {
         onClose: closeTeamModal,
         onRender: render,
         onSubmit: (nextDraft) => {
+            if (!isTeamCaptain()) {
+                setStatus("Запрос спасения может отправить только капитан команды.", "error");
+                render();
+                return;
+            }
+
             if (!nextDraft.topic.trim()) {
                 setStatus("Укажите название спасения.", "error");
                 render();
@@ -3495,39 +3929,15 @@ function renderTeamModal(): string {
     }
 
     if (appState.teamModal === "checkIn") {
-        const nextWeek = String(teamFlowState.checkInWeek || Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
+        const nextWeek = Number(teamFlowState.checkInWeek || Math.max(1, appState.teamCheckIns[0]?.weekNumber + 1 || 1));
         const errorHtml = teamFlowState.checkInError
-            ? `<p class="team-validation-error team-validation-error--modal">${escapeHtml(teamFlowState.checkInError)}</p>`
+            ? `<p class="team-validation-error team-validation-error--modal team-checkin-field-error" role="alert">${escapeHtml(teamFlowState.checkInError)}</p>`
             : "";
 
-        return renderProfileModalShell({
-            ariaLabel: "Check-in команды",
-            closeButtonId: "teamCloseCheckInButton",
-            backdropCloseAttr: 'data-close-team-modal="1"',
-            extraModalClass: "team-overlay-modal team-rescue-modal",
-            extraCardClass: "profile-modal-card--form",
-            bodyHtml: `
-                <h2 class="profile-shell-title">CHECK-IN</h2>
-                ${errorHtml}
-                <form id="teamCheckInForm" class="team-rescue-form profile-modal-card-body" novalidate>
-                    <input
-                        id="teamCheckInWeekInput"
-                        class="team-rescue-field"
-                        type="number"
-                        min="1"
-                        max="52"
-                        placeholder="НЕДЕЛЯ"
-                        value="${escapeHtml(nextWeek)}"
-                    >
-                    <textarea
-                        id="teamCheckInReportInput"
-                        class="team-rescue-textarea"
-                        placeholder="Кратко опишите прогресс, риски и договоренности команды"
-                        aria-label="Отчет команды"
-                    >${escapeHtml(teamFlowState.checkInReport)}</textarea>
-                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
-                </form>
-            `
+        return renderTeamCheckInModal({
+            weekNumber: nextWeek,
+            weeklyStats: resolveCheckInWeeklyStats(),
+            errorHtml
         });
     }
 
@@ -3581,6 +3991,10 @@ function renderTeamModal(): string {
                 </div>
             `
         });
+    }
+
+    if (appState.teamModal === "leaveTeam") {
+        return renderTeamLeaveModal({ isSubmitting: appState.isSubmitting });
     }
 
     return "";
@@ -4236,7 +4650,10 @@ function renderProfileModal(): string {
         case "teamSuccess":
             return renderProfileTeamSuccessModal();
         case "achievement":
-            return renderProfileAchievementModal(getProfileAchievementById(appState.profileAchievementId));
+            return renderProfileAchievementModal(getProfileAchievementById(
+                appState.profileAchievementId,
+                getMyProfileAchievements()
+            ));
         default:
             return "";
     }
@@ -4392,7 +4809,7 @@ function renderProfileMainHtml(): string {
             "Участник";
         group = externalRating?.groupTitle?.trim() || "—";
         teamPillText = externalRating?.teamName?.trim() || (externalRating?.hasTeam ? "КОМАНДА" : "БЕЗ КОМАНДЫ");
-        leagueValue = externalRating?.league?.trim() || "Новичок";
+        leagueValue = normalizePersonalLeague(externalRating?.league);
         pointsValue = externalRating ? String(externalRating.points) : "—";
         ratingValue =
             externalRating && externalRating.rank > 0 ? `${externalRating.rank} место` : "—";
@@ -4401,14 +4818,15 @@ function renderProfileMainHtml(): string {
             joinRequest?.avatarUrl?.trim() ||
             externalView.fallbackAvatarUrl?.trim() ||
             "";
+        const externalAchievements = getUserProfileAchievements(externalView.userId);
         achievementsContent =
-            externalRating && externalRating.achievementsCount > 0
+            externalAchievements.length > 0
                 ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderPublicAchievementsStrip(externalRating.achievementsCount)}
+                            ${renderProfileAchievementStrip(externalAchievements, { interactive: false })}
                         </div>
                     </div>`
                 : `
@@ -4419,23 +4837,22 @@ function renderProfileMainHtml(): string {
         const actualPoints = profile?.userPoints ?? profile?.teamScore ?? 0;
         pointsValue = String(actualPoints);
         ratingValue =
-            profile?.personalRating && profile.personalRating > 0
-                ? `${profile.personalRating} место`
+            profile?.personalRank && profile.personalRank > 0
+                ? `${profile.personalRank} место`
                 : "—";
-        const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
-        leagueValue =
-            rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
+        leagueValue = normalizePersonalLeague(profile?.personalLeague);
         fullName = getFullNameDisplay();
         group = getGroupDisplay();
         teamPillText = getEffectiveTeamName() || "КОМАНДА";
         avatarSrc = getAvatarDisplay();
+        const ownAchievements = getMyProfileAchievements();
         achievementsContent = hasProfileAchievements(profile)
             ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="profileAchievementsScroll">
-                            ${renderProfileAchievementStrip()}
+                            ${renderProfileAchievementStrip(ownAchievements)}
                         </div>
                         <div class="profile-achievements-bar" id="profileAchievementsBar" aria-hidden="true">
                             <div class="profile-achievements-thumb" id="profileAchievementsThumb"></div>
@@ -4536,11 +4953,12 @@ function renderProfileView(): void {
     const navProfileActive = appState.dashboardSection === "profile" ? " is-active" : "";
     const navTeamActive = appState.dashboardSection === "team" ? " is-active" : "";
     const navRatingActive = appState.dashboardSection === "rating" ? " is-active" : "";
+    const navTasksActive = appState.dashboardSection === "tasks" ? " is-active" : "";
     const navEventsActive = appState.dashboardSection === "events" ? " is-active" : "";
     const navSettingsActive = appState.dashboardSection === "settings" ? " is-active" : "";
-    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}`;
+    const profileAppModeClass = ` profile-app--dashboard-profile${appState.profileModal === "achievement" ? " is-achievement-modal-open" : ""}${isDashboardNavigationBlocked() ? " is-dashboard-modal-open" : ""}`;
     const extraNavHtml = `
-                    <button type="button" class="profile-nav-button profile-nav-button--disabled" disabled aria-disabled="true"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
+                    <button type="button" class="profile-nav-button${navTasksActive}" data-dashboard="tasks"><img class="profile-nav-icon" src="${tasksMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">ЗАДАНИЯ</span></button>
                     <button type="button" class="profile-nav-button${navEventsActive}" data-dashboard="events"><img class="profile-nav-icon" src="${calendarMenuIconUrl}" alt="" aria-hidden="true"><span class="profile-nav-label">СОБЫТИЯ</span></button>`;
 
     const mainColumn =
@@ -4548,15 +4966,17 @@ function renderProfileView(): void {
             ? renderTeamPageMain(statusHtml)
             : appState.dashboardSection === "rating"
               ? renderRatingPageMain(statusHtml)
-              : appState.dashboardSection === "events"
-                ? renderEventsDashboardMain(statusHtml)
-                : appState.dashboardSection === "settings"
-                  ? renderSettingsPageMain(
-                      statusHtml,
-                      appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
-                      appState.profileAvatarFileName
-                  )
-                  : renderProfileMainHtml();
+              : appState.dashboardSection === "tasks"
+                ? renderTasksPageMain(statusHtml, appState.tasksKrcTier)
+                : appState.dashboardSection === "events"
+                  ? renderEventsDashboardMain(statusHtml)
+                  : appState.dashboardSection === "settings"
+                    ? renderSettingsPageMain(
+                        statusHtml,
+                        appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
+                        appState.profileAvatarFileName
+                    )
+                    : renderProfileMainHtml();
 
     profileMount.innerHTML = `
         <div class="profile-app${profileAppModeClass}">
@@ -4648,6 +5068,32 @@ function wireMobileProfileMenu(): void {
     let velocityY = 0;
 
     const isBottomNavLayout = (): boolean => window.matchMedia(MOBILE_BOTTOM_NAV_QUERY).matches;
+
+    const isNavButtonTarget = (target: Element): boolean => Boolean(target.closest(".profile-nav-button"));
+
+    const canStartMenuGesture = (target: Element, clientY: number): boolean => {
+        if (isNavButtonTarget(target)) {
+            return false;
+        }
+
+        if (target.closest(".profile-modal, button, input, textarea, select, a, label")) {
+            return false;
+        }
+
+        const isOpen = profileApp.classList.contains("is-mobile-menu-open");
+        if (target.closest(".profile-sidebar-swipe-handle")) {
+            return true;
+        }
+
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const isInsideSidebar = clientY >= sidebarRect.top - 12 && clientY <= sidebarRect.bottom + 12;
+        if (isOpen && isInsideSidebar) {
+            return true;
+        }
+
+        const appRect = profileApp.getBoundingClientRect();
+        return clientY >= appRect.bottom - 160;
+    };
 
     const getMenuHeights = (): { closed: number; open: number } => ({
         closed: MOBILE_BOTTOM_NAV_CLOSED_HEIGHT,
@@ -4801,7 +5247,7 @@ function wireMobileProfileMenu(): void {
             }
 
             if (profileApp.classList.contains("is-mobile-menu-open")) {
-                setMenuOpen(false);
+                setMenuOpen(false, false);
             }
         });
     });
@@ -4903,16 +5349,20 @@ function wireMobileProfileMenu(): void {
     };
 
     const onPointerDown = (event: PointerEvent): void => {
-        if (!isBottomNavLayout() || event.pointerType === "mouse" && event.button !== 0) {
+        if (!isBottomNavLayout() || event.pointerType === "mouse" || event.button !== 0) {
             return;
         }
 
-        if (appState.profileModal !== "none" || appState.teamModal !== "none" || appState.eventsModal !== "none") {
+        if (isDashboardNavigationBlocked()) {
             return;
         }
 
         const target = event.target;
         if (!(target instanceof Element) || target.closest(".profile-modal")) {
+            return;
+        }
+
+        if (!canStartMenuGesture(target, event.clientY)) {
             return;
         }
 
@@ -5024,6 +5474,10 @@ function wireProfileViewEvents(): void {
     const logoutButton = profileMount.querySelector("#profileLogoutButton");
     if (isHTMLButtonElement(logoutButton)) {
         logoutButton.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             clearSession();
             appState.profile = null;
             resetProfileUi();
@@ -5036,6 +5490,10 @@ function wireProfileViewEvents(): void {
     const settingsButton = profileMount.querySelector("#profileSettingsButton");
     if (isHTMLButtonElement(settingsButton)) {
         settingsButton.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             openSettingsView();
         });
     }
@@ -5043,6 +5501,10 @@ function wireProfileViewEvents(): void {
     const teamPill = profileMount.querySelector("#profileTeamPillButton");
     if (isHTMLButtonElement(teamPill)) {
         teamPill.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             if (tryOpenNoTeamModal()) {
                 return;
             }
@@ -5057,12 +5519,20 @@ function wireProfileViewEvents(): void {
     const ratingTrackButton = profileMount.querySelector("#profileRatingTrackButton");
     if (isHTMLButtonElement(ratingTrackButton)) {
         ratingTrackButton.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             openRatingDashboard();
         });
     }
 
     profileMount.querySelectorAll<HTMLButtonElement>("[data-dashboard]").forEach((button) => {
         button.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             const section = button.dataset.dashboard as DashboardSection | undefined;
             if (!section) {
                 return;
@@ -5095,6 +5565,10 @@ function wireProfileViewEvents(): void {
 
     profileMount.querySelectorAll<HTMLButtonElement>("[data-dashboard-placeholder]").forEach((button) => {
         button.addEventListener("click", () => {
+            if (isDashboardNavigationBlocked()) {
+                return;
+            }
+
             setStatus("Раздел скоро будет доступен.");
             render();
         });
@@ -5106,6 +5580,13 @@ function wireProfileViewEvents(): void {
     if (appState.dashboardSection === "team" && isHTMLElement(profileMount)) {
         wireTeamPageEvents(profileMount);
     }
+    if (appState.dashboardSection === "tasks" && isHTMLElement(profileMount)) {
+        wireTasksPageEvents(profileMount, (tier: TasksKrcTier) => {
+            appState.tasksKrcTier = tier;
+            clearStatus();
+            render();
+        });
+    }
     if (appState.dashboardSection === "settings") {
         wireSettingsPageEvents();
     }
@@ -5113,11 +5594,17 @@ function wireProfileViewEvents(): void {
     wireEventsModalEvents();
 
     wireTeamRescueModalEvents();
+    wireTeamCheckInModalEvents();
+    wireTeamLeaveModalEvents();
 
     wireTeamVoteModalEvents();
 
     profileMount.querySelectorAll<HTMLElement>("[data-close-team-modal]").forEach((node) => {
         node.addEventListener("click", () => {
+            if (appState.isSubmitting) {
+                return;
+            }
+
             closeTeamModal();
         });
     });
@@ -5126,65 +5613,6 @@ function wireProfileViewEvents(): void {
     if (isHTMLButtonElement(teamCloseVote)) {
         teamCloseVote.addEventListener("click", () => {
             closeTeamModal();
-        });
-    }
-
-    const teamCloseCheckIn = profileMount.querySelector("#teamCloseCheckInButton");
-    if (isHTMLButtonElement(teamCloseCheckIn)) {
-        teamCloseCheckIn.addEventListener("click", () => {
-            closeTeamModal();
-        });
-    }
-
-    const checkInWeek = profileMount.querySelector("#teamCheckInWeekInput");
-    if (isHTMLInputElement(checkInWeek)) {
-        checkInWeek.addEventListener("input", () => {
-            teamFlowState.checkInWeek = checkInWeek.value;
-            teamFlowState.checkInError = "";
-        });
-    }
-
-    const checkInReport = profileMount.querySelector("#teamCheckInReportInput");
-    if (checkInReport instanceof HTMLTextAreaElement) {
-        checkInReport.addEventListener("input", () => {
-            teamFlowState.checkInReport = checkInReport.value;
-            teamFlowState.checkInError = "";
-        });
-    }
-
-    const checkInForm = profileMount.querySelector("#teamCheckInForm");
-    if (isHTMLFormElement(checkInForm)) {
-        checkInForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const week = Number(isHTMLInputElement(checkInWeek) ? checkInWeek.value : teamFlowState.checkInWeek);
-            const report = checkInReport instanceof HTMLTextAreaElement
-                ? checkInReport.value.trim()
-                : teamFlowState.checkInReport.trim();
-
-            if (!Number.isInteger(week) || week < 1 || week > 52) {
-                teamFlowState.checkInError = "Укажите неделю от 1 до 52.";
-                render();
-                return;
-            }
-
-            if (!report) {
-                teamFlowState.checkInError = "Заполните текст отчета.";
-                render();
-                return;
-            }
-
-            void submitTeamCheckIn(week, report)
-                .then(() => {
-                    teamFlowState.checkInWeek = "";
-                    teamFlowState.checkInReport = "";
-                    teamFlowState.checkInError = "";
-                    setStatus("Check-in отправлен.");
-                    closeTeamModal();
-                })
-                .catch((error: unknown) => {
-                    teamFlowState.checkInError = getErrorMessage(error);
-                    render();
-                });
         });
     }
 
@@ -5313,7 +5741,7 @@ function wireProfileViewEvents(): void {
     profileMount.querySelectorAll<HTMLButtonElement>(".profile-achievement-item").forEach((button) => {
         button.addEventListener("click", () => {
             const achievementId = button.dataset.achievementId ?? "";
-            appState.profileAchievementId = getProfileAchievementById(achievementId).id;
+            appState.profileAchievementId = getProfileAchievementById(achievementId, getMyProfileAchievements()).id;
             openProfileModal("achievement");
         });
     });
@@ -5485,9 +5913,14 @@ function wireProfileViewEvents(): void {
     if (isHTMLInputElement(teamNameInput)) {
         teamNameInput.addEventListener("input", () => {
             appState.profileCreateTeamName = teamNameInput.value;
+            syncProfileCreateTeamButtonState();
         });
         teamNameInput.addEventListener("keydown", (event) => {
             if (event.key !== "Enter" || !isHTMLElement(profileMount)) {
+                return;
+            }
+
+            if (teamNameInput.value.trim().length < 3) {
                 return;
             }
 
@@ -5565,11 +5998,13 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.signIn.password = "";
@@ -5583,8 +6018,6 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
     }
 }
 
-const MIN_PASSWORD_LENGTH = 6;
-
 async function submitRegister(form: HTMLFormElement): Promise<void> {
     appState.signUp.email = getInputValue(form.elements.namedItem("email")).trim();
     appState.signUp.password = getInputValue(form.elements.namedItem("password"));
@@ -5597,8 +6030,8 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
     }
 
     if (appState.signUp.password.length < MIN_PASSWORD_LENGTH) {
-        setStatus(`Пароль не короче ${MIN_PASSWORD_LENGTH} символов (требование сервера).`, "error");
-        updateStatusBlock();
+        setStatus(SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE, "error");
+        render();
         return;
     }
 
@@ -5625,11 +6058,13 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.view = "account";
@@ -5659,6 +6094,7 @@ async function refreshProfile(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
+        await refreshMyAchievementsWorkspace(session.token);
         await refreshTeamWorkspace();
         setStatus("Данные обновлены.");
     } catch (error) {
@@ -5683,6 +6119,7 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             }
             appState.profile = p;
             applyPersistedClientStateAfterMe();
+            await refreshMyAchievementsWorkspace(bearerToken);
             await refreshTeamWorkspace();
             render();
         } catch {
@@ -5879,6 +6316,20 @@ if (profileMount instanceof HTMLElement) {
     profileMount.addEventListener("click", (event: MouseEvent) => {
         const target = event.target;
         if (!(target instanceof Element)) {
+            return;
+        }
+
+        if (target.closest("#teamLeaveConfirmButton")) {
+            event.preventDefault();
+            event.stopPropagation();
+            void submitLeaveTeam();
+            return;
+        }
+
+        if (target.closest("#teamLeaveCancelButton")) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeTeamModal();
             return;
         }
 

@@ -193,6 +193,30 @@ public class TeamsController : ApiControllerBase
         return Ok(await _teamService.GetActivityForUserTeamAsync(userId.Value, limit, HttpContext.RequestAborted));
     }
 
+    [HttpGet("me/weekly-stats")]
+    [ProducesResponseType<TeamWeeklyStatsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TeamWeeklyStatsResponse>> MyTeamWeeklyStats()
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var stats = await _teamService.GetWeeklyStatsForUserTeamAsync(userId.Value, HttpContext.RequestAborted);
+        if (stats is null)
+        {
+            return NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not assigned to a team.",
+                statusCode: StatusCodes.Status404NotFound));
+        }
+
+        return Ok(stats);
+    }
+
     [HttpGet("join-requests")]
     [ProducesResponseType<IEnumerable<TeamJoinRequestResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -298,6 +322,46 @@ public class TeamsController : ApiControllerBase
             _ => Problem(
                 title: "Join request update failed",
                 detail: "The join request could not be updated.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    /// <summary>
+    /// Покидает команду текущего участника (не капитана).
+    /// </summary>
+    [HttpPost("me/leave")]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LeaveMyTeam()
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.LeaveAsync(userId.Value, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            LeaveTeamResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            LeaveTeamResultType.NotInTeam => NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not in a team.",
+                statusCode: StatusCodes.Status404NotFound)),
+            LeaveTeamResultType.IsCaptain => BadRequest(Problem(
+                title: "Captain cannot leave",
+                detail: "The team captain cannot leave the team. Disband the team or transfer captaincy.",
+                statusCode: StatusCodes.Status400BadRequest)),
+            LeaveTeamResultType.Left => NoContent(),
+            _ => Problem(
+                title: "Leave team failed",
+                detail: "Unable to leave the team.",
                 statusCode: StatusCodes.Status500InternalServerError)
         };
     }

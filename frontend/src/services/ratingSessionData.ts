@@ -1,14 +1,92 @@
 import type { UserProfileResponse } from "../types/auth";
 import type { RatingTeam, RatingTeamMember, RatingUser } from "../types/rating";
-import type { LocalCreatedTeam, TeamResponse } from "../types/team";
+import type { LocalCreatedTeam, TeamJoinRequestResponse, TeamResponse } from "../types/team";
+import { normalizePersonalLeague } from "../utils/personalLeague";
+
+type AvatarSource = {
+    id: string | number;
+    avatarUrl?: string | null;
+};
+
+function addAvatarSource(sources: AvatarSource[], id: string | number, avatarUrl?: string | null): void {
+    const normalizedId = String(id).trim();
+    const normalizedUrl = avatarUrl?.trim();
+    if (!normalizedId || !normalizedUrl) {
+        return;
+    }
+
+    sources.push({ id: normalizedId, avatarUrl: normalizedUrl });
+}
+
+export function collectKnownUserAvatars(options: {
+    teamCatalog?: TeamResponse[];
+    currentTeam?: TeamResponse | null;
+    joinRequests?: TeamJoinRequestResponse[];
+    ratingTeams?: RatingTeam[];
+}): Map<string, string> {
+    const sources: AvatarSource[] = [];
+
+    for (const team of options.teamCatalog ?? []) {
+        for (const member of team.members ?? []) {
+            addAvatarSource(sources, member.id, member.avatarUrl);
+        }
+    }
+
+    for (const member of options.currentTeam?.members ?? []) {
+        addAvatarSource(sources, member.id, member.avatarUrl);
+    }
+
+    for (const request of options.joinRequests ?? []) {
+        addAvatarSource(sources, request.userId, request.avatarUrl);
+    }
+
+    for (const team of options.ratingTeams ?? []) {
+        for (const member of team.members ?? []) {
+            addAvatarSource(sources, member.id, member.avatarUrl);
+        }
+    }
+
+    const lookup = new Map<string, string>();
+    for (const source of sources) {
+        const id = String(source.id);
+        const url = source.avatarUrl?.trim();
+        if (id && url && !lookup.has(id)) {
+            lookup.set(id, url);
+        }
+    }
+
+    return lookup;
+}
+
+export function enrichRatingUsersWithKnownAvatars(
+    users: RatingUser[],
+    avatarLookup: Map<string, string>
+): RatingUser[] {
+    return users.map((user) => ({
+        ...user,
+        avatarUrl: user.avatarUrl?.trim() || avatarLookup.get(user.id) || ""
+    }));
+}
+
+export function enrichRatingTeamsWithKnownAvatars(
+    teams: RatingTeam[],
+    avatarLookup: Map<string, string>
+): RatingTeam[] {
+    return teams.map((team) => ({
+        ...team,
+        members: team.members.map((member) => ({
+            ...member,
+            avatarUrl: member.avatarUrl?.trim() || avatarLookup.get(member.id) || ""
+        }))
+    }));
+}
 
 function formatRatingUserName(profile: UserProfileResponse): string {
     const last = profile.lastName?.trim() ?? "";
     const first = profile.firstName?.trim() ?? "";
-    const initial = first ? `${first.charAt(0).toUpperCase()}.` : "";
 
-    if (last && initial) {
-        return `${last.toUpperCase()} ${initial}`;
+    if (first || last) {
+        return [first, last].filter(Boolean).join(" ").toUpperCase();
     }
 
     return (profile.nickname?.trim() || profile.userName?.trim() || "УЧАСТНИК").toUpperCase();
@@ -23,7 +101,7 @@ function rerankByPoints<T extends { points: number; rank: number }>(items: T[]):
 export function buildRatingUserFromProfile(profile: UserProfileResponse): RatingUser {
     return {
         id: String(profile.id),
-        rank: profile.personalRating > 0 ? profile.personalRating : 0,
+        rank: profile.personalRank ?? 0,
         name: formatRatingUserName(profile),
         points: profile.userPoints ?? 0,
         contribution: profile.personalContribution,
@@ -32,7 +110,7 @@ export function buildRatingUserFromProfile(profile: UserProfileResponse): Rating
         teamName: profile.teamName ?? "",
         groupTitle: profile.groupTitle ?? "",
         isCaptain: profile.isCaptain,
-        league: profile.personalLeague?.trim() || "БАЗОВАЯ",
+        league: normalizePersonalLeague(profile.personalLeague),
         achievementsCount: 0,
         avatarUrl: profile.avatarUrl
     };

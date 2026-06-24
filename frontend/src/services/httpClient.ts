@@ -62,6 +62,10 @@ export function getErrorMessage(error: unknown): string {
         return "Не удалось связаться с сервером. Проверьте, что backend запущен.";
     }
 
+    if (error instanceof Error && (error as Error & { status?: number }).status === 403) {
+        return "��� ������� � ����� ��������.";
+    }
+
     return error instanceof Error ? error.message : "Не удалось выполнить запрос.";
 }
 
@@ -74,6 +78,7 @@ function translateApiErrorMessage(message: string): string {
         "Team with this invite code was not found.": "Команда с таким кодом приглашения не найдена.",
         "Join request already exists": "Заявка в эту команду уже отправлена.",
         "The current user is not in a team.": "Вы не состоите в команде.",
+        "The team captain cannot leave the team. Disband the team or transfer captaincy.": "Капитан не может покинуть команду. Расформируйте команду или передайте капитанство.",
         "You must belong to a team before voting.": "Чтобы голосовать, нужно состоять в команде.",
         "You have already voted for this teammate.": "Вы уже оценили этого участника.",
         "You have not voted for this teammate yet.": "Вы ещё не оценивали этого участника.",

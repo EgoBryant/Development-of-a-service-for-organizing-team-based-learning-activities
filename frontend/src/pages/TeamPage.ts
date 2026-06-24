@@ -319,6 +319,13 @@ export function wireTeamPageEvents(root: HTMLElement): void {
         });
     }
 
+    const teamOpenLeave = root.querySelector("#teamOpenLeaveHeaderButton");
+    if (isHTMLButtonElement(teamOpenLeave)) {
+        teamOpenLeave.addEventListener("click", () => {
+            bridge.openTeamOverlayModal("leaveTeam");
+        });
+    }
+
     root.querySelectorAll<HTMLButtonElement>("[data-team-open-member-profile]").forEach((button) => {
         button.addEventListener("click", () => {
             const memberId = button.dataset.teamOpenMemberProfile ?? "";

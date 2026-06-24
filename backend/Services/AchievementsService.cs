@@ -35,6 +35,8 @@ public class AchievementsService : IAchievementsService
 
     public async Task<IReadOnlyCollection<UserAchievementResponse>> GetUserAchievementsAsync(int userId, CancellationToken cancellationToken = default)
     {
+        await EnsureTop3TeamAchievementAsync(userId, cancellationToken);
+
         var items = await _dbContext.UserAchievements
             .AsNoTracking()
             .Include(userAchievement => userAchievement.Achievement)
@@ -87,5 +89,35 @@ public class AchievementsService : IAchievementsService
             cancellationToken);
 
         return true;
+    }
+
+    private async Task EnsureTop3TeamAchievementAsync(int userId, CancellationToken cancellationToken)
+    {
+        var teamId = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => user.TeamId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (teamId is null)
+        {
+            return;
+        }
+
+        var topTeamIds = await _dbContext.Teams
+            .AsNoTracking()
+            .OrderByDescending(team => team.KrkCached)
+            .ThenByDescending(team => team.Score)
+            .ThenBy(team => team.Name)
+            .Select(team => team.Id)
+            .Take(3)
+            .ToListAsync(cancellationToken);
+
+        if (!topTeamIds.Contains(teamId.Value))
+        {
+            return;
+        }
+
+        await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
     }
 }

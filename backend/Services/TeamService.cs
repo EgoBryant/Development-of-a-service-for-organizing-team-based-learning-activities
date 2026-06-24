@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 using TeamExamProject.Contracts.ActivityFeed;
 using TeamExamProject.Contracts.Teams;
 using TeamExamProject.Data;
@@ -124,6 +125,72 @@ public class TeamService : ITeamService
             .ToListAsync(cancellationToken);
 
         return items.Select(MapActivityItemResponse).ToList();
+    }
+
+    public async Task<TeamWeeklyStatsResponse?> GetWeeklyStatsForUserTeamAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var teamId = await GetTeamIdForUserAsync(userId, cancellationToken);
+        if (teamId is null)
+        {
+            return null;
+        }
+
+        var weekStart = GetWeekStartUtc(DateTime.UtcNow);
+        var weekEnd = weekStart.AddDays(7);
+
+        var weekActivities = await _dbContext.ActivityFeedItems
+            .AsNoTracking()
+            .Where(item => item.TeamId == teamId.Value && item.CreatedAtUtc >= weekStart && item.CreatedAtUtc < weekEnd)
+            .ToListAsync(cancellationToken);
+
+        var eventsHeld = weekActivities.Count(item => item.Type == ActivityFeedItemTypes.EventCreated);
+        var rescueActivities = weekActivities
+            .Where(item => item.Type == ActivityFeedItemTypes.HelpRequestCompleted)
+            .ToList();
+        var teamsRescued = rescueActivities.Count;
+
+        var pointsEarned = 0;
+
+        if (rescueActivities.Count > 0)
+        {
+            var completedRescues = await _dbContext.HelpRequests
+                .AsNoTracking()
+                .Where(request =>
+                    request.ToTeamId == teamId.Value &&
+                    request.Status == HelpRequestStatuses.Completed &&
+                    request.BonusAwarded)
+                .ToListAsync(cancellationToken);
+
+            foreach (var activity in rescueActivities)
+            {
+                var topic = ExtractHelpCompletedTopic(activity.Message);
+                if (topic is null)
+                {
+                    continue;
+                }
+
+                var matchedRequest = completedRescues.FirstOrDefault(request =>
+                    request.Topic.Equals(topic, StringComparison.OrdinalIgnoreCase));
+                if (matchedRequest is not null)
+                {
+                    pointsEarned += (int)Math.Round(matchedRequest.BonusPoints, MidpointRounding.AwayFromZero);
+                }
+            }
+        }
+
+        foreach (var activity in weekActivities.Where(item => item.Type == ActivityFeedItemTypes.ChallengeApproved))
+        {
+            pointsEarned += ExtractBonusPointsFromActivityMessage(activity.Message);
+        }
+
+        return new TeamWeeklyStatsResponse
+        {
+            PointsEarned = pointsEarned,
+            TeamsRescued = teamsRescued,
+            EventsHeld = eventsHeld,
+            WeekStartUtc = weekStart,
+            WeekEndUtc = weekEnd
+        };
     }
 
     public Task<int?> GetTeamIdForUserAsync(int userId, CancellationToken cancellationToken = default)
@@ -488,6 +555,55 @@ public class TeamService : ITeamService
         return new DisbandTeamResult { Type = DisbandTeamResultType.Disbanded };
     }
 
+    public async Task<LeaveTeamResult> LeaveAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return new LeaveTeamResult { Type = LeaveTeamResultType.UserNotFound };
+        }
+
+        if (user.TeamId is null)
+        {
+            return new LeaveTeamResult { Type = LeaveTeamResultType.NotInTeam };
+        }
+
+        var team = await _dbContext.Teams
+            .Include(existingTeam => existingTeam.Members)
+            .SingleOrDefaultAsync(existingTeam => existingTeam.Id == user.TeamId, cancellationToken);
+
+        if (team is null)
+        {
+            user.TeamId = null;
+            if (user.Role == Roles.Captain)
+            {
+                user.Role = Roles.Student;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return new LeaveTeamResult { Type = LeaveTeamResultType.NotInTeam };
+        }
+
+        if (team.CaptainId == userId)
+        {
+            return new LeaveTeamResult { Type = LeaveTeamResultType.IsCaptain };
+        }
+
+        var teamId = team.Id;
+        user.TeamId = null;
+        if (user.Role == Roles.Captain)
+        {
+            user.Role = Roles.Student;
+        }
+
+        await CancelPendingJoinRequestsForUserAsync(user.Id, cancellationToken);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _krkCalculationService.RecalculateForTeamAsync(teamId, cancellationToken);
+
+        return new LeaveTeamResult { Type = LeaveTeamResultType.Left };
+    }
+
     public async Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default)
     {
         var team = await _dbContext.Teams
@@ -602,6 +718,25 @@ public class TeamService : ITeamService
         UserName = item.User?.UserName ?? string.Empty,
         CreatedAtUtc = item.CreatedAtUtc
     };
+
+    private static DateTime GetWeekStartUtc(DateTime utcNow)
+    {
+        var utcDate = DateTime.SpecifyKind(utcNow.Date, DateTimeKind.Utc);
+        var daysSinceMonday = ((int)utcDate.DayOfWeek + 6) % 7;
+        return utcDate.AddDays(-daysSinceMonday);
+    }
+
+    private static string? ExtractHelpCompletedTopic(string message)
+    {
+        var match = Regex.Match(message, @"«Спасение» завершено: «(.+?)»", RegexOptions.CultureInvariant);
+        return match.Success ? match.Groups[1].Value.Trim() : null;
+    }
+
+    private static int ExtractBonusPointsFromActivityMessage(string message)
+    {
+        var match = Regex.Match(message, @"\(\+(\d+)\s+бал", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        return match.Success && int.TryParse(match.Groups[1].Value, out var points) ? points : 0;
+    }
 
     private static TeamJoinRequestResponse MapJoinRequestResponse(TeamJoinRequest request)
     {

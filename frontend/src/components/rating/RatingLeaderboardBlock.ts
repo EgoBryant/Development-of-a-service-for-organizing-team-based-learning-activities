@@ -77,7 +77,7 @@ export function renderRatingLeaderboardBlock(): string {
     const rest = sorted.slice(3, 3 + listLimit);
     const teamsTabActive = tab === "teams";
     const usersTabActive = tab === "users";
-    const actionLabel = teamsTabActive ? "НАЙТИ" : "ФИЛЬТР";
+    const actionLabel = "ФИЛЬТР";
 
     return `
         <section class="rating-leaderboard rating-leaderboard--${block}" aria-label="Рейтинг">
@@ -98,32 +98,34 @@ export function renderRatingLeaderboardBlock(): string {
                 >КОМАНДЫ</button>
             </div>
 
-            <div class="rating-toolbar">
-                <input
-                    type="search"
-                    class="rating-search-input"
-                    id="ratingLeaderboardSearchInput"
-                    placeholder="ПОИСК"
-                    value="${escapeHtml(search)}"
-                    autocomplete="off"
-                >
-                <div class="rating-filter-wrap">
-                    <button
-                        type="button"
-                        class="rating-filter-btn"
-                        data-rating-filter-toggle="${block}"
-                        aria-expanded="${filterOpen}"
-                    >${actionLabel}</button>
-                    ${renderSortMenuHtml(block, sortKey, filterOpen)}
+            <div class="rating-leaderboard-content">
+                <div class="rating-toolbar">
+                    <input
+                        type="search"
+                        class="rating-search-input"
+                        id="ratingLeaderboardSearchInput"
+                        placeholder="ПОИСК"
+                        value="${escapeHtml(search)}"
+                        autocomplete="off"
+                    >
+                    <div class="rating-filter-wrap">
+                        <button
+                            type="button"
+                            class="rating-filter-btn"
+                            data-rating-filter-toggle="${block}"
+                            aria-expanded="${filterOpen}"
+                        >${actionLabel}</button>
+                        ${renderSortMenuHtml(block, sortKey, filterOpen)}
+                    </div>
                 </div>
-            </div>
 
-            <div class="rating-leaderboard-body">
-                <div class="rating-featured-row rating-featured-row--${block}" role="list" aria-label="Тройка лидеров">
-                    ${renderFeaturedRowHtml(featured, dataAttr, block)}
-                </div>
-                <div class="rating-list-scroll rating-list-scroll--${block}" role="list" aria-label="Остальные позиции">
-                    ${rest.length ? renderListRowsHtml(rest, dataAttr, block) : (featured.length ? "" : `<p class="rating-list-empty">Ничего не найдено</p>`)}
+                <div class="rating-leaderboard-body">
+                    <div class="rating-featured-row rating-featured-row--${block}" role="list" aria-label="Тройка лидеров">
+                        ${renderFeaturedRowHtml(featured, dataAttr, block)}
+                    </div>
+                    <div class="rating-list-scroll rating-list-scroll--${block}" role="list" aria-label="Остальные позиции">
+                        ${rest.length ? renderListRowsHtml(rest, dataAttr, block) : (featured.length ? "" : `<p class="rating-list-empty">Ничего не найдено</p>`)}
+                    </div>
                 </div>
             </div>
         </section>`;

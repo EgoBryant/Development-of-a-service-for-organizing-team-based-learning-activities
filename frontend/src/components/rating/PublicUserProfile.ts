@@ -1,26 +1,28 @@
 import ligaMobileIconUrl from "../../assets/icons/Liga_mobile.svg";
 import ratingMenuIconUrl from "../../assets/icons/Menu_Icons/Rating.svg";
 import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
-import { PROFILE_ACHIEVEMENTS } from "../../data/profileAchievements";
+import { renderProfileAchievementStrip } from "../profile/ProfileAchievements";
+import {
+    getProfileAchievementsByEarnedCount,
+    getUserProfileAchievements,
+    hasUserAchievementsSnapshot
+} from "../../state/achievementsState";
 import { getRatingUserById } from "../../state/ratingDataState";
 import { escapeHtml } from "../../utils/html";
+import { normalizePersonalLeague } from "../../utils/personalLeague";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
 
-export function renderPublicAchievementsStrip(earnedCount: number): string {
-    return PROFILE_ACHIEVEMENTS.map((achievement, index) => {
-        const status = index < earnedCount ? "earned" : index === earnedCount ? "progress" : "locked";
-        return `
-        <div
-            class="profile-achievement-item profile-achievement-item--${status}"
-            aria-label="${escapeHtml(`${achievement.title}. ${achievement.description}`)}"
-        >
-            <span class="profile-achievement-circle profile-achievement-circle--${achievement.tone}">
-                <img class="profile-achievement-icon" src="${escapeHtml(achievement.iconUrl)}" alt="" aria-hidden="true">
-            </span>
-            <span class="profile-achievement-caption">${escapeHtml(achievement.shortTitle)}</span>
-            <span class="profile-achievement-progress">${escapeHtml(status === "earned" ? "Получено" : status === "progress" ? "В процессе" : "Закрыто")}</span>
-        </div>`;
-    }).join("");
+export function renderPublicAchievementsStrip(userId: string): string {
+    return renderProfileAchievementStrip(getUserProfileAchievements(userId), { interactive: false });
+}
+
+function resolvePublicAchievements(userId: string, achievementsCount: number) {
+    const isBackendUserId = Number.isInteger(Number(userId));
+    if (hasUserAchievementsSnapshot(userId) || isBackendUserId) {
+        return getUserProfileAchievements(userId);
+    }
+
+    return getProfileAchievementsByEarnedCount(achievementsCount);
 }
 
 export function renderPublicUserProfile(userId: string): string {
@@ -34,7 +36,7 @@ export function renderPublicUserProfile(userId: string): string {
         ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
         : `<span class="profile-photo-placeholder">Фото</span>`;
 
-    const leagueValue = user.league?.trim() || "Новичок";
+    const leagueValue = normalizePersonalLeague(user.league);
     const ratingValue = user.rank > 0 ? `${user.rank} место` : "—";
     const group = user.groupTitle?.trim() || "—";
     const teamPillText = user.teamName?.trim() || (user.hasTeam ? "КОМАНДА" : "БЕЗ КОМАНДЫ");
@@ -43,14 +45,15 @@ export function renderPublicUserProfile(userId: string): string {
         ? `<button type="button" class="profile-info-pill profile-info-pill-accent" data-rating-open-team="${escapeHtml(user.teamId)}">${escapeHtml(teamPillText)}</button>`
         : `<div class="profile-info-pill profile-info-pill-accent">${escapeHtml(teamPillText)}</div>`;
 
+    const publicAchievements = resolvePublicAchievements(user.id, user.achievementsCount);
     const achievementsContent =
-        user.achievementsCount > 0
+        publicAchievements.length > 0
             ? `
                     <div class="profile-achievements-scroll-wrap">
                         <div class="profile-achievements-fade profile-achievements-fade-left" aria-hidden="true"></div>
                         <div class="profile-achievements-fade profile-achievements-fade-right" aria-hidden="true"></div>
                         <div class="profile-achievements-scroll" id="ratingPublicAchievementsScroll">
-                            ${renderPublicAchievementsStrip(user.achievementsCount)}
+                            ${renderProfileAchievementStrip(publicAchievements, { interactive: false })}
                         </div>
                     </div>`
             : `
@@ -60,6 +63,17 @@ export function renderPublicUserProfile(userId: string): string {
 
     return `
         <div class="rating-public-profile">
+            <div class="rating-toolbar rating-toolbar--public">
+                <input
+                    type="search"
+                    class="rating-search-input"
+                    placeholder="ПОИСК"
+                    disabled
+                >
+                <div class="rating-filter-wrap">
+                    <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+                </div>
+            </div>
             <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
             <div class="profile-hero-card">
                 <div class="profile-top">

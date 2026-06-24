@@ -97,6 +97,18 @@ button.team-topbar-tab--active:hover {
     box-shadow: 0 10px 22px rgba(120, 124, 254, 0.35);
 }
 
+.team-topbar-tab--leave {
+    background: var(--exam-button-gradient-red);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(223, 46, 128, 0.3);
+}
+
+button.team-topbar-tab--leave:hover,
+button.team-topbar-tab--leave.team-topbar-tab--active:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(223, 46, 128, 0.4);
+}
+
 .team-topbar-tab--name {
     background: var(--exam-button-gradient);
     -webkit-background-clip: text;
@@ -399,7 +411,8 @@ button.team-topbar-tab--active:hover {
 .team-checkin-btn {
     border: none;
     border-radius: 999px;
-    padding: 10px 20px;
+    padding: 10px 28px;
+    min-width: 120px;
     background: var(--exam-button-gradient);
     color: rgba(255, 255, 255, 0.95);
     font-size: 11px;
@@ -589,6 +602,18 @@ button.team-topbar-tab--active:hover {
 
 .team-action-btn--pink:hover {
     box-shadow: 0 10px 24px rgba(223, 46, 128, 0.4);
+}
+
+.team-action-btn--pink:disabled,
+.team-rescue-mobile-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.team-action-btn--pink:disabled:hover {
+    box-shadow: none;
 }
 
 .team-rescue-mobile-action {
@@ -1027,4 +1052,67 @@ button.team-topbar-tab--active:hover {
     cursor: pointer;
     background: var(--exam-button-gradient);
     box-shadow: 0 10px 22px rgba(60, 80, 200, 0.18);
+}
+
+.team-leave-modal-card {
+    width: min(100%, 420px);
+    padding: 32px 28px 28px;
+    text-align: center;
+}
+
+.team-leave-modal-text {
+    margin: 0 0 24px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: rgba(40, 50, 80, 1);
+}
+
+.team-leave-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.team-leave-modal-btn {
+    border: none;
+    border-radius: 999px;
+    min-width: 120px;
+    min-height: 44px;
+    padding: 10px 28px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.team-leave-modal-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.team-leave-modal-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.team-leave-modal-btn--yes {
+    background: var(--exam-button-gradient-red);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(223, 46, 128, 0.3);
+}
+
+.team-leave-modal-btn--yes:hover:not(:disabled) {
+    box-shadow: 0 10px 24px rgba(223, 46, 128, 0.4);
+}
+
+.team-leave-modal-btn--no {
+    background: var(--exam-button-gradient);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(120, 124, 254, 0.22);
+}
+
+.team-leave-modal-btn--no:hover:not(:disabled) {
+    box-shadow: 0 10px 22px rgba(120, 124, 254, 0.35);
 }

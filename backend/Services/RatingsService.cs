@@ -11,15 +11,18 @@ public class RatingsService : IRatingsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IKrkCalculationService _krkCalculationService;
+    private readonly IAchievementsService _achievementsService;
     private readonly LeagueOptions _leagueOptions;
 
     public RatingsService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
+        IAchievementsService achievementsService,
         IOptions<LeagueOptions> leagueOptions)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
+        _achievementsService = achievementsService;
         _leagueOptions = leagueOptions.Value;
     }
 
@@ -40,10 +43,15 @@ public class RatingsService : IRatingsService
         var completedRescuesByTeam = await GetCompletedRescuesCountByTeamAsync(teamIds, cancellationToken);
         var activityByTeam = await GetActivityHistoryByTeamAsync(teamIds, cancellationToken);
 
-        var ranked = teams
+        var rankedTeams = teams
             .OrderByDescending(team => team.KrkCached)
             .ThenByDescending(team => team.Score)
             .ThenBy(team => team.Name)
+            .ToList();
+
+        await GrantTop3TeamAchievementsAsync(rankedTeams, cancellationToken);
+
+        var ranked = rankedTeams
             .Select((team, index) => MapTeam(
                 team,
                 index + 1,
@@ -106,6 +114,7 @@ public class RatingsService : IRatingsService
     {
         var users = await _dbContext.Users
             .AsNoTracking()
+            .Where(user => user.Role != Models.Roles.Admin)
             .Include(user => user.Team)
             .Include(user => user.Group)
             .Select(user => new RatingUserProjection
@@ -123,7 +132,8 @@ public class RatingsService : IRatingsService
                     ? user.AcademicGroupLabel
                     : user.Group == null ? string.Empty : user.Group.Title,
                 IsCaptain = user.Team != null && user.Team.CaptainId == user.Id,
-                AchievementsCount = user.Achievements.Count()
+                AchievementsCount = user.Achievements.Count(),
+                AvatarUrl = user.AvatarUrl
             })
             .ToListAsync(cancellationToken);
 
@@ -171,6 +181,21 @@ public class RatingsService : IRatingsService
         if (hasMissingKrk)
         {
             await _krkCalculationService.RecalculateAllAsync(cancellationToken);
+        }
+    }
+
+    private async Task GrantTop3TeamAchievementsAsync(IReadOnlyCollection<Team> rankedTeams, CancellationToken cancellationToken)
+    {
+        var topMembers = rankedTeams
+            .Take(3)
+            .SelectMany(team => team.Members)
+            .Select(member => member.Id)
+            .Distinct()
+            .ToList();
+
+        foreach (var userId in topMembers)
+        {
+            await _achievementsService.GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
         }
     }
 
@@ -286,7 +311,8 @@ public class RatingsService : IRatingsService
                 {
                     Id = member.Id.ToString(),
                     DisplayName = DisplayNameFormatter.Format(member),
-                    RoleLabel = team.CaptainId == member.Id ? "КАПИТАН" : "УЧАСТНИК"
+                    RoleLabel = team.CaptainId == member.Id ? "КАПИТАН" : "УЧАСТНИК",
+                    AvatarUrl = member.AvatarUrl
                 })
                 .ToList(),
             ActivityHistory = activityHistory
@@ -300,7 +326,7 @@ public class RatingsService : IRatingsService
         {
             Id = user.Id.ToString(),
             Rank = rank,
-            Name = DisplayNameFormatter.Format(user.FirstName, user.LastName, user.MiddleName, user.Nickname, user.UserName),
+            Name = FormatRatingUserName(user.FirstName, user.LastName, user.Nickname, user.UserName),
             Points = personalRating,
             Contribution = contribution,
             HasTeam = user.TeamId is not null,
@@ -309,12 +335,31 @@ public class RatingsService : IRatingsService
             GroupTitle = user.GroupTitle,
             IsCaptain = user.IsCaptain,
             League = ResolveLeague(personalRating),
-            AchievementsCount = user.AchievementsCount
+            AchievementsCount = user.AchievementsCount,
+            AvatarUrl = user.AvatarUrl
         };
     }
 
     private static int CalculatePersonalRating(int userPoints, double contribution) =>
         userPoints + (int)Math.Round(contribution * 20d, MidpointRounding.AwayFromZero);
+
+    private static string FormatRatingUserName(string? firstName, string? lastName, string? nickname, string? userName)
+    {
+        var first = (firstName ?? string.Empty).Trim();
+        var last = (lastName ?? string.Empty).Trim();
+
+        if (first.Length > 0 || last.Length > 0)
+        {
+            return string.Join(" ", new[] { first, last }.Where(part => part.Length > 0)).ToUpperInvariant();
+        }
+
+        if (!string.IsNullOrWhiteSpace(nickname))
+        {
+            return nickname.Trim().ToUpperInvariant();
+        }
+
+        return (userName ?? string.Empty).Trim().ToUpperInvariant();
+    }
 
     private static string ResolveTeamLeague(double krk)
     {
@@ -418,5 +463,6 @@ public class RatingsService : IRatingsService
         public string GroupTitle { get; init; } = string.Empty;
         public bool IsCaptain { get; init; }
         public int AchievementsCount { get; init; }
+        public string AvatarUrl { get; init; } = string.Empty;
     }
 }

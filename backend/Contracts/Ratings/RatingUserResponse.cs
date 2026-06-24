@@ -19,4 +19,5 @@ public class RatingUserResponse
     /// <summary>Подпись лиги по порогам очков (БАЗОВАЯ / БРОНЗА / СЕРЕБРО / ЗОЛОТО). См. <c>FRONTEND-API-CONTRACT.md</c>.</summary>
     public string League { get; set; } = string.Empty;
     public int AchievementsCount { get; set; }
+    public string AvatarUrl { get; set; } = string.Empty;
 }

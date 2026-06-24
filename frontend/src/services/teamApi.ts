@@ -3,8 +3,10 @@ import type {
     CheckInResponse,
     HelpRequestResponse,
     MyVoteResponse,
+    TeamActivityFeedItem,
     TeamJoinRequestResponse,
     TeamResponse,
+    TeamWeeklyStats,
     VoteResponse
 } from "../types/team";
 
@@ -68,6 +70,18 @@ export function joinTeam(
         method: "POST",
         headers: authHeaders(token),
         body: JSON.stringify({ inviteCode })
+    });
+}
+
+export function fetchTeamActivity(token: string, limit = 100): Promise<TeamActivityFeedItem[]> {
+    return request<TeamActivityFeedItem[]>(`/api/teams/me/activity?limit=${limit}`, {
+        headers: authHeaders(token)
+    });
+}
+
+export function fetchTeamWeeklyStats(token: string): Promise<TeamWeeklyStats> {
+    return request<TeamWeeklyStats>("/api/teams/me/weekly-stats", {
+        headers: authHeaders(token)
     });
 }
 
@@ -185,5 +199,13 @@ export function updateVote(
         method: "PUT",
         headers: authHeaders(token),
         body: JSON.stringify({ toUserId, score })
+    });
+}
+
+export function leaveMyTeam(token: string): Promise<void> {
+    return request<void>("/api/teams/me/leave", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({})
     });
 }
