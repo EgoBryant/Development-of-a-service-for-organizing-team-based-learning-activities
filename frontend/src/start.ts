@@ -54,6 +54,7 @@ import {
     getUserEventsForDateKey,
     loadPersistedUserEvents
 } from "./state/eventsCalendarState";
+import { normalizePersonalLeague } from "./utils/personalLeague";
 import { loadPersistedActivityFeed, pushActivityFeedItem, getActivityFeedItems } from "./state/activityFeedState";
 import {
     computeCheckInWeeklyStats,
@@ -110,6 +111,7 @@ import {
 import { renderProfileModalShell } from "./components/profile/ProfileModalShell";
 import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
 import { renderTeamCheckInModal, wireTeamCheckInModal } from "./components/modals/TeamCheckInModal";
+import { renderTeamLeaveModal, wireTeamLeaveModal } from "./components/modals/TeamLeaveModal";
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
 import { renderPublicAchievementsStrip } from "./components/rating/PublicUserProfile";
 import { getProfileAchievementById } from "./data/profileAchievements";
@@ -134,6 +136,7 @@ import {
     fetchTeams,
     fetchTeamJoinRequests,
     joinTeam as joinTeamApi,
+    leaveMyTeam,
     searchTeams,
     updateHelpRequestStatus,
     updateTeamJoinRequestStatus
@@ -231,6 +234,8 @@ const MOBILE_BOTTOM_NAV_FLING_VELOCITY = 0.32;
 const MOBILE_MENU_SNAP_MS = 680;
 const MOBILE_MENU_DRAG_SMOOTHING = 0.38;
 const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
+const MIN_PASSWORD_LENGTH = 6;
+const SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE = `Пароль не короче ${MIN_PASSWORD_LENGTH} символов (требование сервера).`;
 
 void bootstrap();
 
@@ -523,7 +528,14 @@ async function submitProfileTeamCreate(button?: HTMLButtonElement): Promise<void
     const nameInputEl = isHTMLElement(profileMount) ? profileMount.querySelector("#profileTeamNameInput") : null;
     const name = (
         isHTMLInputElement(nameInputEl) ? nameInputEl.value : appState.profileCreateTeamName
-    ).trim() || "КОМАНДА";
+    ).trim();
+
+    if (name.length < 3) {
+        setStatus("Название команды должно содержать не менее 3 символов.", "error");
+        render();
+        return;
+    }
+
     const direction = appState.profileCreateTeamDirection.trim();
 
     appState.profileCreateTeamName = name;
@@ -541,9 +553,23 @@ async function submitProfileTeamCreate(button?: HTMLButtonElement): Promise<void
         render();
     } finally {
         if (button) {
-            button.disabled = false;
+            syncProfileCreateTeamButtonState();
         }
     }
+}
+
+function syncProfileCreateTeamButtonState(): void {
+    if (!isHTMLElement(profileMount) || appState.profileModal !== "createTeam") {
+        return;
+    }
+
+    const nameInput = profileMount.querySelector("#profileTeamNameInput");
+    const confirmButton = profileMount.querySelector("#profileConfirmCreateTeamButton");
+    if (!isHTMLInputElement(nameInput) || !isHTMLButtonElement(confirmButton)) {
+        return;
+    }
+
+    confirmButton.disabled = nameInput.value.trim().length < 3;
 }
 
 async function submitTeamJoinRequestStatus(id: number, status: string): Promise<void> {
@@ -1200,14 +1226,15 @@ function renderAuthView(): void {
                 <input class="auth-modal-field" name="email" type="email" placeholder="ЭЛЕКТРОННАЯ ПОЧТА" value="${escapeHtml(appState.signUp.email)}" autocomplete="email" required readonly onfocus="this.removeAttribute('readonly');">
                 <div class="auth-reveal-field ${appState.signUp.email.trim() ? "" : "hidden"}" data-signup-password-shell ${appState.signUp.email.trim() ? "" : "hidden"}>
                     <div class="auth-password-row">
-                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="6" ${appState.signUp.email.trim() ? "" : "disabled"}>
+                        <input class="auth-modal-field auth-modal-field-password" name="password" type="password" placeholder="ПАРОЛЬ" value="${escapeHtml(appState.signUp.password)}" autocomplete="new-password" required minlength="${MIN_PASSWORD_LENGTH}" ${appState.signUp.email.trim() ? "" : "disabled"}>
                         <button class="auth-password-peek-button" type="button" aria-label="Показать пароль, пока кнопка зажата" data-signup-password-peek ${appState.signUp.email.trim() ? "" : "disabled"}>
                             <span class="auth-password-peek-icon" aria-hidden="true"></span>
                         </button>
                     </div>
+                    <p class="auth-signup-password-hint hidden" id="signUpPasswordHint" role="alert" aria-live="polite" aria-hidden="true"></p>
                 </div>
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
-                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="6" ${appState.signUp.password ? "" : "disabled"}>
+                    <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="${MIN_PASSWORD_LENGTH}" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
                 ${renderStatusBlock()}
                 <button class="auth-submit-pill" type="submit" ${signUpSubmitDisabled ? "disabled" : ""}>
@@ -1325,12 +1352,43 @@ function isSignInReady(): boolean {
     return appState.signIn.email.trim().length > 0 && appState.signIn.password.length > 0;
 }
 
+function getSignUpPasswordLengthError(password: string): string | null {
+    if (password.length > 0 && password.length < MIN_PASSWORD_LENGTH) {
+        return SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE;
+    }
+
+    return null;
+}
+
 function isSignUpReady(): boolean {
+    const email = appState.signUp.email.trim();
+    const password = appState.signUp.password;
+
     return (
-        appState.signUp.email.trim().length > 0 &&
-        appState.signUp.password.length > 0 &&
-        appState.signUp.password === appState.signUp.passwordConfirm
+        email.length > 0 &&
+        password.length >= MIN_PASSWORD_LENGTH &&
+        password === appState.signUp.passwordConfirm
     );
+}
+
+function syncSignUpPasswordHint(passwordInput: HTMLInputElement, hintNode: HTMLElement | null): void {
+    if (!hintNode) {
+        return;
+    }
+
+    const message = getSignUpPasswordLengthError(passwordInput.value);
+    if (message) {
+        hintNode.textContent = message;
+        hintNode.classList.remove("hidden");
+        hintNode.hidden = false;
+        hintNode.setAttribute("aria-hidden", "false");
+        return;
+    }
+
+    hintNode.textContent = "";
+    hintNode.classList.add("hidden");
+    hintNode.hidden = true;
+    hintNode.setAttribute("aria-hidden", "true");
 }
 
 function bindPressToRevealPassword(button: HTMLButtonElement, passwordInput: HTMLInputElement): () => void {
@@ -1392,6 +1450,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
     const confirmShell = signUpForm.querySelector<HTMLElement>("[data-signup-confirm-shell]");
     const passwordPeekButton = signUpForm.querySelector("[data-signup-password-peek]");
     const passwordRow = signUpForm.querySelector(".auth-password-row");
+    const passwordHint = signUpForm.querySelector<HTMLElement>("#signUpPasswordHint");
     const submitButton = signUpForm.querySelector(".auth-submit-pill");
 
     if (
@@ -1434,8 +1493,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         }
 
         const hasPassword = Boolean(passwordInput.value);
-        const passwordsMatch = hasPassword && passwordInput.value === passwordConfirmInput.value;
-        const shouldShowConfirm = hasPassword && !passwordsMatch;
+        const shouldShowConfirm = hasPassword;
 
         if (!hasPassword) {
             appState.signUp.passwordConfirm = "";
@@ -1448,6 +1506,7 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
         confirmShell.classList.toggle("hidden", !shouldShowConfirm);
         confirmShell.hidden = !shouldShowConfirm;
         passwordConfirmInput.disabled = !shouldShowConfirm;
+        syncSignUpPasswordHint(passwordInput, passwordHint);
         resetPasswordVisibility();
 
         if (isHTMLButtonElement(passwordPeekButton)) {
@@ -1749,6 +1808,14 @@ function persistDashboardSectionToStorage(): void {
     }
 
     writeClientProfileBlob(p.id, { dashboardSection: appState.dashboardSection });
+}
+
+function navigateToProfileDashboard(): void {
+    appState.dashboardSection = "profile";
+    appState.profileModal = "none";
+    appState.teamModal = "none";
+    teamFlowState.noTeamView = "landing";
+    persistDashboardSectionToStorage();
 }
 
 function hydrateProfileClientStateFromStorage(): void {
@@ -2883,7 +2950,22 @@ function isTeamCaptain(): boolean {
         return true;
     }
 
-    return Boolean(appState.localCreatedTeam);
+    if (appState.localCreatedTeam) {
+        const profileId = String(appState.profile.id);
+        const selfRowId = `user-${profileId}`;
+        const members = appState.localCreatedTeam.members;
+        const selfMember = members.find(
+            (member) => member.id === selfRowId || member.id === profileId
+        );
+
+        if (selfMember) {
+            return selfMember.isCaptain;
+        }
+
+        return members.length === 0;
+    }
+
+    return false;
 }
 
 function buildSelfTeamMemberRow(): TeamMemberRow | null {
@@ -3185,6 +3267,39 @@ function persistLocalTeam(): void {
     localStorage.setItem(localTeamStorageKey(p.id), JSON.stringify(payload));
 }
 
+function clearPersistedLocalTeam(): void {
+    appState.localCreatedTeam = null;
+
+    const profile = appState.profile;
+    if (profile) {
+        localStorage.removeItem(localTeamStorageKey(profile.id));
+    }
+}
+
+function clearTeamMembershipState(): void {
+    clearPersistedLocalTeam();
+    appState.currentTeam = null;
+    appState.teamCheckIns = [];
+    appState.teamHelpRequests = [];
+    appState.teamActivityFeed = [];
+    appState.teamWeeklyStats = null;
+    appState.teamMyVotes = [];
+
+    if (!appState.profile) {
+        return;
+    }
+
+    appState.profile = {
+        ...appState.profile,
+        teamId: null,
+        teamName: "",
+        teamInviteCode: "",
+        isCaptain: false,
+        teamScore: 0,
+        role: appState.profile.role === "Captain" ? "Student" : appState.profile.role
+    };
+}
+
 function hydrateLocalTeamFromStorage(): void {
     const p = appState.profile;
     if (!p) {
@@ -3300,8 +3415,22 @@ function openTeamModal(kind: TeamModalKind, memberIndex = 0): void {
     appState.teamVoteMemberIndex = safeIndex;
 
     if (kind === "requests") {
+        if (!isTeamCaptain()) {
+            appState.teamModal = "none";
+            render();
+            return;
+        }
+
         appState.teamRequestsInviteLink = buildTeamInviteLink();
         appState.teamRequestsCurrentIndex = 0;
+    }
+
+    if (kind === "leaveTeam") {
+        if (isTeamCaptain()) {
+            appState.teamModal = "none";
+            render();
+            return;
+        }
     }
 
     if (kind === "rescue") {
@@ -3481,6 +3610,74 @@ function wireTeamCheckInModalEvents(): void {
                 });
         }
     });
+}
+
+function wireTeamLeaveModalEvents(): void {
+    if (!isHTMLElement(profileMount) || appState.teamModal !== "leaveTeam") {
+        return;
+    }
+
+    wireTeamLeaveModal(profileMount, {
+        onCancel: closeTeamModal,
+        onConfirm: () => {
+            void submitLeaveTeam();
+        }
+    });
+}
+
+async function submitLeaveTeam(): Promise<void> {
+    if (appState.isSubmitting || appState.teamModal !== "leaveTeam") {
+        return;
+    }
+
+    const session = loadSession();
+    if (!session) {
+        setStatus("Сессия не найдена.", "error");
+        render();
+        return;
+    }
+
+    if (isTeamCaptain()) {
+        setStatus("Капитан не может покинуть команду. Расформируйте её.", "error");
+        render();
+        return;
+    }
+
+    const hasServerTeam = Boolean(appState.profile?.teamId ?? appState.currentTeam?.id);
+
+    appState.isSubmitting = true;
+
+    try {
+        if (hasServerTeam) {
+            await leaveMyTeam(session.token);
+        }
+
+        clearTeamMembershipState();
+
+        try {
+            appState.profile = await fetchCurrentUser(session.token);
+        } catch {
+            /* локально уже сбросили членство */
+        }
+
+        hydrateProfileClientStateFromStorage();
+        await refreshTeamWorkspace();
+
+        if (hasTeamAccess()) {
+            setStatus("Не удалось покинуть команду.", "error");
+            render();
+            return;
+        }
+
+        navigateToProfileDashboard();
+        closeTeamModal();
+        setStatus("Вы покинули команду.");
+    } catch (error) {
+        setStatus(getErrorMessage(error), "error");
+    } finally {
+        appState.isSubmitting = false;
+        render();
+    }
 }
 
 function wireTeamRescueModalEvents(): void {
@@ -3691,6 +3888,10 @@ function renderTeamModal(): string {
                 </div>
             `
         });
+    }
+
+    if (appState.teamModal === "leaveTeam") {
+        return renderTeamLeaveModal({ isSubmitting: appState.isSubmitting });
     }
 
     return "";
@@ -4502,7 +4703,7 @@ function renderProfileMainHtml(): string {
             "Участник";
         group = externalRating?.groupTitle?.trim() || "—";
         teamPillText = externalRating?.teamName?.trim() || (externalRating?.hasTeam ? "КОМАНДА" : "БЕЗ КОМАНДЫ");
-        leagueValue = externalRating?.league?.trim() || "Новичок";
+        leagueValue = normalizePersonalLeague(externalRating?.league);
         pointsValue = externalRating ? String(externalRating.points) : "—";
         ratingValue =
             externalRating && externalRating.rank > 0 ? `${externalRating.rank} место` : "—";
@@ -4532,9 +4733,7 @@ function renderProfileMainHtml(): string {
             profile?.personalRating && profile.personalRating > 0
                 ? `${profile.personalRating} место`
                 : "—";
-        const rawLeagueValue = profile?.personalLeague?.trim() ?? "";
-        leagueValue =
-            rawLeagueValue && rawLeagueValue.toLowerCase() !== "старт" ? rawLeagueValue : "Новичок";
+        leagueValue = normalizePersonalLeague(profile?.personalLeague);
         fullName = getFullNameDisplay();
         group = getGroupDisplay();
         teamPillText = getEffectiveTeamName() || "КОМАНДА";
@@ -5248,11 +5447,16 @@ function wireProfileViewEvents(): void {
 
     wireTeamRescueModalEvents();
     wireTeamCheckInModalEvents();
+    wireTeamLeaveModalEvents();
 
     wireTeamVoteModalEvents();
 
     profileMount.querySelectorAll<HTMLElement>("[data-close-team-modal]").forEach((node) => {
         node.addEventListener("click", () => {
+            if (appState.isSubmitting) {
+                return;
+            }
+
             closeTeamModal();
         });
     });
@@ -5561,9 +5765,14 @@ function wireProfileViewEvents(): void {
     if (isHTMLInputElement(teamNameInput)) {
         teamNameInput.addEventListener("input", () => {
             appState.profileCreateTeamName = teamNameInput.value;
+            syncProfileCreateTeamButtonState();
         });
         teamNameInput.addEventListener("keydown", (event) => {
             if (event.key !== "Enter" || !isHTMLElement(profileMount)) {
+                return;
+            }
+
+            if (teamNameInput.value.trim().length < 3) {
                 return;
             }
 
@@ -5659,8 +5868,6 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
     }
 }
 
-const MIN_PASSWORD_LENGTH = 6;
-
 async function submitRegister(form: HTMLFormElement): Promise<void> {
     appState.signUp.email = getInputValue(form.elements.namedItem("email")).trim();
     appState.signUp.password = getInputValue(form.elements.namedItem("password"));
@@ -5673,8 +5880,8 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
     }
 
     if (appState.signUp.password.length < MIN_PASSWORD_LENGTH) {
-        setStatus(`Пароль не короче ${MIN_PASSWORD_LENGTH} символов (требование сервера).`, "error");
-        updateStatusBlock();
+        setStatus(SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE, "error");
+        render();
         return;
     }
 
@@ -5955,6 +6162,20 @@ if (profileMount instanceof HTMLElement) {
     profileMount.addEventListener("click", (event: MouseEvent) => {
         const target = event.target;
         if (!(target instanceof Element)) {
+            return;
+        }
+
+        if (target.closest("#teamLeaveConfirmButton")) {
+            event.preventDefault();
+            event.stopPropagation();
+            void submitLeaveTeam();
+            return;
+        }
+
+        if (target.closest("#teamLeaveCancelButton")) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeTeamModal();
             return;
         }
 

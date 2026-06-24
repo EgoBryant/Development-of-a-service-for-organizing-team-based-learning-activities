@@ -1,6 +1,7 @@
 import type { UserProfileResponse } from "../types/auth";
 import type { RatingTeam, RatingTeamMember, RatingUser } from "../types/rating";
 import type { LocalCreatedTeam, TeamResponse } from "../types/team";
+import { normalizePersonalLeague } from "../utils/personalLeague";
 
 function formatRatingUserName(profile: UserProfileResponse): string {
     const last = profile.lastName?.trim() ?? "";
@@ -32,7 +33,7 @@ export function buildRatingUserFromProfile(profile: UserProfileResponse): Rating
         teamName: profile.teamName ?? "",
         groupTitle: profile.groupTitle ?? "",
         isCaptain: profile.isCaptain,
-        league: profile.personalLeague?.trim() || "БАЗОВАЯ",
+        league: normalizePersonalLeague(profile.personalLeague),
         achievementsCount: 0,
         avatarUrl: profile.avatarUrl
     };

@@ -555,6 +555,55 @@ public class TeamService : ITeamService
         return new DisbandTeamResult { Type = DisbandTeamResultType.Disbanded };
     }
 
+    public async Task<LeaveTeamResult> LeaveAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return new LeaveTeamResult { Type = LeaveTeamResultType.UserNotFound };
+        }
+
+        if (user.TeamId is null)
+        {
+            return new LeaveTeamResult { Type = LeaveTeamResultType.NotInTeam };
+        }
+
+        var team = await _dbContext.Teams
+            .Include(existingTeam => existingTeam.Members)
+            .SingleOrDefaultAsync(existingTeam => existingTeam.Id == user.TeamId, cancellationToken);
+
+        if (team is null)
+        {
+            user.TeamId = null;
+            if (user.Role == Roles.Captain)
+            {
+                user.Role = Roles.Student;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return new LeaveTeamResult { Type = LeaveTeamResultType.NotInTeam };
+        }
+
+        if (team.CaptainId == userId)
+        {
+            return new LeaveTeamResult { Type = LeaveTeamResultType.IsCaptain };
+        }
+
+        var teamId = team.Id;
+        user.TeamId = null;
+        if (user.Role == Roles.Captain)
+        {
+            user.Role = Roles.Student;
+        }
+
+        await CancelPendingJoinRequestsForUserAsync(user.Id, cancellationToken);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _krkCalculationService.RecalculateForTeamAsync(teamId, cancellationToken);
+
+        return new LeaveTeamResult { Type = LeaveTeamResultType.Left };
+    }
+
     public async Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default)
     {
         var team = await _dbContext.Teams

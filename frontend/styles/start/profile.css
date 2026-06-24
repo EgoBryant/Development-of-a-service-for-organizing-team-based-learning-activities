@@ -785,6 +785,23 @@
     overflow: hidden;
 }
 
+.profile-modal-card.profile-modal-card--shell.profile-modal-card--find-team {
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.profile-modal-card--find-team .profile-modal-card-body--find {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+}
+
+.profile-modal-card--find-team .profile-team-flow-input,
+.profile-modal-card--find-team .profile-team-flow-stack {
+    flex-shrink: 0;
+}
+
 .profile-modal-card--scroll {
     justify-content: flex-start;
 }
@@ -1865,6 +1882,12 @@
     padding: 4px 2px;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
+}
+
+.profile-modal-card--find-team .profile-team-find-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
 }
 
 .profile-team-find-item {

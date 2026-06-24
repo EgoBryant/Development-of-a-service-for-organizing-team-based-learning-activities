@@ -80,6 +80,10 @@ export function renderActiveTeamBlock(): string {
 
     const historyPanelClass = isHistoryEmpty ? "team-history-panel" : "team-history-panel team-history-panel--filled";
 
+    const topbarActionButtonHtml = isCaptain
+        ? `<button type="button" class="team-topbar-tab team-topbar-tab--active" id="teamOpenRequestsHeaderButton" aria-label="Заявки">ЗАЯВКИ</button>`
+        : `<button type="button" class="team-topbar-tab team-topbar-tab--active team-topbar-tab--leave" id="teamOpenLeaveHeaderButton" aria-label="Покинуть команду">ПОКИНУТЬ</button>`;
+
     return `
         <div class="team-active-wrap">
 
@@ -87,7 +91,7 @@ export function renderActiveTeamBlock(): string {
                 <div class="team-topbar">
                     <div class="team-topbar-tabs">
                         <span class="team-topbar-tab team-topbar-tab--name">${escapeHtml(title)}</span>
-                        <button type="button" class="team-topbar-tab team-topbar-tab--active" id="teamOpenRequestsHeaderButton" aria-label="Заявки">ЗАЯВКИ</button>
+                        ${topbarActionButtonHtml}
                     </div>
                     <div class="team-topbar-krk">
                         <span class="team-topbar-krk-label" aria-hidden="true"><span class="team-topbar-krk-label-text">БАЛЛЫ</span></span>

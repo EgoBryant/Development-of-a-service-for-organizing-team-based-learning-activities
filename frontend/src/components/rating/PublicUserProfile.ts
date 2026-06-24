@@ -4,6 +4,7 @@ import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import { PROFILE_ACHIEVEMENTS } from "../../data/profileAchievements";
 import { getRatingUserById } from "../../state/ratingDataState";
 import { escapeHtml } from "../../utils/html";
+import { normalizePersonalLeague } from "../../utils/personalLeague";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
 
 export function renderPublicAchievementsStrip(earnedCount: number): string {
@@ -34,7 +35,7 @@ export function renderPublicUserProfile(userId: string): string {
         ? `<img class="profile-photo-image" src="${escapeHtml(avatarSrc)}" alt="Фото профиля" loading="lazy">`
         : `<span class="profile-photo-placeholder">Фото</span>`;
 
-    const leagueValue = user.league?.trim() || "Новичок";
+    const leagueValue = normalizePersonalLeague(user.league);
     const ratingValue = user.rank > 0 ? `${user.rank} место` : "—";
     const group = user.groupTitle?.trim() || "—";
     const teamPillText = user.teamName?.trim() || (user.hasTeam ? "КОМАНДА" : "БЕЗ КОМАНДЫ");

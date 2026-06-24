@@ -217,17 +217,12 @@ public class ProfileService : IProfileService
             return "Легенда";
         }
 
-        if (personalRating >= 650)
-        {
-            return "Мастер";
-        }
-
         if (personalRating >= 350)
         {
             return "Профи";
         }
 
-        return "Старт";
+        return "Новичок";
     }
 
     private async Task<UserProfileResponse> BuildProfileAsync(int userId, CancellationToken cancellationToken)
