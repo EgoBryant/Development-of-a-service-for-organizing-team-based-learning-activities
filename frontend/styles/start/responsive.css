@@ -93,13 +93,15 @@
         min-height: 108px;
     }
 
-    .events-calendar-block,
-    .events-feed-block {
+    .events-calendar-block {
         max-height: none;
     }
 
+    .events-feed-block {
+        --events-feed-block-height: 380px;
+    }
+
     .events-calendar-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 16px;
     }
 
@@ -249,10 +251,6 @@
     .events-calendar-toolbar-start,
     .events-calendar-scope {
         width: 100%;
-    }
-
-    .events-calendar-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .events-feed-tab {

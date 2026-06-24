@@ -1,6 +1,6 @@
 import { EVENT_FORMAT_OPTIONS, EVENT_TAG_OPTIONS } from "../../data/eventFormOptions";
 import type { EventCreateDraft, EventFormIdPrefix } from "../../types/event";
-import { isEventOnVisibleWeekday } from "../../utils/calendarEvents";
+import { isEventInCalendarYear } from "../../utils/calendarEvents";
 import { escapeHtml } from "../../utils/html";
 import { isHTMLFormElement, isHTMLInputElement, isHTMLTextAreaElement } from "../../utils/dom";
 
@@ -21,7 +21,7 @@ export function isEventCreateDraftComplete(draft: EventCreateDraft): boolean {
         draft.description.trim().length > 0 &&
         draft.format.trim().length > 0 &&
         draft.dateTime.trim().length > 0 &&
-        isEventOnVisibleWeekday(draft.dateTime)
+        isEventInCalendarYear(draft.dateTime)
     );
 }
 

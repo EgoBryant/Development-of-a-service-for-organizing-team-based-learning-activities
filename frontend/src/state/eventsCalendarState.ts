@@ -1,19 +1,71 @@
 import type { CalendarEventItem, EventCreateDraft } from "../types/event";
 import { createCalendarEventFromDraft } from "../types/event";
+import { EVENTS_CALENDAR_YEAR } from "../data/demoEvents";
 import {
     dateKeyToLocalDate,
+    dateToDateKey,
     extractEventDateKey,
-    getCalendarDayDateKey,
-    getMondayOfWeek,
-    getWeekOffsetForDate,
+    isSameCalendarDay,
     parseEventDateTimeLocal
 } from "../utils/calendarEvents";
-/** Понедельник 1 июня 2026 — якорь недели из макета «События». */
-export const EVENTS_WEEK_ANCHOR = getMondayOfWeek(new Date(2026, 5, 1));
+
+export const EVENTS_CALENDAR_VISIBLE_DAYS = 4;
 
 const USER_EVENTS_STORAGE_KEY = "team-exam-user-calendar-events";
 
 export const eventsUserCreated: CalendarEventItem[] = [];
+
+let cachedYearDates: Date[] | null = null;
+
+function buildYearDates(year: number): Date[] {
+    const dates: Date[] = [];
+
+    for (let month = 0; month < 12; month += 1) {
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            dates.push(new Date(year, month, day));
+        }
+    }
+
+    return dates;
+}
+
+export function getEventsCalendarYearDates(): readonly Date[] {
+    if (!cachedYearDates) {
+        cachedYearDates = buildYearDates(EVENTS_CALENDAR_YEAR);
+    }
+
+    return cachedYearDates;
+}
+
+export function getCalendarDayIndexForDate(date: Date): number {
+    return getEventsCalendarYearDates().findIndex((day) => isSameCalendarDay(day, date));
+}
+
+export function getTodayCalendarStartIndex(): number {
+    const todayIndex = getCalendarDayIndexForDate(new Date());
+    return todayIndex >= 0 ? todayIndex : 0;
+}
+
+export function clampCalendarStartIndex(index: number): number {
+    const maxStart = Math.max(0, getEventsCalendarYearDates().length - EVENTS_CALENDAR_VISIBLE_DAYS);
+    return Math.min(Math.max(0, index), maxStart);
+}
+
+export function getCalendarStartIndexForDateTime(dateTime: string): number | null {
+    const dateKey = extractEventDateKey(dateTime);
+    if (!dateKey) {
+        return null;
+    }
+
+    const eventDate = parseEventDateTimeLocal(dateTime) ?? dateKeyToLocalDate(dateKey);
+    const dayIndex = getCalendarDayIndexForDate(eventDate);
+    if (dayIndex < 0) {
+        return null;
+    }
+
+    return clampCalendarStartIndex(dayIndex);
+}
 
 export function loadPersistedUserEvents(): void {
     if (typeof localStorage === "undefined") {
@@ -60,32 +112,8 @@ function persistUserEvents(): void {
     localStorage.setItem(USER_EVENTS_STORAGE_KEY, JSON.stringify(eventsUserCreated));
 }
 
-export function getWeekStartForOffset(weekOffset: number): Date {
-    return new Date(
-        EVENTS_WEEK_ANCHOR.getFullYear(),
-        EVENTS_WEEK_ANCHOR.getMonth(),
-        EVENTS_WEEK_ANCHOR.getDate() + weekOffset * 7
-    );
-}
-
-export function getWeekOffsetForEventDateTime(dateTime: string): number | null {
-    const dateKey = extractEventDateKey(dateTime);
-    if (!dateKey) {
-        return null;
-    }
-
-    const eventDate = parseEventDateTimeLocal(dateTime) ?? dateKeyToLocalDate(dateKey);
-    if (!eventDate) {
-        return null;
-    }
-
-    return getWeekOffsetForDate(EVENTS_WEEK_ANCHOR, eventDate);
-}
-
-export function getUserEventsForWeekDay(weekStart: Date, dayIndex: number): CalendarEventItem[] {
-    const dayKey = getCalendarDayDateKey(weekStart, dayIndex);
-
-    return eventsUserCreated.filter((event) => extractEventDateKey(event.dateTime) === dayKey);
+export function getUserEventsForDateKey(dateKey: string): CalendarEventItem[] {
+    return eventsUserCreated.filter((event) => extractEventDateKey(event.dateTime) === dateKey);
 }
 
 export function addUserCalendarEventFromDraft(draft: EventCreateDraft): boolean {

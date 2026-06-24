@@ -638,8 +638,7 @@
         height: auto;
     }
 
-    .events-calendar-block,
-    .events-feed-block {
+    .events-calendar-block {
         flex: 0 0 auto;
         min-height: 0;
         max-height: none;
@@ -647,8 +646,21 @@
     }
 
     .events-feed-block {
+        flex: 0 0 var(--events-feed-block-height, 360px);
+        min-height: var(--events-feed-block-height, 360px);
+        max-height: var(--events-feed-block-height, 360px);
+        overflow: hidden;
+    }
+
+    .events-feed-block {
+        --events-feed-block-height: 360px;
+        flex: 0 0 var(--events-feed-block-height);
+        height: var(--events-feed-block-height);
+        min-height: var(--events-feed-block-height);
+        max-height: var(--events-feed-block-height);
         padding: 14px;
         border-radius: 22px;
+        overflow: hidden;
     }
 
     .events-calendar-toolbar {
@@ -669,18 +681,39 @@
         letter-spacing: 0.06em;
     }
 
+    .events-calendar-carousel-wrap {
+        min-width: 0;
+        min-height: 0;
+    }
+
+    .events-calendar-day-card {
+        min-height: clamp(200px, 44vw, 280px);
+        max-height: clamp(200px, 44vw, 280px);
+    }
+
     .events-calendar-grid {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        overflow-y: hidden;
+        --events-calendar-visible-cols: 1;
+        --events-calendar-gap: 10px;
+        gap: var(--events-calendar-gap);
         padding-bottom: 8px;
         scroll-snap-type: x proximity;
     }
 
     .events-calendar-col {
-        flex: 0 0 min(76vw, 260px);
+        flex-basis: min(76vw, 260px);
+        min-width: min(76vw, 260px);
+        max-width: min(76vw, 260px);
         scroll-snap-align: start;
+    }
+
+    .events-calendar-arrow {
+        width: 34px;
+        height: 34px;
+    }
+
+    .events-calendar-arrow img {
+        width: 34px;
+        height: 34px;
     }
 
     .events-calendar-col-body {
@@ -688,12 +721,16 @@
         max-height: 380px;
     }
 
-    .events-feed-panels,
-    .events-feed-panel {
-        flex: 0 0 auto;
+    .events-feed-panels {
+        flex: 1 1 auto;
         min-height: 0;
-        height: auto;
-        overflow: visible;
+        overflow: hidden;
+    }
+
+    .events-feed-panel:not([hidden]) {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .events-feed-list {
@@ -708,7 +745,7 @@
         line-height: 1.15;
     }
 
-    .events-feed-feature {
+    .events-feed-feature-head {
         grid-template-columns: 1fr;
     }
 

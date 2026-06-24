@@ -1,3 +1,5 @@
+import { EVENTS_CALENDAR_YEAR } from "../data/demoEvents";
+
 const MS_PER_DAY = 86_400_000;
 
 /** Якорь недели (понедельник) для сравнения смещений. */
@@ -19,6 +21,18 @@ export function extractEventDateKey(dateTime: string): string | null {
 export function dateKeyToLocalDate(dateKey: string): Date {
     const [year, month, day] = dateKey.split("-").map(Number);
     return new Date(year, month - 1, day);
+}
+
+export function dateToDateKey(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export const CALENDAR_WEEKDAY_LABELS = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"] as const;
+
+export function formatCalendarWeekdayLabel(date: Date): string {
+    return CALENDAR_WEEKDAY_LABELS[date.getDay()] ?? "ПН";
 }
 
 export function getCalendarDayDateKey(weekStart: Date, dayIndex: number): string {
@@ -73,15 +87,18 @@ export function getWeekOffsetForDate(anchorMonday: Date, targetDate: Date): numb
     return Math.floor(diffDays / 7);
 }
 
-export function isEventOnVisibleWeekday(dateTime: string): boolean {
+export function isEventInCalendarYear(dateTime: string, year: number = EVENTS_CALENDAR_YEAR): boolean {
     const dateKey = extractEventDateKey(dateTime);
     if (!dateKey) {
         return false;
     }
 
-    const eventDate = dateKeyToLocalDate(dateKey);
-    const day = eventDate.getDay();
-    return day >= 1 && day <= 5;
+    return Number(dateKey.slice(0, 4)) === year;
+}
+
+/** @deprecated Используйте isEventInCalendarYear. */
+export function isEventOnVisibleWeekday(dateTime: string): boolean {
+    return isEventInCalendarYear(dateTime);
 }
 
 export function formatEventCardTime(dateTime: string): string {

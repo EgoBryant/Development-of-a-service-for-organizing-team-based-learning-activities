@@ -31,7 +31,7 @@ export function renderNewsFeedPanel(isVisible: boolean): string {
             aria-labelledby="eventsFeedTabNews"
             ${isVisible ? "" : "hidden"}
         >
-            <ul class="events-feed-list" role="list">
+            <ul class="events-feed-list events-feed-list--cards" role="list">
                 ${rowsHtml}
             </ul>
             <div class="events-news-toolbar">
