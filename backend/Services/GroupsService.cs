@@ -5,15 +5,24 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Справочник учебных групп (факультет, курс, число студентов).
+/// </summary>
 public class GroupsService : IGroupsService
 {
     private readonly AppDbContext _dbContext;
 
+    /// <summary>
+    /// Создаёт сервис учебных групп.
+    /// </summary>
     public GroupsService(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
+    /// <summary>
+    /// Возвращает все группы, отсортированные по названию.
+    /// </summary>
     public async Task<IReadOnlyCollection<GroupResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var groups = await _dbContext.Groups
@@ -25,6 +34,9 @@ public class GroupsService : IGroupsService
         return groups.Select(Map).ToList();
     }
 
+    /// <summary>
+    /// Создаёт новую учебную группу.
+    /// </summary>
     public async Task<GroupResponse> CreateAsync(CreateGroupDto request, CancellationToken cancellationToken = default)
     {
         var group = new Group
@@ -40,6 +52,9 @@ public class GroupsService : IGroupsService
         return Map(group);
     }
 
+    /// <summary>
+    /// Преобразует сущность группы в DTO ответа.
+    /// </summary>
     private static GroupResponse Map(Group group)
     {
         return new GroupResponse

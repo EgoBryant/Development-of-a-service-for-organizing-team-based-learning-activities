@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Эндпоинты еженедельных check-in отчетов команды.
+/// Еженедельные check-in отчёты команды: просмотр истории и создание нового отчёта капитаном.
+/// Базовый маршрут: <c>api/checkins</c>. Требуется JWT; создание — политика Captain.
 /// </summary>
 [Route("api/checkins")]
 [Authorize]
@@ -21,9 +22,9 @@ public class CheckInsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает список check-in текущей команды.
+    /// GET <c>api/checkins</c> — возвращает историю check-in текущей команды пользователя.
+    /// Требуется JWT. 200 со списком отчётов; 401 без токена.
     /// </summary>
-    /// <returns>История еженедельных отчетов команды.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<CheckInResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -39,11 +40,12 @@ public class CheckInsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Создает новый еженедельный check-in для команды текущего капитана.
+    /// POST <c>api/checkins</c> — создаёт еженедельный check-in для команды текущего капитана.
+    /// Требуется JWT и политика Captain. 201 с созданным отчётом; 404 — пользователь не найден;
+    /// 409 — нет команды или отчёт за эту неделю уже существует.
     /// </summary>
-    /// <param name="request">Неделя, статус и текст отчета команды.</param>
+    /// <param name="request">Неделя, статус и текст отчёта команды.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Созданный check-in.</returns>
     [HttpPost]
     [Authorize(Policy = PolicyNames.Captain)]
     [ProducesResponseType<CheckInResponse>(StatusCodes.Status201Created)]

@@ -3,8 +3,11 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Data;
 
+/// <summary>Начальное заполнение справочников и демо-данных при старте приложения.</summary>
 public static class SeedData
 {
+    /// <summary>Добавляет отсутствующие достижения, челленджи и новости в БД.</summary>
+    /// <param name="dbContext">Контекст базы данных.</param>
     public static async Task InitializeAsync(AppDbContext dbContext)
     {
         await EnsureAchievementsAsync(dbContext);

@@ -6,9 +6,13 @@ namespace TeamExamProject.Options;
 /// </summary>
 public class KrkOptions
 {
+    /// <summary>Имя секции в конфигурации приложения.</summary>
     public const string SectionName = "Krk";
 
+    /// <summary>Вес базового рейтинга в формуле КРК (по умолчанию 0.6).</summary>
     public double BaseWeight { get; set; } = 0.6;
+    /// <summary>Вес коэффициента сплочённости (по умолчанию 0.3).</summary>
     public double CohesionWeight { get; set; } = 0.3;
+    /// <summary>Вес бонуса за челленджи (по умолчанию 0.1).</summary>
     public double ChallengeWeight { get; set; } = 0.1;
 }

@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Эндпоинты анонимного голосования внутри команды.
+/// Анонимное голосование внутри команды: оценка вклада участников по 5-балльной шкале.
+/// Базовый маршрут: <c>api/votes</c>. Требуется JWT; создание и изменение — политика Student.
 /// </summary>
 [Route("api/votes")]
 [Authorize]
@@ -21,9 +22,9 @@ public class VotesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает все голоса текущей команды.
+    /// GET <c>api/votes</c> — возвращает все голоса текущей команды пользователя.
+    /// Требуется JWT. 200 со списком голосов; 401 без токена.
     /// </summary>
-    /// <returns>Список голосов участников команды.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<VoteResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -39,7 +40,8 @@ public class VotesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает голоса, отданные текущим пользователем (UI: кого уже оценил).
+    /// GET <c>api/votes/my</c> — возвращает голоса, отданные текущим пользователем (кого уже оценил).
+    /// Требуется JWT. 200 со списком; 401 без токена.
     /// </summary>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
     [HttpGet("my")]
@@ -56,11 +58,12 @@ public class VotesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Создает голос за участника своей команды.
+    /// POST <c>api/votes</c> — создаёт голос за участника своей команды.
+    /// Требуется JWT и политика Student. 201 Created; 400 — голос за себя или участника другой команды;
+    /// 404 — пользователь или участник не найден; 409 — нет команды или голос уже отдан.
     /// </summary>
     /// <param name="request">Идентификатор участника и оценка по 5-балльной шкале.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Созданный голос.</returns>
     [HttpPost]
     [Authorize(Policy = PolicyNames.Student)]
     [ProducesResponseType<VoteResponse>(StatusCodes.Status201Created)]
@@ -115,11 +118,12 @@ public class VotesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Изменяет ранее отданный голос за участника своей команды.
+    /// PUT <c>api/votes</c> — изменяет ранее отданный голос за участника своей команды.
+    /// Требуется JWT и политика Student. 200 с обновлённым голосом; 400 — недопустимая цель;
+    /// 404 — пользователь, участник или голос не найден; 409 — нет команды.
     /// </summary>
     /// <param name="request">Идентификатор участника и новая оценка по 5-балльной шкале.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Обновлённый голос.</returns>
     [HttpPut]
     [Authorize(Policy = PolicyNames.Student)]
     [ProducesResponseType<VoteResponse>(StatusCodes.Status200OK)]

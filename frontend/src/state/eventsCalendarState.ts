@@ -10,6 +10,15 @@ import {
 } from "../utils/calendarEvents";
 
 export const EVENTS_CALENDAR_VISIBLE_DAYS = 4;
+export const EVENTS_CALENDAR_MOBILE_QUERY = "(max-width: 767px)";
+
+export function getEventsCalendarVisibleDaysCount(): number {
+    if (typeof window !== "undefined" && window.matchMedia(EVENTS_CALENDAR_MOBILE_QUERY).matches) {
+        return 1;
+    }
+
+    return EVENTS_CALENDAR_VISIBLE_DAYS;
+}
 
 const USER_EVENTS_STORAGE_KEY = "team-exam-user-calendar-events";
 
@@ -55,7 +64,8 @@ export function getDemoEventsCalendarStartIndex(): number {
 }
 
 export function clampCalendarStartIndex(index: number): number {
-    const maxStart = Math.max(0, getEventsCalendarYearDates().length - EVENTS_CALENDAR_VISIBLE_DAYS);
+    const visibleDays = getEventsCalendarVisibleDaysCount();
+    const maxStart = Math.max(0, getEventsCalendarYearDates().length - visibleDays);
     return Math.min(Math.max(0, index), maxStart);
 }
 

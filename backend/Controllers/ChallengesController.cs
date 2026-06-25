@@ -8,7 +8,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Челленджи (10% от КРК). 5–10 заданий, статусы, сдача и проверка.
+/// Челленджи (до 10% от КРК): задания, сдача командой и проверка администратором.
+/// Базовый маршрут: <c>api/challenges</c>. Большинство методов требуют JWT; создание и проверка — роль Admin; сдача — политика Student.
 /// </summary>
 [Route("api/challenges")]
 [Authorize]
@@ -23,7 +24,10 @@ public class ChallengesController : ApiControllerBase
         _teamService = teamService;
     }
 
-    /// <summary>Возвращает активные челленджи. Если у пользователя есть команда, отдаёт статус её попытки.</summary>
+    /// <summary>
+    /// GET <c>api/challenges</c> — возвращает активные челленджи.
+    /// Требуется JWT. Если у пользователя есть команда, включает статус её попытки. 200 со списком челленджей.
+    /// </summary>
     [HttpGet]
     [ProducesResponseType<IEnumerable<ChallengeResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ChallengeResponse>>> Get(CancellationToken cancellationToken)
@@ -33,7 +37,10 @@ public class ChallengesController : ApiControllerBase
         return Ok(await _challengesService.GetActiveAsync(teamId, cancellationToken));
     }
 
-    /// <summary>Создает челлендж. Доступно администратору.</summary>
+    /// <summary>
+    /// POST <c>api/challenges</c> — создаёт новый челлендж.
+    /// Требуется JWT и роль Admin. 201 Created с данными челленджа.
+    /// </summary>
     [HttpPost]
     [Authorize(Roles = Roles.Admin)]
     [ProducesResponseType<ChallengeResponse>(StatusCodes.Status201Created)]
@@ -43,7 +50,11 @@ public class ChallengesController : ApiControllerBase
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
-    /// <summary>Сдает выполненный челлендж. Доступно капитану/участнику команды.</summary>
+    /// <summary>
+    /// POST <c>api/challenges/{id}/submit</c> — сдаёт выполненный челлендж от имени команды.
+    /// Требуется JWT и политика Student (участник/капитан команды). 201 при успехе; 400 — челлендж неактивен;
+    /// 404 — пользователь или челлендж не найден; 409 — нет команды или уже сдано.
+    /// </summary>
     [HttpPost("{id:int}/submit")]
     [Authorize(Policy = PolicyNames.Student)]
     [ProducesResponseType<ChallengeProgressResponse>(StatusCodes.Status201Created)]
@@ -81,7 +92,10 @@ public class ChallengesController : ApiControllerBase
         };
     }
 
-    /// <summary>Проверяет сдачу челленджа: Approved (засчитать + бонус Score) / Rejected. Только админ.</summary>
+    /// <summary>
+    /// PATCH <c>api/challenges/progress/{progressId}/review</c> — проверяет сдачу челленджа (Approved/Rejected).
+    /// Требуется JWT и роль Admin. 200 с обновлённым прогрессом; 400 — недопустимый статус; 404 — прогресс не найден.
+    /// </summary>
     [HttpPatch("progress/{progressId:int}/review")]
     [Authorize(Roles = Roles.Admin)]
     [ProducesResponseType<ChallengeProgressResponse>(StatusCodes.Status200OK)]
@@ -103,7 +117,10 @@ public class ChallengesController : ApiControllerBase
         };
     }
 
-    /// <summary>Возвращает прогресс команды по челленджам.</summary>
+    /// <summary>
+    /// GET <c>api/challenges/teams/{teamId}/progress</c> — возвращает прогресс команды по всем челленджам.
+    /// Требуется JWT. 200 со списком записей прогресса.
+    /// </summary>
     [HttpGet("teams/{teamId:int}/progress")]
     [ProducesResponseType<IEnumerable<ChallengeProgressResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ChallengeProgressResponse>>> GetTeamProgress(int teamId, CancellationToken cancellationToken)

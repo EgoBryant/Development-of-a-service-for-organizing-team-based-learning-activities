@@ -3,6 +3,7 @@ namespace TeamExamProject.Contracts.Ratings;
 /// <summary>Параметры запроса лидерборда. Совпадают со значениями <c>RatingSortKey</c> на фронте.</summary>
 public class RatingQuery
 {
+    /// <summary>Строка поиска по имени команды или пользователя.</summary>
     public string? Search { get; set; }
 
     /// <summary>rank-asc | rank-desc | points-desc | points-asc | name-asc. По умолчанию rank-asc.</summary>

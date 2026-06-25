@@ -323,17 +323,16 @@
     -webkit-backdrop-filter: blur(8px);
 }
 
-.event-create-modal .team-rescue-card {
-    width: min(100%, 560px);
-    padding: 38px 34px 34px;
-    gap: 20px;
+.event-create-modal .team-rescue-card,
+.event-create-modal .profile-modal-card.profile-modal-card--shell.profile-modal-card--form {
+    width: min(100%, 600px);
     min-width: 0;
-    max-width: 560px;
+    max-width: 600px;
     height: auto;
     min-height: 0;
-    max-height: min(92vh, 680px);
+    max-height: none;
     aspect-ratio: auto;
-    padding: 28px 34px 28px;
+    padding: 28px 38px 32px;
     gap: 12px;
     overflow: visible;
 }
@@ -693,6 +692,34 @@
     font-size: 15px;
     letter-spacing: 0.06em;
     box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
+}
+
+@media (min-width: 1025px) {
+    .event-create-modal .profile-modal-card.profile-modal-card--shell.profile-modal-card--form {
+        width: 600px;
+        max-width: min(600px, calc(100vw - 48px));
+        min-height: 580px;
+        overflow: visible;
+        overflow-y: visible;
+    }
+
+    .event-create-modal .profile-modal-card-body,
+    .event-create-modal .team-rescue-form.profile-modal-card-body {
+        overflow: visible;
+        overflow-y: visible;
+        flex: 0 0 auto;
+    }
+
+    .event-create-modal .team-rescue-duo-row:has(.event-create-datetime-picker.is-open) {
+        margin-bottom: 118px;
+    }
+
+    .event-create-modal .event-create-datetime-panel {
+        width: 100%;
+        max-width: 100%;
+        left: 0;
+        right: 0;
+    }
 }
 
 .event-success-card {

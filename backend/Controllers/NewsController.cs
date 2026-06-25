@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Новости организатора игры (лента).
+/// Новости организатора игры (лента объявлений).
+/// Базовый маршрут: <c>api/news</c>. Чтение — анонимно; создание и удаление — роль Admin.
 /// </summary>
 [Route("api/news")]
 public class NewsController : ApiControllerBase
@@ -19,7 +20,10 @@ public class NewsController : ApiControllerBase
         _newsService = newsService;
     }
 
-    /// <summary>Возвращает новости. Параметр <c>limit</c> — ограничение количества (опционально).</summary>
+    /// <summary>
+    /// GET <c>api/news</c> — возвращает ленту новостей.
+    /// Анонимный доступ (<c>AllowAnonymous</c>). Параметр <c>limit</c> ограничивает количество записей. 200 со списком новостей.
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType<IEnumerable<NewsResponse>>(StatusCodes.Status200OK)]
@@ -28,7 +32,10 @@ public class NewsController : ApiControllerBase
         return Ok(await _newsService.GetAllAsync(limit, cancellationToken));
     }
 
-    /// <summary>Создает новость. Доступно администратору.</summary>
+    /// <summary>
+    /// POST <c>api/news</c> — создаёт новость организатора.
+    /// Требуется JWT и роль Admin. 201 Created с данными новости.
+    /// </summary>
     [HttpPost]
     [Authorize(Roles = Roles.Admin)]
     [ProducesResponseType<NewsResponse>(StatusCodes.Status201Created)]
@@ -38,7 +45,10 @@ public class NewsController : ApiControllerBase
         return CreatedAtAction(nameof(GetAll), new { id = created.Id }, created);
     }
 
-    /// <summary>Удаляет новость. Доступно администратору.</summary>
+    /// <summary>
+    /// DELETE <c>api/news/{id}</c> — удаляет новость.
+    /// Требуется JWT и роль Admin. 204 при успехе; 404, если новость не найдена.
+    /// </summary>
     [HttpDelete("{id:int}")]
     [Authorize(Roles = Roles.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -5,17 +5,26 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Биржа знаний: объявления студентов с фильтрацией и публикацией в ленту.
+/// </summary>
 public class KnowledgePostsService : IKnowledgePostsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
 
+    /// <summary>
+    /// Создаёт сервис биржи знаний.
+    /// </summary>
     public KnowledgePostsService(AppDbContext dbContext, IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
     }
 
+    /// <summary>
+    /// Возвращает объявления с опциональной фильтрацией по типу и поиску по заголовку/описанию.
+    /// </summary>
     public async Task<IReadOnlyCollection<KnowledgePostResponse>> GetAllAsync(KnowledgePostQuery query, CancellationToken cancellationToken = default)
     {
         IQueryable<KnowledgePost> source = _dbContext.KnowledgePosts
@@ -43,6 +52,9 @@ public class KnowledgePostsService : IKnowledgePostsService
         return posts.Select(Map).ToList();
     }
 
+    /// <summary>
+    /// Публикует объявление; при <c>PublishToTeam</c> привязывает его к команде автора.
+    /// </summary>
     public async Task<KnowledgePostResponse?> CreateAsync(int userId, CreateKnowledgePostDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
@@ -82,6 +94,10 @@ public class KnowledgePostsService : IKnowledgePostsService
             .SingleAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Удаляет объявление автора или администратора.
+    /// </summary>
+    /// <returns><c>true</c>, если запись найдена и удалена.</returns>
     public async Task<bool> DeleteOwnAsync(int userId, int postId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var post = await _dbContext.KnowledgePosts.SingleOrDefaultAsync(existing => existing.Id == postId, cancellationToken);
@@ -100,6 +116,9 @@ public class KnowledgePostsService : IKnowledgePostsService
         return true;
     }
 
+    /// <summary>
+    /// Преобразует сущность объявления в DTO ответа.
+    /// </summary>
     private static KnowledgePostResponse Map(KnowledgePost post)
     {
         return new KnowledgePostResponse
