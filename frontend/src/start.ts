@@ -1,4 +1,4 @@
-﻿﻿import "../styles/start.css";
+﻿import "../styles/start.css";
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
@@ -30,7 +30,19 @@ import {
     getSettingsPhotoDisplay,
     renderSettingsPageMain
 } from "./pages/SettingsPage";
-import { renderTasksPageMain, wireTasksPageEvents } from "./pages/TasksPage";
+import { renderTasksPageMain, wireTasksPageEvents, mountTasksAssignmentModal, renderTasksPageModals } from "./pages/TasksPage";
+import { isTasksKrcTierUnlocked, normalizeTasksKrcTier } from "./constants/tasksKrcScale";
+import { stopTasksAssignmentFeed } from "./components/tasks/TasksAssignmentFeed";
+import {
+    openTasksAssignmentModal,
+    prependTasksAssignmentIfActiveLeague,
+    closeTasksRequestModal,
+    openTasksRequestModal,
+    ensureTasksRequestDraft,
+    createEmptyTasksRequestDraft,
+    openTasksChallengeModal,
+    tasksFlowState
+} from "./state/tasksFlowState";
 import { closeTeamEventModals, teamFlowState } from "./state/teamFlowState";
 import { ratingFlowState } from "./state/ratingFlowState";
 import type { CalendarEventItem, EventCreateDraft } from "./types/event";
@@ -111,7 +123,8 @@ import {
     renderProfileTeamSuccessModal
 } from "./components/profile/ProfileTeamModals";
 import { renderProfileModalShell } from "./components/profile/ProfileModalShell";
-import { renderTeamRescueModal, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
+import { renderTeamRescueModal, readTeamRescueDraftFromMount, wireTeamRescueModal } from "./components/modals/TeamRescueModal";
+import { readTasksRequestDraftFromMount, wireTasksRequestModal } from "./components/modals/TasksRequestModal";
 import { renderTeamCheckInModal, wireTeamCheckInModal } from "./components/modals/TeamCheckInModal";
 import { renderTeamLeaveModal, wireTeamLeaveModal } from "./components/modals/TeamLeaveModal";
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
@@ -147,7 +160,8 @@ import {
     updateTeamJoinRequestStatus
 } from "./services/teamApi";
 import { getErrorMessage } from "./services/httpClient";
-import { queueRescueAssignmentTask } from "./services/rescueAssignmentsQueue";
+import { createAssignment, mapTeamRescueDraftToCreatePayload, mapTasksRequestDraftToCreatePayload } from "./services/assignmentsApi";
+import { persistDraftAttachments } from "./services/assignmentAttachmentsStore";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
 import { buildPersonalProfilePutBody, splitFullNameForApi } from "./services/profilePayload";
 import { clearSession, loadSession, saveSession } from "./services/sessionStorage";
@@ -209,7 +223,7 @@ const appState: AppState = {
     eventsShareLink: "",
     newsCreateDraft: null,
     newsShowValidationError: false,
-    tasksKrcTier: "pro",
+    tasksKrcTier: "novice",
     teamVoteMemberIndex: 0,
     teamRequestsCurrentIndex: 0,
     teamRequestsInviteLink: "",
@@ -442,9 +456,42 @@ function parseLocalDateTimeToUtc(value: string): string | null {
     return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+async function submitTasksRequestDraftToAssignments(draft: TeamRescueDraft): Promise<void> {
+    const token = getSessionToken();
+    if (!token) {
+        throw new Error("Требуется авторизация.");
+    }
+
+    const payload = mapTasksRequestDraftToCreatePayload(draft);
+    const created = await createAssignment(token, payload);
+    persistDraftAttachments(created.id, draft.attachments);
+    prependTasksAssignmentIfActiveLeague(created);
+    pushUserActivity({
+        kind: "rescue_sent",
+        title: "ЗАПРОС ОТПРАВЛЕН",
+        description: `«${created.title}» добавлено в ленту заданий (${created.leagueTier}).`
+    });
+}
+
 async function submitTeamRescueDraftToAssignments(draft: TeamRescueDraft): Promise<void> {
-    queueRescueAssignmentTask(draft);
-    // TODO(assignments-section): передать draft в раздел «ЗАДАНИЯ», когда раздел будет реализован.
+    if (!isTeamCaptain()) {
+        throw new Error("Запрос спасения может отправить только капитан команды.");
+    }
+
+    const token = getSessionToken();
+    if (!token) {
+        throw new Error("Требуется авторизация.");
+    }
+
+    const payload = mapTeamRescueDraftToCreatePayload(draft);
+    const created = await createAssignment(token, payload);
+    persistDraftAttachments(created.id, draft.attachments);
+    prependTasksAssignmentIfActiveLeague(created);
+    pushUserActivity({
+        kind: "rescue_sent",
+        title: "СПАСЕНИЕ ОТПРАВЛЕНО",
+        description: `«${created.title}» добавлено в ленту заданий (${created.leagueTier}).`
+    });
 }
 
 async function submitTeamRescueRequest(draft: TeamRescueDraft): Promise<void> {
@@ -3586,7 +3633,9 @@ function isDashboardNavigationBlocked(): boolean {
         appState.teamModal !== "none" ||
         appState.eventsModal !== "none" ||
         teamFlowState.eventModal !== "none" ||
-        ratingFlowState.rescueOpen
+        ratingFlowState.rescueOpen ||
+        tasksFlowState.requestModalOpen ||
+        tasksFlowState.challengeModalOpen
     );
 }
 
@@ -3596,31 +3645,16 @@ function syncTeamRescueDraftFromForm(): void {
     }
 
     const draft = ensureTeamRescueDraft();
-    const target = profileMount.querySelector("#teamRescueTargetInput");
-    const topic = profileMount.querySelector("#teamRescueTopicInput");
-    const description = profileMount.querySelector("#teamRescueDescriptionInput");
-    const leagueValue = profileMount.querySelector("#teamRescueLeagueValue");
-    const tagValue = profileMount.querySelector("#teamRescueTagValue");
-    const deadlineValue = profileMount.querySelector("#teamRescueDeadlineValue");
+    Object.assign(draft, readTeamRescueDraftFromMount(profileMount, draft));
+}
 
-    if (target instanceof HTMLSelectElement) {
-        draft.targetTeamId = target.value;
+function syncTasksRequestDraftFromForm(): void {
+    if (!isHTMLElement(profileMount) || !tasksFlowState.requestModalOpen) {
+        return;
     }
-    if (isHTMLInputElement(topic)) {
-        draft.topic = topic.value;
-    }
-    if (description instanceof HTMLTextAreaElement) {
-        draft.description = description.value;
-    }
-    if (isHTMLInputElement(leagueValue)) {
-        draft.league = leagueValue.value;
-    }
-    if (isHTMLInputElement(tagValue)) {
-        draft.tag = tagValue.value;
-    }
-    if (isHTMLInputElement(deadlineValue)) {
-        draft.deadline = deadlineValue.value;
-    }
+
+    const draft = ensureTasksRequestDraft();
+    Object.assign(draft, readTasksRequestDraftFromMount(profileMount, draft));
 }
 
 function wireTeamVoteModalEvents(): void {
@@ -3793,7 +3827,12 @@ function wireTeamRescueModalEvents(): void {
         syncDraftFromForm: syncTeamRescueDraftFromForm,
         onClose: closeTeamModal,
         onRender: render,
-        onSubmit: (nextDraft) => {
+        isSubmitting: appState.isSubmitting,
+        onSubmit: async (nextDraft) => {
+            if (appState.isSubmitting) {
+                return;
+            }
+
             if (!isTeamCaptain()) {
                 setStatus("Запрос спасения может отправить только капитан команды.", "error");
                 render();
@@ -3812,20 +3851,112 @@ function wireTeamRescueModalEvents(): void {
                 return;
             }
 
-            void submitTeamRescueDraftToAssignments(nextDraft)
-                .then(() => {
-                    appState.teamRescueDraft = createEmptyTeamRescueDraft();
-                    teamFlowState.rescueLeagueDropdownOpen = false;
-                    teamFlowState.rescueTagDropdownOpen = false;
-                    teamFlowState.rescueDeadlineCalendarOpen = false;
-                    closeTeamModal();
-                    clearStatus();
-                    render();
-                })
-                .catch((error: unknown) => {
-                    setStatus(getErrorMessage(error), "error");
-                    render();
-                });
+            if (!nextDraft.tag.trim()) {
+                setStatus("Выберите тег спасения.", "error");
+                render();
+                return;
+            }
+
+            if (!nextDraft.league.trim()) {
+                setStatus("Выберите лигу.", "error");
+                render();
+                return;
+            }
+
+            if (!nextDraft.deadline.trim()) {
+                setStatus("Укажите дедлайн.", "error");
+                render();
+                return;
+            }
+
+            appState.isSubmitting = true;
+            render();
+
+            try {
+                await submitTeamRescueDraftToAssignments(nextDraft);
+                appState.teamRescueDraft = createEmptyTeamRescueDraft();
+                teamFlowState.rescueLeagueDropdownOpen = false;
+                teamFlowState.rescueTagDropdownOpen = false;
+                teamFlowState.rescueDeadlineCalendarOpen = false;
+                closeTeamModal();
+                setStatus("Задание отправлено во вкладку «Задания».");
+            } catch (error: unknown) {
+                setStatus(getErrorMessage(error), "error");
+            } finally {
+                appState.isSubmitting = false;
+                render();
+            }
+        }
+    });
+}
+
+function wireTasksRequestModalEvents(): void {
+    if (!isHTMLElement(profileMount) || !tasksFlowState.requestModalOpen) {
+        return;
+    }
+
+    const draft = ensureTasksRequestDraft();
+    wireTasksRequestModal(profileMount, {
+        draft,
+        syncDraftFromForm: syncTasksRequestDraftFromForm,
+        onClose: () => {
+            closeTasksRequestModal();
+            render();
+        },
+        onRender: render,
+        isSubmitting: appState.isSubmitting,
+        onSubmit: async (nextDraft) => {
+            if (appState.isSubmitting) {
+                return;
+            }
+
+            if (!nextDraft.topic.trim()) {
+                setStatus("Укажите название запроса.", "error");
+                render();
+                return;
+            }
+
+            if (!nextDraft.description.trim()) {
+                setStatus("Опишите проблему для запроса.", "error");
+                render();
+                return;
+            }
+
+            if (!nextDraft.tag.trim()) {
+                setStatus("Выберите тег запроса.", "error");
+                render();
+                return;
+            }
+
+            if (!nextDraft.league.trim()) {
+                setStatus("Выберите лигу.", "error");
+                render();
+                return;
+            }
+
+            if (!nextDraft.deadline.trim()) {
+                setStatus("Укажите дедлайн.", "error");
+                render();
+                return;
+            }
+
+            appState.isSubmitting = true;
+            render();
+
+            try {
+                await submitTasksRequestDraftToAssignments(nextDraft);
+                tasksFlowState.requestDraft = createEmptyTasksRequestDraft();
+                teamFlowState.rescueLeagueDropdownOpen = false;
+                teamFlowState.rescueTagDropdownOpen = false;
+                teamFlowState.rescueDeadlineCalendarOpen = false;
+                closeTasksRequestModal();
+                setStatus("Запрос отправлен во вкладку «Задания».");
+            } catch (error: unknown) {
+                setStatus(getErrorMessage(error), "error");
+            } finally {
+                appState.isSubmitting = false;
+                render();
+            }
         }
     });
 }
@@ -3950,7 +4081,8 @@ function renderTeamModal(): string {
 
         return renderTeamRescueModal({
             draft,
-            targetOptionsHtml: targetOptions
+            targetOptionsHtml: targetOptions,
+            isSubmitting: appState.isSubmitting
         });
     }
 
@@ -4943,6 +5075,10 @@ function renderProfileView(): void {
         return;
     }
 
+    if (appState.dashboardSection !== "tasks") {
+        stopTasksAssignmentFeed();
+    }
+
     if (!isDesktopDashboardLayout() && appState.dashboardSection === "settings") {
         appState.dashboardSection = "profile";
     }
@@ -4966,7 +5102,15 @@ function renderProfileView(): void {
             : appState.dashboardSection === "rating"
               ? renderRatingPageMain(statusHtml)
               : appState.dashboardSection === "tasks"
-                ? renderTasksPageMain(statusHtml, appState.tasksKrcTier)
+                ? (() => {
+                    const tasksUserPoints = appState.profile?.userPoints ?? appState.profile?.teamScore ?? 0;
+                    appState.tasksKrcTier = normalizeTasksKrcTier(appState.tasksKrcTier, tasksUserPoints);
+                    return renderTasksPageMain(
+                        statusHtml,
+                        appState.tasksKrcTier,
+                        tasksUserPoints
+                    );
+                })()
                 : appState.dashboardSection === "events"
                   ? renderEventsDashboardMain(statusHtml)
                   : appState.dashboardSection === "settings"
@@ -5012,6 +5156,7 @@ function renderProfileView(): void {
         ${renderEventsModal()}
         ${renderRatingPageModals()}
         ${renderTeamPageModals()}
+        ${renderTasksPageModals(appState.isSubmitting)}
     `;
 
     wireProfileViewEvents();
@@ -5580,11 +5725,41 @@ function wireProfileViewEvents(): void {
         wireTeamPageEvents(profileMount);
     }
     if (appState.dashboardSection === "tasks" && isHTMLElement(profileMount)) {
-        wireTasksPageEvents(profileMount, (tier: TasksKrcTier) => {
-            appState.tasksKrcTier = tier;
-            clearStatus();
-            render();
-        });
+        const tasksUserPoints = appState.profile?.userPoints ?? appState.profile?.teamScore ?? 0;
+        wireTasksPageEvents(
+            profileMount,
+            appState.tasksKrcTier,
+            tasksUserPoints,
+            (tier: TasksKrcTier) => {
+                if (!isTasksKrcTierUnlocked(tier, tasksUserPoints)) {
+                    return;
+                }
+
+                appState.tasksKrcTier = tier;
+                clearStatus();
+                render();
+            },
+            (assignment) => {
+                openTasksAssignmentModal(assignment);
+                mountTasksAssignmentModal(profileMount);
+            },
+            getSessionToken(),
+            {
+                onRender: () => {
+                    render();
+                },
+                onOpenRequestModal: () => {
+                    tasksFlowState.tagFilterDropdownOpen = false;
+                    openTasksRequestModal();
+                    render();
+                },
+                onOpenChallengeModal: () => {
+                    tasksFlowState.tagFilterDropdownOpen = false;
+                    openTasksChallengeModal();
+                    render();
+                }
+            }
+        );
     }
     if (appState.dashboardSection === "settings") {
         wireSettingsPageEvents();
@@ -5593,6 +5768,7 @@ function wireProfileViewEvents(): void {
     wireEventsModalEvents();
 
     wireTeamRescueModalEvents();
+    wireTasksRequestModalEvents();
     wireTeamCheckInModalEvents();
     wireTeamLeaveModalEvents();
 
@@ -5605,6 +5781,17 @@ function wireProfileViewEvents(): void {
             }
 
             closeTeamModal();
+        });
+    });
+
+    profileMount.querySelectorAll<HTMLElement>('[data-close-tasks-request-modal="1"]').forEach((node) => {
+        node.addEventListener("click", () => {
+            if (appState.isSubmitting) {
+                return;
+            }
+
+            closeTasksRequestModal();
+            render();
         });
     });
 

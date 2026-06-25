@@ -1,5 +1,9 @@
 import { getRescueLeagueDisplayLabel } from "../constants/rescueLeagues";
 import type { TeamRescueAttachment } from "../types/team";
+import {
+    registerDraftAttachmentFile,
+    unregisterDraftAttachmentFile
+} from "../services/assignmentAttachmentsStore";
 
 const RESCUE_WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const RESCUE_MONTH_LABELS = [
@@ -37,8 +41,10 @@ export function appendRescueAttachments(
 ): TeamRescueAttachment[] {
     const next = [...attachments];
     Array.from(files).forEach((file) => {
+        const id = createRescueAttachmentId();
+        registerDraftAttachmentFile(id, file);
         next.push({
-            id: createRescueAttachmentId(),
+            id,
             name: file.name
         });
     });
@@ -49,6 +55,7 @@ export function removeRescueAttachment(
     attachments: TeamRescueAttachment[],
     attachmentId: string
 ): TeamRescueAttachment[] {
+    unregisterDraftAttachmentFile(attachmentId);
     return attachments.filter((item) => item.id !== attachmentId);
 }
 

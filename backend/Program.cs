@@ -51,6 +51,7 @@ builder.Services.AddScoped<IRatingsService, RatingsService>();
 builder.Services.AddScoped<IChallengesService, ChallengesService>();
 builder.Services.AddScoped<IEventsService, EventsService>();
 builder.Services.AddScoped<INewsService, NewsService>();
+builder.Services.AddScoped<IAssignmentsService, AssignmentsService>();
 builder.Services.AddScoped<IActivityFeedService, ActivityFeedService>();
 builder.Services.AddScoped<IAchievementsService, AchievementsService>();
 // MVP-заглушки: реальная имплементация — после интеграции с УрФУ.
