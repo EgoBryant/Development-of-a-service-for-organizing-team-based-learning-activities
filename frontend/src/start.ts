@@ -2091,7 +2091,7 @@ function renderEventsFeedBlock(): string {
                     id="eventsFeedTabActivity"
                     role="tab"
                     aria-selected="${activityActive}"
-                    aria-controls="eventsFeedPanelActivity"
+                    aria-controls="eventsFeedPanelNews"
                     data-events-feed-tab="activity"
                 >ЛЕНТА АКТИВНОСТЕЙ</button>
                 <button
@@ -2100,13 +2100,13 @@ function renderEventsFeedBlock(): string {
                     id="eventsFeedTabNews"
                     role="tab"
                     aria-selected="${newsActive}"
-                    aria-controls="eventsFeedPanelNews"
+                    aria-controls="eventsFeedPanelActivity"
                     data-events-feed-tab="news"
-                >ЛЕНТА СОБЫТИЙ</button>
+                >ЛЕНТА НОВОСТЕЙ</button>
             </div>
             <div class="events-feed-panels">
-                ${renderActivityFeedPanel(appState.eventsFeedTab === "activity")}
-                ${renderNewsFeedPanel(appState.eventsFeedTab === "news")}
+                ${renderNewsFeedPanel(appState.eventsFeedTab === "activity")}
+                ${renderActivityFeedPanel(appState.eventsFeedTab === "news")}
             </div>
         </section>`;
 }
@@ -2259,13 +2259,13 @@ function setEventsFeedTab(tab: EventsFeedTab, options?: { forceRender?: boolean 
     }
 
     if (activityPanel) {
-        activityPanel.hidden = !isActivity;
-        activityPanel.classList.toggle("events-feed-panel--switch-in", isActivity);
+        activityPanel.hidden = isActivity;
+        activityPanel.classList.toggle("events-feed-panel--switch-in", !isActivity);
     }
 
     if (newsPanel) {
-        newsPanel.hidden = isActivity;
-        newsPanel.classList.toggle("events-feed-panel--switch-in", !isActivity);
+        newsPanel.hidden = !isActivity;
+        newsPanel.classList.toggle("events-feed-panel--switch-in", isActivity);
     }
 
     syncEventsFeedTabsIndicator();

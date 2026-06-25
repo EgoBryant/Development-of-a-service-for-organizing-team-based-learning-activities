@@ -173,18 +173,17 @@
 
 .events-calendar-grid {
     --events-calendar-visible-cols: 4;
-    --events-calendar-gap: clamp(28px, 4vw, 64px);
-    --events-calendar-card-width: clamp(142px, 13vw, 176px);
-    flex: 0 0 auto;
+    --events-calendar-gap: clamp(14px, 1.8vw, 28px);
+    flex: 1 1 auto;
     display: grid;
-    grid-template-columns: repeat(var(--events-calendar-visible-cols), minmax(136px, var(--events-calendar-card-width)));
-    justify-content: flex-start;
+    grid-template-columns: repeat(var(--events-calendar-visible-cols), minmax(0, 1fr));
+    justify-content: stretch;
     gap: var(--events-calendar-gap);
     width: 100%;
     min-width: 0;
     height: 100%;
     max-height: 100%;
-    align-items: start;
+    align-items: stretch;
     padding: 2px 0;
 }
 
@@ -486,8 +485,10 @@
     top: 0;
     left: 0;
     border-radius: 999px;
-    background: var(--exam-button-gradient);
-    box-shadow: 0 6px 16px rgba(60, 80, 200, 0.18);
+    background: var(--events-surface);
+    box-shadow:
+        inset 0 0 0 1px rgba(210, 222, 248, 0.72),
+        0 4px 12px rgba(19, 60, 150, 0.08);
     pointer-events: none;
     z-index: 0;
     transform: translate3d(0, 0, 0);
@@ -510,8 +511,8 @@
     min-height: 48px;
     padding: 0 clamp(12px, 2vw, 28px);
     border-radius: 999px;
-    background: transparent;
-    color: rgba(55, 100, 180, 1);
+    background: var(--exam-button-gradient);
+    color: #ffffff;
     font-family: "Montserrat", sans-serif;
     font-size: 17px;
     line-height: 22px;
@@ -520,11 +521,15 @@
     text-transform: uppercase;
     text-shadow: 0 7px 16px rgba(19, 60, 150, 0.1);
     cursor: pointer;
-    transition: color 0.28s ease;
+    box-shadow: 0 6px 16px rgba(60, 80, 200, 0.18);
+    transition:
+        color 0.28s ease,
+        background 0.28s ease,
+        box-shadow 0.28s ease;
 }
 
 .events-feed-tab.is-active {
-    color: #ffffff;
+    color: rgba(36, 116, 255, 1);
     background: transparent;
     box-shadow: none;
     text-shadow: 0 7px 16px rgba(19, 60, 150, 0.1);
@@ -734,7 +739,7 @@
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    align-self: flex-start;
+    align-self: center; 
     text-align: left;
     line-height: 1.15;
     background: linear-gradient(to bottom, rgba(120, 124, 254, 1), rgba(0, 169, 242, 1));
@@ -748,7 +753,7 @@
 .events-feed-feature-text {
     margin: 0;
     color: rgba(23, 45, 157, 1);
-    font-size: 19px;
+    font-size: 3vh;
     font-weight: 700;
     line-height: 1.5;
     text-align: justify;
@@ -811,8 +816,8 @@
 
 @media (max-width: 1100px) {
     .events-calendar-grid {
-        --events-calendar-gap: clamp(16px, 2.4vw, 28px);
-        --events-calendar-card-width: clamp(104px, 18vw, 132px);
+        --events-calendar-gap: clamp(10px, 1.6vw, 20px);
+        grid-template-columns: repeat(var(--events-calendar-visible-cols), minmax(0, 1fr));
         gap: var(--events-calendar-gap);
     }
 

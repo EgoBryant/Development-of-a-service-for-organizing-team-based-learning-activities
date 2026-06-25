@@ -40,7 +40,7 @@ export function renderActivityFeedPanel(isVisible: boolean): string {
             class="events-feed-panel events-feed-panel--activity"
             id="eventsFeedPanelActivity"
             role="tabpanel"
-            aria-labelledby="eventsFeedTabActivity"
+            aria-labelledby="eventsFeedTabNews"
             ${isVisible ? "" : "hidden"}
         >
             ${renderActivityFeatured()}
