@@ -39,11 +39,9 @@ public class AppDbContext : DbContext
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     /// <summary>Таблица новостей организатора.</summary>
     public DbSet<NewsItem> NewsItems => Set<NewsItem>();
-<<<<<<< HEAD
+    /// <summary>Таблица заданий.</summary>
     public DbSet<Assignment> Assignments => Set<Assignment>();
-=======
     /// <summary>Таблица записей ленты активности.</summary>
->>>>>>> 3d578392bfadbd52fcf244fda5c70c5433a7e4dc
     public DbSet<ActivityFeedItem> ActivityFeedItems => Set<ActivityFeedItem>();
 
     /// <summary>Настраивает схему, индексы и связи между сущностями.</summary>
