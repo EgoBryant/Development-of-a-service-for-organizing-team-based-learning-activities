@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Методы просмотра и редактирования личного кабинета пользователя.
+/// Личный кабинет: просмотр и редактирование профиля текущего пользователя.
+/// Базовый маршрут: <c>api/profile</c>. Все методы требуют JWT.
 /// </summary>
 [Route("api/profile")]
 [Authorize]
@@ -21,9 +22,9 @@ public class ProfileController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает профиль текущего пользователя.
+    /// GET <c>api/profile</c> — возвращает профиль текущего пользователя.
+    /// Требуется JWT. 200 с данными профиля, команды и группы; 401 без токена; 404, если профиль не найден.
     /// </summary>
-    /// <returns>Данные профиля, команды и учебной группы.</returns>
     [HttpGet]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -49,11 +50,12 @@ public class ProfileController : ApiControllerBase
     }
 
     /// <summary>
-    /// Обновляет данные профиля текущего пользователя.
+    /// PUT <c>api/profile</c> — обновляет данные профиля текущего пользователя.
+    /// Требуется JWT. 200 с обновлённым профилем; 400 — группа не найдена, конфликт студбилета или слишком большой аватар;
+    /// 404 — профиль не найден.
     /// </summary>
     /// <param name="request">Новые значения профиля: ФИО, контакты, описание, группа и другие поля.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Обновленный профиль пользователя.</returns>
     [HttpPut]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

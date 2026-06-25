@@ -2,11 +2,7 @@ import ligaMobileIconUrl from "../../assets/icons/Liga_mobile.svg";
 import ratingMenuIconUrl from "../../assets/icons/Menu_Icons/Rating.svg";
 import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import { renderProfileAchievementStrip } from "../profile/ProfileAchievements";
-import {
-    getProfileAchievementsByEarnedCount,
-    getUserProfileAchievements,
-    hasUserAchievementsSnapshot
-} from "../../state/achievementsState";
+import { getUserProfileAchievements } from "../../state/achievementsState";
 import { getRatingUserById } from "../../state/ratingDataState";
 import { escapeHtml } from "../../utils/html";
 import { normalizePersonalLeague } from "../../utils/personalLeague";
@@ -16,13 +12,8 @@ export function renderPublicAchievementsStrip(userId: string): string {
     return renderProfileAchievementStrip(getUserProfileAchievements(userId), { interactive: false });
 }
 
-function resolvePublicAchievements(userId: string, achievementsCount: number) {
-    const isBackendUserId = Number.isInteger(Number(userId));
-    if (hasUserAchievementsSnapshot(userId) || isBackendUserId) {
-        return getUserProfileAchievements(userId);
-    }
-
-    return getProfileAchievementsByEarnedCount(achievementsCount);
+function resolvePublicAchievements(userId: string) {
+    return getUserProfileAchievements(userId);
 }
 
 export function renderPublicUserProfile(userId: string): string {
@@ -45,7 +36,7 @@ export function renderPublicUserProfile(userId: string): string {
         ? `<button type="button" class="profile-info-pill profile-info-pill-accent" data-rating-open-team="${escapeHtml(user.teamId)}">${escapeHtml(teamPillText)}</button>`
         : `<div class="profile-info-pill profile-info-pill-accent">${escapeHtml(teamPillText)}</div>`;
 
-    const publicAchievements = resolvePublicAchievements(user.id, user.achievementsCount);
+    const publicAchievements = resolvePublicAchievements(user.id);
     const achievementsContent =
         publicAchievements.length > 0
             ? `
@@ -63,18 +54,20 @@ export function renderPublicUserProfile(userId: string): string {
 
     return `
         <div class="rating-public-profile">
-            <div class="rating-toolbar rating-toolbar--public">
-                <input
-                    type="search"
-                    class="rating-search-input"
-                    placeholder="ПОИСК"
-                    disabled
-                >
-                <div class="rating-filter-wrap">
-                    <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+            <div class="rating-public-topbar">
+                <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
+                <div class="rating-toolbar rating-toolbar--public">
+                    <input
+                        type="search"
+                        class="rating-search-input"
+                        placeholder="ПОИСК"
+                        disabled
+                    >
+                    <div class="rating-filter-wrap">
+                        <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+                    </div>
                 </div>
             </div>
-            <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
             <div class="profile-hero-card">
                 <div class="profile-top">
                     <div class="profile-photo-col">

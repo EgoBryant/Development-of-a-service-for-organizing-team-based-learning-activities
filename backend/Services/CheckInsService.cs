@@ -5,22 +5,28 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Еженедельные check-in отчёты команд.
+/// </summary>
 public class CheckInsService : ICheckInsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
-    private readonly IAchievementsService _achievements;
 
+    /// <summary>
+    /// Создаёт сервис check-in.
+    /// </summary>
     public CheckInsService(
         AppDbContext dbContext,
-        IActivityFeedService activityFeed,
-        IAchievementsService achievements)
+        IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
-        _achievements = achievements;
     }
 
+    /// <summary>
+    /// Возвращает check-in текущей команды пользователя, от новых к старым.
+    /// </summary>
     public async Task<IReadOnlyCollection<CheckInResponse>> GetForCurrentTeamAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
@@ -42,6 +48,9 @@ public class CheckInsService : ICheckInsService
         return checkIns.Select(Map).ToList();
     }
 
+    /// <summary>
+    /// Создаёт check-in за указанную неделю; дубликаты по номеру недели запрещены.
+    /// </summary>
     public async Task<CheckInCreateResult> CreateAsync(int userId, CreateCheckInDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -82,8 +91,6 @@ public class CheckInsService : ICheckInsService
             user.Id,
             cancellationToken);
 
-        await _achievements.GrantIfMissingAsync(user.Id, AchievementCodes.FirstCheckIn, cancellationToken);
-
         return new CheckInCreateResult
         {
             Type = CheckInCreateResultType.Created,
@@ -96,6 +103,9 @@ public class CheckInsService : ICheckInsService
         };
     }
 
+    /// <summary>
+    /// Преобразует сущность check-in в DTO ответа.
+    /// </summary>
     private static CheckInResponse Map(CheckIn checkIn)
     {
         return new CheckInResponse

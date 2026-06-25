@@ -6,7 +6,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Лента активности игры.
+/// Лента активности игры: последние события команд и участников.
+/// Базовый маршрут: <c>api/activity-feed</c>. Требуется JWT.
 /// </summary>
 [Route("api/activity-feed")]
 [Authorize]
@@ -19,7 +20,10 @@ public class ActivityFeedController : ApiControllerBase
         _activityFeed = activityFeed;
     }
 
-    /// <summary>Возвращает последние события (по умолчанию 50).</summary>
+    /// <summary>
+    /// GET <c>api/activity-feed</c> — возвращает последние события ленты активности.
+    /// Требуется JWT. Параметр <c>limit</c> ограничивает количество записей (по умолчанию 50). 200 со списком событий.
+    /// </summary>
     [HttpGet]
     [ProducesResponseType<IEnumerable<ActivityFeedItemResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ActivityFeedItemResponse>>> Get(

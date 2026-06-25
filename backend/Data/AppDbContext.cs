@@ -3,28 +3,51 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Data;
 
+/// <summary>Контекст Entity Framework Core для PostgreSQL — все сущности «Командного зачёта».</summary>
 public class AppDbContext : DbContext
 {
+    /// <summary>Создаёт контекст с параметрами из DI.</summary>
+    /// <param name="options">Настройки провайдера и строки подключения.</param>
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
 
+    /// <summary>Таблица пользователей.</summary>
     public DbSet<User> Users => Set<User>();
+    /// <summary>Таблица команд.</summary>
     public DbSet<Team> Teams => Set<Team>();
+    /// <summary>Таблица академических групп.</summary>
     public DbSet<Group> Groups => Set<Group>();
+    /// <summary>Таблица объявлений биржи знаний.</summary>
     public DbSet<KnowledgePost> KnowledgePosts => Set<KnowledgePost>();
+    /// <summary>Таблица запросов на помощь между командами.</summary>
     public DbSet<HelpRequest> HelpRequests => Set<HelpRequest>();
+    /// <summary>Таблица заявок на вступление в команду.</summary>
     public DbSet<TeamJoinRequest> TeamJoinRequests => Set<TeamJoinRequest>();
+    /// <summary>Таблица голосов участников.</summary>
     public DbSet<Vote> Votes => Set<Vote>();
+    /// <summary>Таблица еженедельных отчётов (check-in).</summary>
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
+    /// <summary>Таблица челленджей.</summary>
     public DbSet<Challenge> Challenges => Set<Challenge>();
+    /// <summary>Таблица прогресса команд по челленджам.</summary>
     public DbSet<TeamChallengeProgress> TeamChallengeProgresses => Set<TeamChallengeProgress>();
+    /// <summary>Каталог достижений.</summary>
     public DbSet<Achievement> Achievements => Set<Achievement>();
+    /// <summary>Связь пользователей с полученными достижениями.</summary>
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    /// <summary>Таблица событий игрового календаря.</summary>
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+    /// <summary>Таблица новостей организатора.</summary>
     public DbSet<NewsItem> NewsItems => Set<NewsItem>();
+<<<<<<< HEAD
     public DbSet<Assignment> Assignments => Set<Assignment>();
+=======
+    /// <summary>Таблица записей ленты активности.</summary>
+>>>>>>> 3d578392bfadbd52fcf244fda5c70c5433a7e4dc
     public DbSet<ActivityFeedItem> ActivityFeedItems => Set<ActivityFeedItem>();
 
+    /// <summary>Настраивает схему, индексы и связи между сущностями.</summary>
+    /// <param name="modelBuilder">Построитель модели EF Core.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

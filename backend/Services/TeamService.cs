@@ -9,27 +9,50 @@ using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Реализация сервиса управления командами: CRUD, вступление по инвайт-коду,
+/// заявки на вступление, недельная статистика и жизненный цикл команды.
+/// </summary>
 public class TeamService : ITeamService
 {
+    /// <summary>Алфавит для генерации инвайт-кодов (без похожих символов O/0, I/1).</summary>
     private const string InviteAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+    /// <summary>Контекст базы данных приложения.</summary>
     private readonly AppDbContext _dbContext;
+
+    /// <summary>Сервис пересчёта командного рейтингового коэффициента (КРК).</summary>
     private readonly IKrkCalculationService _krkCalculationService;
+
+    /// <summary>Сервис записи событий в ленту активности команд.</summary>
     private readonly IActivityFeedService _activityFeed;
+    private readonly IAchievementsService _achievementsService;
     private readonly TeamOptions _teamOptions;
 
+    /// <summary>
+    /// Создаёт экземпляр сервиса команд с зависимостями БД, расчёта КРК, ленты активности и настроек.
+    /// </summary>
+    /// <param name="dbContext">Контекст базы данных.</param>
+    /// <param name="krkCalculationService">Сервис пересчёта командного рейтингового коэффициента.</param>
+    /// <param name="activityFeed">Сервис записи событий в ленту активности.</param>
+    /// <param name="teamOptions">Настройки команд (лимит участников и др.).</param>
     public TeamService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
         IActivityFeedService activityFeed,
+        IAchievementsService achievementsService,
         IOptions<TeamOptions> teamOptions)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
         _activityFeed = activityFeed;
+        _achievementsService = achievementsService;
         _teamOptions = teamOptions.Value;
     }
 
+    /// <summary>
+    /// Возвращает все команды, отсортированные по убыванию счёта и имени.
+    /// </summary>
     public async Task<IReadOnlyCollection<TeamResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var teams = await _dbContext.Teams
@@ -43,6 +66,11 @@ public class TeamService : ITeamService
         return teams.Select(MapTeamResponse).ToList();
     }
 
+    /// <summary>
+    /// Ищет команды по названию, описанию или инвайт-коду с ограничением числа результатов.
+    /// </summary>
+    /// <param name="query">Текстовый запрос; пустая строка возвращает команды без фильтра.</param>
+    /// <param name="limit">Максимальное число результатов (ограничивается диапазоном 1–50).</param>
     public async Task<IReadOnlyCollection<TeamResponse>> SearchAsync(string? query, int limit, CancellationToken cancellationToken = default)
     {
         var safeLimit = Math.Clamp(limit, 1, 50);
@@ -72,6 +100,10 @@ public class TeamService : ITeamService
         return result.Select(MapTeamResponse).ToList();
     }
 
+    /// <summary>
+    /// Возвращает команду по идентификатору или <c>null</c>, если команда не найдена.
+    /// </summary>
+    /// <param name="teamId">Идентификатор команды.</param>
     public async Task<TeamResponse?> GetByIdAsync(int teamId, CancellationToken cancellationToken = default)
     {
         var team = await _dbContext.Teams
@@ -83,6 +115,10 @@ public class TeamService : ITeamService
         return team is null ? null : MapTeamResponse(team);
     }
 
+    /// <summary>
+    /// Возвращает команду по инвайт-коду после нормализации (обрезка пробелов, верхний регистр).
+    /// </summary>
+    /// <param name="inviteCode">Инвайт-код команды.</param>
     public async Task<TeamResponse?> GetByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default)
     {
         var normalizedInviteCode = NormalizeInviteCode(inviteCode);
@@ -100,12 +136,21 @@ public class TeamService : ITeamService
         return team is null ? null : MapTeamResponse(team);
     }
 
+    /// <summary>
+    /// Возвращает команду, в которой состоит указанный пользователь, или <c>null</c>.
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя.</param>
     public async Task<TeamResponse?> GetForUserAsync(int userId, CancellationToken cancellationToken = default)
     {
         var teamId = await GetTeamIdForUserAsync(userId, cancellationToken);
         return teamId is null ? null : await GetByIdAsync(teamId.Value, cancellationToken);
     }
 
+    /// <summary>
+    /// Возвращает ленту активности команды пользователя в хронологическом порядке (новые первыми).
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя.</param>
+    /// <param name="limit">Максимальное число записей (ограничивается диапазоном 1–100).</param>
     public async Task<IReadOnlyCollection<ActivityFeedItemResponse>> GetActivityForUserTeamAsync(int userId, int limit, CancellationToken cancellationToken = default)
     {
         var teamId = await GetTeamIdForUserAsync(userId, cancellationToken);
@@ -127,6 +172,15 @@ public class TeamService : ITeamService
         return items.Select(MapActivityItemResponse).ToList();
     }
 
+    /// <summary>
+    /// Собирает недельную статистику команды пользователя: баллы, «спасения» и проведённые мероприятия.
+    /// </summary>
+    /// <remarks>
+    /// Неделя считается с понедельника 00:00 UTC. Баллы начисляются за завершённые «спасения»
+    /// (сопоставление темы из ленты с заявкой HelpRequest) и одобренные челленджи
+    /// (извлечение числа из текста сообщения ленты).
+    /// </remarks>
+    /// <param name="userId">Идентификатор пользователя.</param>
     public async Task<TeamWeeklyStatsResponse?> GetWeeklyStatsForUserTeamAsync(int userId, CancellationToken cancellationToken = default)
     {
         var teamId = await GetTeamIdForUserAsync(userId, cancellationToken);
@@ -193,6 +247,10 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>
+    /// Возвращает идентификатор команды пользователя или <c>null</c>, если пользователь не состоит в команде.
+    /// </summary>
+    /// <param name="userId">Идентификатор пользователя.</param>
     public Task<int?> GetTeamIdForUserAsync(int userId, CancellationToken cancellationToken = default)
     {
         return _dbContext.Users
@@ -202,6 +260,15 @@ public class TeamService : ITeamService
             .SingleOrDefaultAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Создаёт новую команду: пользователь становится капитаном, генерируется уникальный инвайт-код.
+    /// </summary>
+    /// <remarks>
+    /// Перед созданием проверяется, что пользователь существует и не состоит в другой команде.
+    /// Отменяются все его ожидающие заявки, записывается событие в ленту и пересчитывается КРК.
+    /// </remarks>
+    /// <param name="userId">Идентификатор создателя (будущего капитана).</param>
+    /// <param name="request">Данные новой команды (название и описание).</param>
     public async Task<CreateTeamResult> CreateAsync(int userId, CreateTeamDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -241,6 +308,8 @@ public class TeamService : ITeamService
 
         await _krkCalculationService.RecalculateForTeamAsync(team.Id, cancellationToken);
 
+        await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstVote, cancellationToken);
+
         return new CreateTeamResult
         {
             Type = CreateTeamResultType.Created,
@@ -248,6 +317,15 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>
+    /// Мгновенное вступление в команду по инвайт-коду без рассмотрения заявки капитаном.
+    /// </summary>
+    /// <remarks>
+    /// Альтернатива заявке на вступление (<see cref="CreateJoinRequestAsync"/>): пользователь сразу
+    /// становится участником, если команда не заполнена. Отменяются все его ожидающие заявки.
+    /// </remarks>
+    /// <param name="userId">Идентификатор вступающего пользователя.</param>
+    /// <param name="request">Запрос с инвайт-кодом команды.</param>
     public async Task<JoinTeamResult> JoinAsync(int userId, JoinTeamRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -285,6 +363,8 @@ public class TeamService : ITeamService
             user.Id,
             cancellationToken);
 
+        await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstVote, cancellationToken);
+
         return new JoinTeamResult
         {
             Type = JoinTeamResultType.Joined,
@@ -292,6 +372,18 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>
+    /// Возвращает заявки на вступление с учётом роли пользователя и области выборки.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="scope"/> определяет фильтр:
+    /// <c>incoming</c> — входящие заявки в команду капитана;
+    /// <c>outgoing</c> — исходящие заявки пользователя;
+    /// <c>all</c> — все заявки (только для администратора);
+    /// по умолчанию капитан видит входящие и свои исходящие, обычный пользователь — только свои.
+    /// </remarks>
+    /// <param name="userId">Идентификатор запрашивающего пользователя.</param>
+    /// <param name="scope">Область выборки заявок.</param>
     public async Task<IReadOnlyCollection<TeamJoinRequestResponse>> GetJoinRequestsAsync(int userId, string? scope, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
@@ -332,6 +424,15 @@ public class TeamService : ITeamService
         return requests.Select(MapJoinRequestResponse).ToList();
     }
 
+    /// <summary>
+    /// Создаёт заявку на вступление в команду по её идентификатору (без инвайт-кода).
+    /// </summary>
+    /// <remarks>
+    /// Заявка ожидает решения капитана или администратора. Дубликаты ожидающих заявок
+    /// в ту же команду отклоняются. При успехе событие фиксируется в ленте активности.
+    /// </remarks>
+    /// <param name="userId">Идентификатор подающего заявку пользователя.</param>
+    /// <param name="request">Идентификатор команды и сопроводительное сообщение.</param>
     public async Task<TeamJoinRequestResult> CreateJoinRequestAsync(int userId, CreateTeamJoinRequestDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -392,6 +493,18 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>
+    /// Обновляет статус заявки на вступление: принятие, отклонение или отмена.
+    /// </summary>
+    /// <remarks>
+    /// Принять или отклонить может капитан целевой команды или администратор.
+    /// Отменить может только заявитель или администратор. При принятии заявитель
+    /// добавляется в команду, остальные его ожидающие заявки отменяются (кроме текущей).
+    /// Изменить можно только заявки в статусе Pending.
+    /// </remarks>
+    /// <param name="userId">Идентификатор пользователя, выполняющего действие.</param>
+    /// <param name="requestId">Идентификатор заявки.</param>
+    /// <param name="request">Новый статус заявки.</param>
     public async Task<TeamJoinRequestResult> UpdateJoinRequestStatusAsync(
         int userId,
         int requestId,
@@ -477,6 +590,8 @@ public class TeamService : ITeamService
                 joinRequest.TeamId,
                 joinRequest.UserId,
                 cancellationToken);
+
+            await _achievementsService.GrantIfMissingAsync(joinRequest.UserId, AchievementCodes.FirstVote, cancellationToken);
         }
         else if (canonicalStatus == TeamJoinRequestStatuses.Rejected)
         {
@@ -498,6 +613,14 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>
+    /// Расформировывает команду: доступно только капитану.
+    /// </summary>
+    /// <remarks>
+    /// Удаляет связанные заявки «спасения», снимает всех участников с команды,
+    /// обнуляет роли капитанов и удаляет запись команды из БД.
+    /// </remarks>
+    /// <param name="userId">Идентификатор капитана, инициирующего расформирование.</param>
     public async Task<DisbandTeamResult> DisbandAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -555,6 +678,13 @@ public class TeamService : ITeamService
         return new DisbandTeamResult { Type = DisbandTeamResultType.Disbanded };
     }
 
+    /// <summary>
+    /// Выход участника из команды (капитан не может покинуть команду — только расформировать).
+    /// </summary>
+    /// <remarks>
+    /// После выхода отменяются ожидающие заявки пользователя и пересчитывается КРК команды.
+    /// </remarks>
+    /// <param name="userId">Идентификатор выходящего участника.</param>
     public async Task<LeaveTeamResult> LeaveAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -604,6 +734,11 @@ public class TeamService : ITeamService
         return new LeaveTeamResult { Type = LeaveTeamResultType.Left };
     }
 
+    /// <summary>
+    /// Обновляет базовый командный счёт и пересчитывает КРК.
+    /// </summary>
+    /// <param name="teamId">Идентификатор команды.</param>
+    /// <param name="request">Новое значение счёта.</param>
     public async Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default)
     {
         var team = await _dbContext.Teams
@@ -630,12 +765,18 @@ public class TeamService : ITeamService
         return MapTeamResponse(refreshed);
     }
 
+    /// <summary>
+    /// Проверяет, достигнут ли лимит участников команды (<see cref="TeamOptions.MaxMembers"/>).
+    /// </summary>
     private async Task<bool> IsTeamFullAsync(int teamId, CancellationToken cancellationToken)
     {
         var memberCount = await _dbContext.Users.CountAsync(user => user.TeamId == teamId, cancellationToken);
         return memberCount >= _teamOptions.MaxMembers;
     }
 
+    /// <summary>
+    /// Генерирует уникальный 6-символьный инвайт-код из <see cref="InviteAlphabet"/>.
+    /// </summary>
     private async Task<string> GenerateInviteCodeAsync(CancellationToken cancellationToken)
     {
         while (true)
@@ -655,6 +796,13 @@ public class TeamService : ITeamService
         }
     }
 
+    /// <summary>
+    /// Отменяет все ожидающие заявки пользователя, опционально кроме указанной.
+    /// </summary>
+    /// <remarks>
+    /// Вызывается при вступлении, создании команды или принятии заявки,
+    /// чтобы у пользователя не оставалось параллельных pending-заявок.
+    /// </remarks>
     private async Task CancelPendingJoinRequestsForUserAsync(int userId, CancellationToken cancellationToken, int? exceptRequestId = null)
     {
         var pendingRequests = await _dbContext.TeamJoinRequests
@@ -671,6 +819,9 @@ public class TeamService : ITeamService
         }
     }
 
+    /// <summary>
+    /// Загружает заявку на вступление по идентификатору и преобразует в DTO ответа.
+    /// </summary>
     private async Task<TeamJoinRequestResponse> BuildJoinRequestAsync(int requestId, CancellationToken cancellationToken)
     {
         var joinRequest = await _dbContext.TeamJoinRequests
@@ -683,9 +834,13 @@ public class TeamService : ITeamService
         return MapJoinRequestResponse(joinRequest);
     }
 
+    /// <summary>Нормализует инвайт-код: обрезка пробелов и приведение к верхнему регистру.</summary>
     private static string NormalizeInviteCode(string inviteCode) =>
         inviteCode.Trim().ToUpperInvariant();
 
+    /// <summary>
+    /// Приводит строковый статус заявки к каноническому значению или возвращает <c>null</c> при неизвестном статусе.
+    /// </summary>
     private static string? ResolveJoinRequestStatus(string status)
     {
         var normalized = status.Trim();
@@ -707,6 +862,7 @@ public class TeamService : ITeamService
         return null;
     }
 
+    /// <summary>Преобразует запись ленты активности в DTO ответа.</summary>
     private static ActivityFeedItemResponse MapActivityItemResponse(ActivityFeedItem item) => new()
     {
         Id = item.Id,
@@ -719,6 +875,7 @@ public class TeamService : ITeamService
         CreatedAtUtc = item.CreatedAtUtc
     };
 
+    /// <summary>Возвращает начало текущей недели (понедельник 00:00 UTC).</summary>
     private static DateTime GetWeekStartUtc(DateTime utcNow)
     {
         var utcDate = DateTime.SpecifyKind(utcNow.Date, DateTimeKind.Utc);
@@ -726,18 +883,25 @@ public class TeamService : ITeamService
         return utcDate.AddDays(-daysSinceMonday);
     }
 
+    /// <summary>
+    /// Извлекает тему завершённого «спасения» из текста сообщения ленты активности.
+    /// </summary>
     private static string? ExtractHelpCompletedTopic(string message)
     {
         var match = Regex.Match(message, @"«Спасение» завершено: «(.+?)»", RegexOptions.CultureInvariant);
         return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
+    /// <summary>
+    /// Извлекает число бонусных баллов из текста сообщения ленты (шаблон «(+N бал...»).
+    /// </summary>
     private static int ExtractBonusPointsFromActivityMessage(string message)
     {
         var match = Regex.Match(message, @"\(\+(\d+)\s+бал", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         return match.Success && int.TryParse(match.Groups[1].Value, out var points) ? points : 0;
     }
 
+    /// <summary>Преобразует заявку на вступление в DTO ответа.</summary>
     private static TeamJoinRequestResponse MapJoinRequestResponse(TeamJoinRequest request)
     {
         return new TeamJoinRequestResponse
@@ -758,6 +922,9 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>
+    /// Преобразует сущность команды в DTO ответа с участниками (капитан первым).
+    /// </summary>
     private static TeamResponse MapTeamResponse(Team team)
     {
         return new TeamResponse
@@ -791,6 +958,7 @@ public class TeamService : ITeamService
         };
     }
 
+    /// <summary>Форматирует отображаемое имя пользователя или пустую строку.</summary>
     private static string FormatUser(User? user) =>
         user is null ? string.Empty : DisplayNameFormatter.Format(user);
 }

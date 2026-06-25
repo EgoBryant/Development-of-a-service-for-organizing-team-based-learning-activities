@@ -98,11 +98,12 @@
     }
 
     .events-feed-block {
-        --events-feed-block-height: 380px;
+        --events-feed-block-height: clamp(220px, 34vh, 360px);
     }
 
     .events-calendar-grid {
-        gap: 16px;
+        --events-calendar-gap: clamp(18px, 2vw, 24px);
+        gap: var(--events-calendar-gap);
     }
 
     .profile-app--dashboard-profile {

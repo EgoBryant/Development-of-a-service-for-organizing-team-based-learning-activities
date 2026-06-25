@@ -8,6 +8,9 @@ using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Регистрация, вход и формирование ответа с JWT и профилем пользователя.
+/// </summary>
 public class AuthService : IAuthService
 {
     private const int MaxLoginCandidates = 3;
@@ -19,6 +22,9 @@ public class AuthService : IAuthService
     private readonly JwtOptions _jwtOptions;
     private readonly ILogger<AuthService> _logger;
 
+    /// <summary>
+    /// Создаёт сервис аутентификации.
+    /// </summary>
     public AuthService(
         AppDbContext dbContext,
         IPasswordHasher<User> passwordHasher,
@@ -35,6 +41,9 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Регистрирует нового пользователя с хешированием пароля и немедленной выдачей токена.
+    /// </summary>
     public async Task<AuthResult> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
     {
         var email = NormalizeEmail(request.Email);
@@ -61,6 +70,9 @@ public class AuthService : IAuthService
         };
     }
 
+    /// <summary>
+    /// Выполняет вход по email и паролю; при дубликатах email в БД возвращает ошибку целостности.
+    /// </summary>
     public async Task<AuthResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var email = NormalizeEmail(request.Email);
@@ -94,6 +106,9 @@ public class AuthService : IAuthService
         };
     }
 
+    /// <summary>
+    /// Сверяет пароль с хешем; некорректный формат хеша трактуется как неверные учётные данные.
+    /// </summary>
     private bool VerifyPassword(User user, string password)
     {
         try
@@ -108,6 +123,9 @@ public class AuthService : IAuthService
         }
     }
 
+    /// <summary>
+    /// Собирает полный ответ авторизации: JWT, срок действия и данные профиля.
+    /// </summary>
     private async Task<AuthResponse> BuildAuthResponseAsync(User user, CancellationToken cancellationToken)
     {
         var profile = await _profileService.MapToProfileResponseAsync(user, cancellationToken);
@@ -146,5 +164,8 @@ public class AuthService : IAuthService
         };
     }
 
+    /// <summary>
+    /// Нормализует email для сравнения и хранения.
+    /// </summary>
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 }

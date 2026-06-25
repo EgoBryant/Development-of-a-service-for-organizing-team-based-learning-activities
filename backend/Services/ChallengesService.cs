@@ -5,6 +5,9 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Челленджи: каталог, отправка доказательств командой и модерация с начислением бонусных баллов.
+/// </summary>
 public class ChallengesService : IChallengesService
 {
     private readonly AppDbContext _dbContext;
@@ -12,6 +15,9 @@ public class ChallengesService : IChallengesService
     private readonly IActivityFeedService _activityFeed;
     private readonly IAchievementsService _achievements;
 
+    /// <summary>
+    /// Создаёт сервис челленджей.
+    /// </summary>
     public ChallengesService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
@@ -24,6 +30,9 @@ public class ChallengesService : IChallengesService
         _achievements = achievements;
     }
 
+    /// <summary>
+    /// Возвращает активные челленджи со статусом команды текущего пользователя и числом одобренных команд.
+    /// </summary>
     public async Task<IReadOnlyCollection<ChallengeResponse>> GetActiveAsync(int? currentUserTeamId, CancellationToken cancellationToken = default)
     {
         var challenges = await _dbContext.Challenges
@@ -62,6 +71,9 @@ public class ChallengesService : IChallengesService
         }).ToList();
     }
 
+    /// <summary>
+    /// Создаёт новый челлендж (административная операция).
+    /// </summary>
     public async Task<ChallengeResponse> CreateAsync(CreateChallengeDto request, CancellationToken cancellationToken = default)
     {
         var challenge = new Challenge
@@ -92,6 +104,9 @@ public class ChallengesService : IChallengesService
         };
     }
 
+    /// <summary>
+    /// Отправляет доказательство выполнения челленджа от имени команды пользователя.
+    /// </summary>
     public async Task<ChallengeProgressSubmitResult> SubmitAsync(int userId, int challengeId, SubmitChallengeDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
@@ -153,6 +168,9 @@ public class ChallengesService : IChallengesService
         };
     }
 
+    /// <summary>
+    /// Модерирует заявку: при одобрении начисляет бонус команде, при отзыве одобрения — списывает; пересчитывает КРК.
+    /// </summary>
     public async Task<ChallengeProgressReviewResult> ReviewAsync(int progressId, ReviewChallengeProgressDto request, CancellationToken cancellationToken = default)
     {
         var status = request.Status?.Trim();
@@ -212,6 +230,9 @@ public class ChallengesService : IChallengesService
         };
     }
 
+    /// <summary>
+    /// Возвращает историю заявок команды по челленджам.
+    /// </summary>
     public async Task<IReadOnlyCollection<ChallengeProgressResponse>> GetTeamProgressAsync(int teamId, CancellationToken cancellationToken = default)
     {
         var entries = await _dbContext.TeamChallengeProgresses
@@ -226,6 +247,9 @@ public class ChallengesService : IChallengesService
         return entries.Select(MapProgress).ToList();
     }
 
+    /// <summary>
+    /// Загружает одну заявку по идентификатору для ответа API.
+    /// </summary>
     private async Task<ChallengeProgressResponse> BuildProgressAsync(int progressId, CancellationToken cancellationToken)
     {
         var progress = await _dbContext.TeamChallengeProgresses
@@ -237,6 +261,9 @@ public class ChallengesService : IChallengesService
         return MapProgress(progress);
     }
 
+    /// <summary>
+    /// Преобразует сущность прогресса челленджа в DTO ответа.
+    /// </summary>
     private static ChallengeProgressResponse MapProgress(TeamChallengeProgress progress) => new()
     {
         Id = progress.Id,

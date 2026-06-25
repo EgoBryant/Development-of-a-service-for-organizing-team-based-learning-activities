@@ -26,7 +26,7 @@ export function createCalendarEventFromDraft(
     return {
         id: options.id ?? `ev-user-${Date.now().toString(36)}`,
         topic: draft.topic.trim(),
-        tag: draft.tag.trim(),
+        tag: draft.tag.trim() || "Другое",
         format: draft.format.trim(),
         description: draft.description.trim(),
         dateTime: draft.dateTime,

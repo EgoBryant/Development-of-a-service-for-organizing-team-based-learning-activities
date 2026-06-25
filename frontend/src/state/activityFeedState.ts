@@ -71,25 +71,21 @@ function seedDemoActivityFeedIfEmpty(): void {
     const now = Date.now();
     const seeds: ActivityFeedPushInput[] = [
         {
-            kind: "challenge_completed",
-            title: "ЧЕЛЛЕНДЖ ЗАВЕРШЁН",
-            description: "Команда закрыла челлендж «Неделя сплочённости».",
-            badge: "+120"
+            kind: "event_created",
+            title: "Воркшоп команды",
+            description: "Команда «Организаторы» провели воркшоп «АГиТДУ: сдать нельзя отчислиться»",
+            badge: "50 баллов"
         },
         {
             kind: "rating_changed",
-            title: "РЕЙТИНГ ОБНОВЛЁН",
-            description: "Ваша позиция в личном рейтинге: 4 → 3 место."
+            title: "Переход в лигу",
+            description: "Валерий Салимгареев перешёл в лигу «Профи»"
         },
         {
-            kind: "team_achievement",
-            title: "ДОСТИЖЕНИЕ КОМАНДЫ",
-            description: "Команда получила ачивку «Синхрон»."
-        },
-        {
-            kind: "event_upcoming",
-            title: "СКОРО МЕРОПРИЯТИЕ",
-            description: "Воркшоп по КРК — завтра в 16:00."
+            kind: "challenge_completed",
+            title: "Челлендж выполнен",
+            description: "Егор Шадрин успешно выполнил челлендж «Ночной дозор»",
+            badge: "25 баллов"
         }
     ];
 

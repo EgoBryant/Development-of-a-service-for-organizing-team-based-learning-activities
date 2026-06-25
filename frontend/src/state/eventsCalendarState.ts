@@ -10,6 +10,15 @@ import {
 } from "../utils/calendarEvents";
 
 export const EVENTS_CALENDAR_VISIBLE_DAYS = 4;
+export const EVENTS_CALENDAR_MOBILE_QUERY = "(max-width: 767px)";
+
+export function getEventsCalendarVisibleDaysCount(): number {
+    if (typeof window !== "undefined" && window.matchMedia(EVENTS_CALENDAR_MOBILE_QUERY).matches) {
+        return 1;
+    }
+
+    return EVENTS_CALENDAR_VISIBLE_DAYS;
+}
 
 const USER_EVENTS_STORAGE_KEY = "team-exam-user-calendar-events";
 
@@ -47,8 +56,16 @@ export function getTodayCalendarStartIndex(): number {
     return todayIndex >= 0 ? todayIndex : 0;
 }
 
+/** Индекс начала демо-недели (1–4 июня) для макета вкладки «События». */
+export function getDemoEventsCalendarStartIndex(): number {
+    const demoStart = new Date(EVENTS_CALENDAR_YEAR, 5, 1);
+    const dayIndex = getCalendarDayIndexForDate(demoStart);
+    return clampCalendarStartIndex(dayIndex >= 0 ? dayIndex : 0);
+}
+
 export function clampCalendarStartIndex(index: number): number {
-    const maxStart = Math.max(0, getEventsCalendarYearDates().length - EVENTS_CALENDAR_VISIBLE_DAYS);
+    const visibleDays = getEventsCalendarVisibleDaysCount();
+    const maxStart = Math.max(0, getEventsCalendarYearDates().length - visibleDays);
     return Math.min(Math.max(0, index), maxStart);
 }
 

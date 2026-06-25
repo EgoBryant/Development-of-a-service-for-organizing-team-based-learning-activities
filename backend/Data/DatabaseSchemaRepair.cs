@@ -10,6 +10,10 @@ namespace TeamExamProject.Data;
 /// </summary>
 public static class DatabaseSchemaRepair
 {
+    /// <summary>Применяет все зарегистрированные правки схемы к базе данных.</summary>
+    /// <param name="dbContext">Контекст базы данных.</param>
+    /// <param name="logger">Логгер для предупреждений о неудачных ALTER.</param>
+    /// <param name="cancellationToken">Токен отмены.</param>
     public static async Task ApplyAsync(AppDbContext dbContext, ILogger logger, CancellationToken cancellationToken = default)
     {
         await EnsureUsersProfileColumnsAsync(dbContext, logger, cancellationToken);

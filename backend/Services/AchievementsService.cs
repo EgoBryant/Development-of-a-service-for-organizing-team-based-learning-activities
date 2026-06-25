@@ -5,17 +5,26 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Управление каталогом достижений и выдачей ачивок пользователям.
+/// </summary>
 public class AchievementsService : IAchievementsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
 
+    /// <summary>
+    /// Создаёт сервис достижений.
+    /// </summary>
     public AchievementsService(AppDbContext dbContext, IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
     }
 
+    /// <summary>
+    /// Возвращает полный каталог достижений платформы.
+    /// </summary>
     public async Task<IReadOnlyCollection<AchievementResponse>> GetCatalogAsync(CancellationToken cancellationToken = default)
     {
         var items = await _dbContext.Achievements
@@ -33,9 +42,12 @@ public class AchievementsService : IAchievementsService
         }).ToList();
     }
 
+    /// <summary>
+    /// Возвращает достижения пользователя; перед выдачей проверяет право на ачивку «Топ-3 команды».
+    /// </summary>
     public async Task<IReadOnlyCollection<UserAchievementResponse>> GetUserAchievementsAsync(int userId, CancellationToken cancellationToken = default)
     {
-        await EnsureTop3TeamAchievementAsync(userId, cancellationToken);
+        await EnsureEligibleAchievementsAsync(userId, cancellationToken);
 
         var items = await _dbContext.UserAchievements
             .AsNoTracking()
@@ -57,6 +69,10 @@ public class AchievementsService : IAchievementsService
         }).ToList();
     }
 
+    /// <summary>
+    /// Выдаёт достижение по коду, если у пользователя его ещё нет; публикует событие в ленту активности.
+    /// </summary>
+    /// <returns><c>true</c>, если ачивка была выдана впервые.</returns>
     public async Task<bool> GrantIfMissingAsync(int userId, string achievementCode, CancellationToken cancellationToken = default)
     {
         var achievement = await _dbContext.Achievements
@@ -91,33 +107,56 @@ public class AchievementsService : IAchievementsService
         return true;
     }
 
-    private async Task EnsureTop3TeamAchievementAsync(int userId, CancellationToken cancellationToken)
+    /// <summary>
+    /// Проверяет, входит ли команда пользователя в топ-3 по КРК, и выдаёт соответствующую ачивку.
+    /// </summary>
+    private async Task EnsureEligibleAchievementsAsync(int userId, CancellationToken cancellationToken)
     {
-        var teamId = await _dbContext.Users
+        var user = await _dbContext.Users
             .AsNoTracking()
-            .Where(user => user.Id == userId)
-            .Select(user => user.TeamId)
-            .SingleOrDefaultAsync(cancellationToken);
-
-        if (teamId is null)
+            .SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
+        if (user is null)
         {
             return;
         }
 
-        var topTeamIds = await _dbContext.Teams
-            .AsNoTracking()
-            .OrderByDescending(team => team.KrkCached)
-            .ThenByDescending(team => team.Score)
-            .ThenBy(team => team.Name)
-            .Select(team => team.Id)
-            .Take(3)
-            .ToListAsync(cancellationToken);
-
-        if (!topTeamIds.Contains(teamId.Value))
+        if (ProfileCompletion.IsComplete(user))
         {
-            return;
+            await GrantIfMissingAsync(userId, AchievementCodes.FirstCheckIn, cancellationToken);
         }
 
-        await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
+        if (user.TeamId is not null)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.FirstVote, cancellationToken);
+        }
+
+        if (user.UserPoints > 0)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
+        }
+
+        var hasSubmittedChallenge = await _dbContext.TeamChallengeProgresses
+            .AsNoTracking()
+            .AnyAsync(progress => progress.SubmittedByUserId == userId, cancellationToken);
+        if (hasSubmittedChallenge)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.FirstChallenge, cancellationToken);
+        }
+
+        if (user.TeamId is not null && user.Role == Roles.Captain)
+        {
+            var hasRescueResponse = await _dbContext.HelpRequests
+                .AsNoTracking()
+                .AnyAsync(
+                    request =>
+                        request.ToTeamId == user.TeamId &&
+                        (request.Status == HelpRequestStatuses.Accepted ||
+                         request.Status == HelpRequestStatuses.Completed),
+                    cancellationToken);
+            if (hasRescueResponse)
+            {
+                await GrantIfMissingAsync(userId, AchievementCodes.FirstRescue, cancellationToken);
+            }
+        }
     }
 }

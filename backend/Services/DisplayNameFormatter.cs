@@ -4,13 +4,27 @@ namespace TeamExamProject.Services;
 
 /// <summary>
 /// Единый формат отображаемого имени пользователя.
-/// Приоритет: «Фамилия И.» → Nickname → UserName. Возвращает в верхнем регистре.
+/// Приоритет: «Фамилия И.» → Nickname → UserName. Возвращает строку в верхнем регистре.
 /// </summary>
 public static class DisplayNameFormatter
 {
+    /// <summary>
+    /// Форматирует отображаемое имя из сущности пользователя.
+    /// </summary>
+    /// <param name="user">Пользователь платформы.</param>
+    /// <returns>Строка для UI в верхнем регистре.</returns>
     public static string Format(User user) =>
         Format(user.FirstName, user.LastName, user.MiddleName, user.Nickname, user.UserName);
 
+    /// <summary>
+    /// Форматирует отображаемое имя из отдельных полей профиля.
+    /// </summary>
+    /// <param name="firstName">Имя.</param>
+    /// <param name="lastName">Фамилия.</param>
+    /// <param name="middleName">Отчество (зарезервировано для расширения формата).</param>
+    /// <param name="nickname">Псевдоним.</param>
+    /// <param name="userName">Логин пользователя.</param>
+    /// <returns>Строка для UI в верхнем регистре.</returns>
     public static string Format(
         string? firstName,
         string? lastName,

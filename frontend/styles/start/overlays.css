@@ -323,54 +323,403 @@
     -webkit-backdrop-filter: blur(8px);
 }
 
-.event-create-modal .team-rescue-card {
-    width: min(100%, 560px);
-    padding: 38px 34px 34px;
-    gap: 20px;
+.event-create-modal .team-rescue-card,
+.event-create-modal .profile-modal-card.profile-modal-card--shell.profile-modal-card--form {
+    width: min(100%, 600px);
+    min-width: 0;
+    max-width: 600px;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    padding: 28px 38px 32px;
+    gap: 12px;
+    overflow: visible;
+}
+
+.event-create-modal .profile-shell-title {
+    margin: 48px 0 10px;
+    width: 100%;
+    font-size: clamp(16px, 1.35vw, 20px);
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    text-align: center;
+}
+
+.event-create-modal .profile-modal-card-body {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow: visible;
+    min-height: 0;
+    padding-top: 0;
 }
 
 .event-create-modal .team-rescue-form {
-    gap: 16px;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow: visible;
+    min-height: 0;
 }
 
-.event-create-modal .team-rescue-topic-row {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: 12px;
+.event-create-modal .team-rescue-field--topic,
+.event-create-modal .team-rescue-textarea {
+    border: 1px solid rgba(143, 170, 230, 0.42);
+    background: rgba(237, 242, 255, 1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    color: rgba(23, 45, 157, 1);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.event-create-modal .team-rescue-field--topic:focus,
+.event-create-modal .team-rescue-field--topic:focus-visible,
+.event-create-modal .team-rescue-textarea:focus,
+.event-create-modal .team-rescue-textarea:focus-visible {
+    outline: none;
+    border: 2px solid transparent;
+    background:
+        linear-gradient(rgba(240, 245, 255, 1), rgba(240, 245, 255, 1)) padding-box,
+        linear-gradient(135deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%) border-box;
+    color: rgba(23, 45, 157, 1);
+    box-shadow: none;
+}
+
+.event-create-modal .team-rescue-field--topic::placeholder,
+.event-create-modal .team-rescue-textarea::placeholder {
+    color: rgba(164, 185, 230, 1);
+}
+
+.event-create-modal .team-rescue-field--topic:focus::placeholder,
+.event-create-modal .team-rescue-field--topic:focus-visible::placeholder,
+.event-create-modal .team-rescue-textarea:focus::placeholder,
+.event-create-modal .team-rescue-textarea:focus-visible::placeholder {
+    color: rgba(23, 45, 157, 1);
+    opacity: 1;
+}
+
+.event-create-modal .team-rescue-field--topic {
+    width: 100%;
+    min-height: 54px;
+    margin-top: 0;
+    padding: 17px 22px;
+    font-size: 15px;
+    text-align: left;
+}
+
+.event-create-modal .team-rescue-field--topic::placeholder {
+    text-align: left;
 }
 
 .event-create-modal .team-rescue-duo-row {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 0;
 }
 
-.event-create-modal .team-rescue-field--tag,
-.event-create-modal .team-rescue-field--duo,
-.event-create-modal .team-rescue-select.team-rescue-field--tag,
-.event-create-modal .team-rescue-select.team-rescue-field--duo {
+.event-create-modal .event-create-datetime-picker {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.event-create-modal .event-create-datetime-trigger {
+    width: 100%;
     min-height: 54px;
     padding: 17px 22px;
     font-size: 15px;
     letter-spacing: 0.06em;
+    color: #ffffff;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    background: var(--exam-button-gradient);
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.event-create-modal .event-create-datetime-trigger.is-empty {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.event-create-modal .event-create-datetime-trigger-label {
+    width: 100%;
+    text-align: center;
+}
+
+.event-create-modal .event-create-datetime-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    z-index: 13;
+    display: none;
+    width: 290px;
+    max-width: min(290px, calc(100vw - 32px));
+    padding: 12px 14px;
+    border-radius: 22px;
+    background: #F0F5FF;
+    box-shadow: 0 16px 34px rgba(19, 60, 150, 0.18);
+    transform: none;
+}
+
+.event-create-modal .event-create-datetime-picker.is-open .event-create-datetime-panel {
+    display: block;
+}
+
+.event-create-modal .event-create-datetime-segments {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.event-create-modal .event-create-datetime-date-group,
+.event-create-modal .event-create-datetime-time-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 4px 6px;
+    width: 100%;
+}
+
+.event-create-modal .event-create-datetime-segment {
+    width: 42px;
+    min-height: 42px;
+    padding: 0 4px;
+    border: 1px solid rgba(143, 170, 230, 0.42);
+    border-radius: 12px;
+    background: #ffffff;
+    color: rgba(23, 45, 157, 1);
+    font-family: "Montserrat", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.event-create-modal .event-create-datetime-segment--year {
+    width: 58px;
+}
+
+.event-create-modal .event-create-datetime-segment::placeholder {
+    color: rgba(167, 184, 227, 1);
+    font-weight: 700;
+}
+
+.event-create-modal .event-create-datetime-segment:focus {
+    border-color: rgba(93, 139, 244, 0.8);
+    box-shadow: 0 0 0 3px rgba(93, 139, 244, 0.15);
+    background: #f7faff;
+}
+
+.event-create-modal .event-create-datetime-dot,
+.event-create-modal .event-create-datetime-colon {
+    color: rgba(23, 45, 157, 0.55);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.event-create-modal .event-create-datetime-gap {
+    display: none;
+}
+
+.event-create-modal .event-create-format-dropdown {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.event-create-modal .event-create-format-trigger {
+    width: 100%;
+    min-height: 54px;
+    padding: 17px 36px 17px 22px;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    color: #ffffff;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23ffffff' d='M1 1l4 4 4-4'/%3E%3C/svg%3E") right 18px center no-repeat,
+        var(--exam-button-gradient);
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.event-create-modal .event-create-format-trigger.is-empty {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.event-create-modal .event-create-format-trigger-label {
+    width: 100%;
+    text-align: center;
+}
+
+.event-create-modal .event-create-format-dropdown .team-rescue-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 12;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 22px;
+    background: #F0F5FF;
+    box-shadow: 0 16px 34px rgba(19, 60, 150, 0.18);
+}
+
+.event-create-modal .event-create-format-dropdown.is-open .team-rescue-dropdown-menu {
+    display: flex;
+}
+
+.event-create-modal .event-create-format-dropdown .team-rescue-dropdown-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(237, 242, 255, 1);
+    color: rgba(23, 45, 157, 1);
+    font-family: "Montserrat", sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+}
+
+.event-create-modal .event-create-format-dropdown .team-rescue-dropdown-option.is-active,
+.event-create-modal .event-create-format-dropdown .team-rescue-dropdown-option:hover {
+    background: var(--exam-button-gradient);
+    color: #ffffff;
 }
 
 .event-create-modal .team-rescue-select {
     padding-right: 36px;
     background-position: right 18px center;
+    color-scheme: light;
 }
 
-.event-create-modal .team-rescue-field--datetime {
-    min-height: 54px;
-    padding: 17px 18px;
-    font-size: 14px;
-    letter-spacing: 0.04em;
+.event-create-modal .team-rescue-select option {
+    color: rgba(23, 45, 157, 1);
+    background: #ffffff;
+    text-align: center;
 }
 
-.event-create-modal .team-rescue-field--datetime::-webkit-datetime-edit-fields-wrapper {
-    padding: 0;
+.event-create-modal .event-create-format-trigger:focus,
+.event-create-modal .event-create-format-trigger:focus-visible,
+.event-create-modal .event-create-format-trigger:active,
+.event-create-modal .event-create-format-dropdown.is-open .event-create-format-trigger {
+    color: rgba(255, 255, 255, 0.72);
+    border-color: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23ffffff' d='M1 1l4 4 4-4'/%3E%3C/svg%3E") right 18px center no-repeat,
+        var(--exam-button-gradient);
+    outline: none;
+}
+
+.event-create-modal .event-create-format-trigger:focus .event-create-format-trigger-label,
+.event-create-modal .event-create-format-trigger:focus-visible .event-create-format-trigger-label,
+.event-create-modal .event-create-format-trigger:active .event-create-format-trigger-label,
+.event-create-modal .event-create-format-dropdown.is-open .event-create-format-trigger-label {
+    opacity: 0.72;
+}
+
+.event-create-modal .event-create-datetime-trigger:focus,
+.event-create-modal .event-create-datetime-trigger:focus-visible,
+.event-create-modal .event-create-datetime-trigger:active,
+.event-create-modal .event-create-datetime-picker.is-open .event-create-datetime-trigger {
+    color: rgba(255, 255, 255, 0.72);
+    border-color: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
+    background: var(--exam-button-gradient);
+    outline: none;
+}
+
+.event-create-modal .event-create-datetime-trigger:focus .event-create-datetime-trigger-label,
+.event-create-modal .event-create-datetime-trigger:focus-visible .event-create-datetime-trigger-label,
+.event-create-modal .event-create-datetime-trigger:active .event-create-datetime-trigger-label,
+.event-create-modal .event-create-datetime-picker.is-open .event-create-datetime-trigger-label {
+    opacity: 0.72;
 }
 
 .event-create-modal .team-rescue-textarea {
     min-height: 168px;
+    flex: 0 0 auto;
+    min-height: 120px;
+    max-height: 140px;
+    padding: 18px 22px;
+    border-radius: 32px;
+}
+
+.event-create-modal .team-rescue-submit {
+    margin-top: 0;
+}
+
+.event-create-modal .event-create-submit-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.event-create-modal .event-create-submit-btn {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc((100% - 14px) / 2);
+    min-width: 0;
+    max-width: none;
+    min-height: 54px;
+    padding: 17px 22px;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24);
+}
+
+@media (min-width: 1025px) {
+    .event-create-modal .profile-modal-card.profile-modal-card--shell.profile-modal-card--form {
+        width: 600px;
+        max-width: min(600px, calc(100vw - 48px));
+        min-height: 580px;
+        overflow: visible;
+        overflow-y: visible;
+    }
+
+    .event-create-modal .profile-modal-card-body,
+    .event-create-modal .team-rescue-form.profile-modal-card-body {
+        overflow: visible;
+        overflow-y: visible;
+        flex: 0 0 auto;
+    }
+
+    .event-create-modal .team-rescue-duo-row:has(.event-create-datetime-picker.is-open) {
+        margin-bottom: 118px;
+    }
+
+    .event-create-modal .event-create-datetime-panel {
+        width: 100%;
+        max-width: 100%;
+        left: 0;
+        right: 0;
+    }
 }
 
 .event-success-card {

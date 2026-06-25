@@ -52,24 +52,6 @@ export function hasUserAchievementsSnapshot(userId: number | string): boolean {
     return achievementsByUserId.has(normalizeUserId(userId));
 }
 
-export function getProfileAchievementsByEarnedCount(earnedCount: number): ProfileAchievement[] {
-    const normalizedCount = Math.max(0, Math.min(earnedCount, achievementCatalog.length));
-    const earnedItems: UserAchievementItem[] = achievementCatalog
-        .slice(0, normalizedCount)
-        .map((achievement, index) => ({
-            id: -index - 1,
-            userId: 0,
-            achievementId: achievement.id,
-            code: achievement.code,
-            title: achievement.title,
-            description: achievement.description,
-            iconUrl: achievement.iconUrl,
-            earnedAtUtc: ""
-        }));
-
-    return buildProfileAchievements(achievementCatalog, earnedItems).sort(comparePublicAchievements);
-}
-
 export function getTeamProfileAchievements(memberIds: readonly string[]): ProfileAchievement[] {
     const summaryByCode = new Map<string, { achievement: ProfileAchievement; count: number; earnedAtUtc: string }>();
 

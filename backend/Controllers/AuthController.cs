@@ -6,7 +6,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Методы регистрации, входа и получения данных текущего пользователя.
+/// Аутентификация: регистрация, вход и профиль текущего пользователя.
+/// Базовый маршрут: <c>api/auth</c>. Регистрация и вход доступны без JWT; <c>GET me</c> требует авторизации.
 /// </summary>
 [Route("api/[controller]")]
 public class AuthController : ApiControllerBase
@@ -25,7 +26,10 @@ public class AuthController : ApiControllerBase
         _logger = logger;
     }
 
-    /// <summary>Регистрирует нового пользователя по email и паролю.</summary>
+    /// <summary>
+    /// POST <c>api/auth/register</c> — регистрирует нового пользователя по email и паролю.
+    /// Анонимный доступ. 200 с JWT при успехе; 409, если email уже занят.
+    /// </summary>
     [HttpPost("register")]
     [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -35,7 +39,10 @@ public class AuthController : ApiControllerBase
         return MapAuthResult(result);
     }
 
-    /// <summary>Выполняет вход пользователя по email и паролю.</summary>
+    /// <summary>
+    /// POST <c>api/auth/login</c> — выполняет вход по email и паролю.
+    /// Анонимный доступ. 200 с JWT при успехе; 401 при неверных учётных данных.
+    /// </summary>
     [HttpPost("login")]
     [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -45,7 +52,10 @@ public class AuthController : ApiControllerBase
         return MapAuthResult(result);
     }
 
-    /// <summary>Возвращает профиль текущего авторизованного пользователя.</summary>
+    /// <summary>
+    /// GET <c>api/auth/me</c> — возвращает профиль текущего авторизованного пользователя.
+    /// Требуется JWT. 200 с профилем; 401 без токена; 404, если пользователь из токена отсутствует в БД.
+    /// </summary>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]

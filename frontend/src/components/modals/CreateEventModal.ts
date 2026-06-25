@@ -18,11 +18,13 @@ export function renderCreateEventModal(): string {
         extraModalClass: "team-overlay-modal event-create-modal team-page-event-modal",
         extraCardClass: "profile-modal-card--form",
         bodyHtml: `
-            <h2 class="profile-shell-title">СОБЫТИЕ</h2>
+            <h2 class="profile-shell-title">Что планируете провести?</h2>
             ${errorHtml}
             <form id="teamEventCreateForm" class="team-rescue-form profile-modal-card-body" novalidate>
                 ${renderEventCreateFormFields("teamEventCreate", draft)}
-                <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">СОЗДАТЬ</button>
+                <div class="event-create-submit-row">
+                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit event-create-submit-btn">СОЗДАТЬ</button>
+                </div>
             </form>
         `
     });
@@ -43,11 +45,13 @@ export function renderEventsDashboardCreateModal(
         extraModalClass: "team-overlay-modal event-create-modal",
         extraCardClass: "profile-modal-card--form",
         bodyHtml: `
-            <h2 class="profile-shell-title">СОБЫТИЕ</h2>
+            <h2 class="profile-shell-title">Что планируете провести?</h2>
             ${errorHtml}
             <form id="eventCreateForm" class="team-rescue-form profile-modal-card-body" novalidate>
                 ${renderEventCreateFormFields("eventCreate", draft)}
-                <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">СОЗДАТЬ</button>
+                <div class="event-create-submit-row">
+                    <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit event-create-submit-btn">СОЗДАТЬ</button>
+                </div>
             </form>
         `
     });

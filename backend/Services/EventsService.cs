@@ -5,17 +5,26 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Календарь событий: глобальные и командные мероприятия.
+/// </summary>
 public class EventsService : IEventsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
 
+    /// <summary>
+    /// Создаёт сервис календаря событий.
+    /// </summary>
     public EventsService(AppDbContext dbContext, IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
     }
 
+    /// <summary>
+    /// Возвращает события по области видимости (<c>all</c>, <c>mine</c>) и диапазону дат.
+    /// </summary>
     public async Task<IReadOnlyCollection<CalendarEventResponse>> GetCalendarAsync(int userId, CalendarEventQuery query, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.AsNoTracking()
@@ -56,6 +65,9 @@ public class EventsService : IEventsService
         return events.Select(Map).ToList();
     }
 
+    /// <summary>
+    /// Создаёт событие; глобальные не привязываются к команде, остальные — к команде автора.
+    /// </summary>
     public async Task<CalendarEventResponse?> CreateAsync(int userId, CreateCalendarEventDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
@@ -92,6 +104,10 @@ public class EventsService : IEventsService
         return await GetByIdAsync(calendarEvent.Id, cancellationToken);
     }
 
+    /// <summary>
+    /// Удаляет событие: автор или администратор.
+    /// </summary>
+    /// <returns><c>true</c>, если событие найдено и удалено.</returns>
     public async Task<bool> DeleteAsync(int userId, int eventId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var calendarEvent = await _dbContext.CalendarEvents.SingleOrDefaultAsync(existing => existing.Id == eventId, cancellationToken);
@@ -110,6 +126,9 @@ public class EventsService : IEventsService
         return true;
     }
 
+    /// <summary>
+    /// Загружает одно событие по идентификатору.
+    /// </summary>
     private async Task<CalendarEventResponse?> GetByIdAsync(int eventId, CancellationToken cancellationToken)
     {
         var calendarEvent = await _dbContext.CalendarEvents.AsNoTracking()
@@ -120,6 +139,9 @@ public class EventsService : IEventsService
         return calendarEvent is null ? null : Map(calendarEvent);
     }
 
+    /// <summary>
+    /// Преобразует сущность события в DTO ответа.
+    /// </summary>
     private static CalendarEventResponse Map(CalendarEvent calendarEvent) => new()
     {
         Id = calendarEvent.Id,

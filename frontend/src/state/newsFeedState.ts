@@ -1,6 +1,6 @@
 import type { NewsColorVariant, NewsPost, NewsPostPushInput } from "../types/news";
 
-const STORAGE_KEY = "team-exam-news-feed-v2";
+const STORAGE_KEY = "team-exam-news-feed-v4";
 const MAX_ITEMS = 40;
 
 const COLOR_CYCLE: NewsColorVariant[] = ["pink", "blue", "green", "purple", "amber", "rose"];
@@ -67,21 +67,35 @@ function seedDemoNewsFeedIfEmpty(): void {
     const now = Date.now();
     const seeds: NewsPostPushInput[] = [
         {
-            title: "Воркшоп команды",
-            body: "Команда «Организаторы» провели воркшоп «АГиТДУ: сдать нельзя отчислиться»",
-            authorName: "Организатор",
-            pointsLabel: "50 баллов"
-        },
-        {
-            title: "Переход в лигу",
-            body: "Валерий Салимгареев перешёл в лигу «Профи»",
+            title: "Событие в календаре",
+            body: "«рр» добавлено в календарь.",
             authorName: "Система"
         },
         {
-            title: "Челлендж выполнен",
-            body: "Егор Шадрин успешно выполнил челлендж «Ночной дозор»",
-            authorName: "Куратор",
-            pointsLabel: "25 баллов"
+            title: "Профиль",
+            body: "Личные данные сохранены.",
+            authorName: "Система"
+        },
+        {
+            title: "Челлендж",
+            body: "Команда закрыла челлендж «Неделя сплочённости».",
+            authorName: "Система",
+            pointsLabel: "+120"
+        },
+        {
+            title: "Рейтинг",
+            body: "Ваша позиция в личном рейтинге: 4 → 3 место.",
+            authorName: "Система"
+        },
+        {
+            title: "Достижение",
+            body: "Команда получила ачивку «Синхрон».",
+            authorName: "Система"
+        },
+        {
+            title: "Мероприятие",
+            body: "Воркшоп по КРК — завтра в 16:00.",
+            authorName: "Система"
         }
     ];
 
