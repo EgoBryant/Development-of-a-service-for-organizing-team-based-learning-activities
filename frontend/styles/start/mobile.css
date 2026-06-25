@@ -191,6 +191,14 @@
 
     .profile-hero-card,
     .profile-app--dashboard-profile .profile-hero-card {
+        --profile-mobile-photo-width: 150px;
+        --profile-mobile-photo-height: 178px;
+        --profile-mobile-photo-pills-gap: 16px;
+        --profile-mobile-pills-gap: 10px;
+        --profile-mobile-pill-width: 217px;
+        --profile-mobile-pill-height: 35px;
+        --profile-mobile-pill-font-size: 13px;
+        --profile-mobile-stats-gap: 18px;
         gap: 14px;
         padding: 0;
         overflow: visible;
@@ -198,32 +206,36 @@
 
     .profile-top,
     .profile-app--dashboard-profile .profile-top {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
+        display: grid;
+        grid-template-columns: var(--profile-mobile-photo-width, 150px) minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
     }
 
     .profile-photo-col,
     .profile-app--dashboard-profile .profile-photo-col {
-        width: 100%;
-        max-width: 260px;
-        margin-inline: auto;
+        width: var(--profile-mobile-photo-width, 150px);
+        max-width: var(--profile-mobile-photo-width, 150px);
+        flex: 0 0 var(--profile-mobile-photo-width, 150px);
+        margin: 0;
     }
 
     .profile-photo,
     .profile-app--dashboard-profile .profile-photo {
-        width: 100%;
-        max-height: none;
-        aspect-ratio: 0.92;
-        border-radius: 22px;
+        width: var(--profile-mobile-photo-width, 150px);
+        height: var(--profile-mobile-photo-height, 178px);
+        min-height: var(--profile-mobile-photo-height, 178px);
+        max-height: var(--profile-mobile-photo-height, 178px);
+        aspect-ratio: auto;
+        border-radius: 18px;
     }
 
     .profile-stats-col,
     .profile-app--dashboard-profile .profile-stats-col {
         width: 100%;
-        gap: 10px;
-        justify-content: flex-start;
+        gap: var(--profile-mobile-stats-gap, 18px);
+        justify-content: center;
+        align-self: center;
     }
 
     .profile-stat-track,
@@ -265,17 +277,36 @@
 
     .profile-pills-row,
     .profile-app--dashboard-profile .profile-pills-row {
-        grid-template-columns: 1fr;
-        gap: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--profile-mobile-pills-gap, 10px);
+        width: 100%;
+        align-self: stretch;
+        margin: var(--profile-mobile-photo-pills-gap, 16px) 0;
+        padding: 0 28px;
+        box-sizing: border-box;
     }
 
     .profile-info-pill,
     .profile-app--dashboard-profile .profile-info-pill {
-        min-height: 44px;
-        padding: 10px 12px;
-        font-size: 13px;
-        line-height: 1.2;
+        width: var(--profile-mobile-pill-width, 217px);
+        height: var(--profile-mobile-pill-height, 35px);
+        min-height: var(--profile-mobile-pill-height, 35px);
+        max-height: var(--profile-mobile-pill-height, 35px);
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(240, 245, 255, 0.95);
+        color: #2fa8ef;
+        font-size: var(--profile-mobile-pill-font-size, 13px);
+        font-weight: 800;
+        letter-spacing: 0.02em;
         text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 20px rgba(34, 79, 155, 0.12);
+        box-sizing: border-box;
         overflow-wrap: anywhere;
     }
 
@@ -1596,9 +1627,17 @@
 
     .profile-hero-card,
     .profile-app--dashboard-profile .profile-hero-card {
+        --profile-mobile-photo-width: 150px;
+        --profile-mobile-photo-height: 178px;
+        --profile-mobile-photo-pills-gap: 16px;
+        --profile-mobile-pills-gap: 10px;
+        --profile-mobile-pill-width: 217px;
+        --profile-mobile-pill-height: 35px;
+        --profile-mobile-pill-font-size: 13px;
+        --profile-mobile-stats-gap: 18px;
         height: 100%;
         padding: 18px 16px 0;
-        gap: 18px;
+        gap: 0;
         overflow: visible;
         justify-content: flex-start;
     }
@@ -1606,24 +1645,26 @@
     .profile-top,
     .profile-app--dashboard-profile .profile-top {
         display: grid;
-        grid-template-columns: minmax(0, 1.05fr) minmax(126px, 0.95fr);
+        grid-template-columns: var(--profile-mobile-photo-width, 150px) minmax(0, 1fr);
         align-items: center;
         gap: 12px;
     }
 
     .profile-photo-col,
     .profile-app--dashboard-profile .profile-photo-col {
-        width: 100%;
-        max-width: none;
+        width: var(--profile-mobile-photo-width, 150px);
+        max-width: var(--profile-mobile-photo-width, 150px);
+        flex: 0 0 var(--profile-mobile-photo-width, 150px);
         margin: 0;
     }
 
     .profile-photo,
     .profile-app--dashboard-profile .profile-photo {
-        width: 100%;
-        aspect-ratio: 0.86;
-        max-height: 145px;
-        min-height: 0;
+        width: var(--profile-mobile-photo-width, 150px);
+        height: var(--profile-mobile-photo-height, 178px);
+        min-height: var(--profile-mobile-photo-height, 178px);
+        max-height: var(--profile-mobile-photo-height, 178px);
+        aspect-ratio: auto;
         border-radius: 18px;
         background: rgba(240, 245, 255, 0.78);
         box-shadow: 0 18px 34px rgba(24, 76, 163, 0.18);
@@ -1637,8 +1678,10 @@
     .profile-stats-col,
     .profile-app--dashboard-profile .profile-stats-col {
         width: 100%;
-        gap: 12px;
+        gap: var(--profile-mobile-stats-gap, 18px);
         padding: 0;
+        justify-content: center;
+        align-self: center;
     }
 
     .profile-stat-track,
@@ -1703,21 +1746,32 @@
     .profile-app--dashboard-profile .profile-pills-row {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        align-items: center;
+        gap: var(--profile-mobile-pills-gap, 10px);
+        width: 100%;
+        margin: var(--profile-mobile-photo-pills-gap, 16px) 0;
         padding: 0 28px;
+        box-sizing: border-box;
     }
 
     .profile-info-pill,
     .profile-app--dashboard-profile .profile-info-pill {
-        min-height: 28px;
-        padding: 7px 14px;
+        width: var(--profile-mobile-pill-width, 217px);
+        height: var(--profile-mobile-pill-height, 35px);
+        min-height: var(--profile-mobile-pill-height, 35px);
+        max-height: var(--profile-mobile-pill-height, 35px);
+        padding: 0 12px;
         border-radius: 999px;
         background: rgba(240, 245, 255, 0.95);
         color: #2fa8ef;
-        font-size: 11px;
+        font-size: var(--profile-mobile-pill-font-size, 13px);
         font-weight: 800;
         letter-spacing: 0.02em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         box-shadow: 0 10px 20px rgba(34, 79, 155, 0.12);
+        box-sizing: border-box;
     }
 
     .profile-info-pill-accent,
@@ -2428,26 +2482,35 @@
 
     .profile-photo,
     .profile-app--dashboard-profile .profile-photo {
-        height: 178px;
-        max-height: 178px;
+        width: var(--profile-mobile-photo-width, 150px);
+        height: var(--profile-mobile-photo-height, 178px);
+        min-height: var(--profile-mobile-photo-height, 178px);
+        max-height: var(--profile-mobile-photo-height, 178px);
         aspect-ratio: auto;
         border-radius: 18px;
     }
 
     .profile-pills-row,
     .profile-app--dashboard-profile .profile-pills-row {
-        width: 217px;
-        align-self: center;
-        gap: 14px;
-        padding: 0;
-        margin: auto auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--profile-mobile-pills-gap, 10px);
+        width: 100%;
+        align-self: stretch;
+        margin: var(--profile-mobile-photo-pills-gap, 16px) 0;
+        padding: 0 28px;
+        box-sizing: border-box;
     }
 
     .profile-info-pill,
     .profile-app--dashboard-profile .profile-info-pill {
-        width: 217px;
-        min-height: 30px;
+        width: var(--profile-mobile-pill-width, 217px);
+        height: var(--profile-mobile-pill-height, 35px);
+        min-height: var(--profile-mobile-pill-height, 35px);
+        max-height: var(--profile-mobile-pill-height, 35px);
         box-sizing: border-box;
+        font-size: var(--profile-mobile-pill-font-size, 13px);
     }
 
     .profile-achievements,
@@ -2657,8 +2720,16 @@
     .profile-top,
     .profile-app--dashboard-profile .profile-top {
         display: grid;
-        grid-template-columns: minmax(0, 1.05fr) minmax(126px, 0.95fr);
+        grid-template-columns: var(--profile-mobile-photo-width, 150px) minmax(0, 1fr);
+        align-items: center;
         gap: 12px;
+    }
+
+    .profile-stats-col,
+    .profile-app--dashboard-profile .profile-stats-col {
+        gap: var(--profile-mobile-stats-gap, 18px);
+        justify-content: center;
+        align-self: center;
     }
 
     .profile-stat-track,
@@ -5513,16 +5584,57 @@
 @media (max-width: 520px) {
     .profile-top,
     .profile-app--dashboard-profile .profile-top {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 14px;
+        display: grid;
+        grid-template-columns: var(--profile-mobile-photo-width, 150px) minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+    }
+
+    .profile-stats-col,
+    .profile-app--dashboard-profile .profile-stats-col {
+        gap: var(--profile-mobile-stats-gap, 18px);
+        justify-content: center;
+        align-self: center;
+    }
+
+    .profile-photo-col,
+    .profile-app--dashboard-profile .profile-photo-col {
+        width: var(--profile-mobile-photo-width, 150px);
+        max-width: var(--profile-mobile-photo-width, 150px);
+        flex: 0 0 var(--profile-mobile-photo-width, 150px);
+        margin: 0;
     }
 
     .profile-photo,
     .profile-app--dashboard-profile .profile-photo {
-        max-height: clamp(148px, 40vw, 200px);
-        aspect-ratio: 1.05;
+        width: var(--profile-mobile-photo-width, 150px);
+        height: var(--profile-mobile-photo-height, 178px);
+        min-height: var(--profile-mobile-photo-height, 178px);
+        max-height: var(--profile-mobile-photo-height, 178px);
+        aspect-ratio: auto;
+        border-radius: 18px;
+    }
+
+    .profile-pills-row,
+    .profile-app--dashboard-profile .profile-pills-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--profile-mobile-pills-gap, 10px);
+        width: 100%;
+        margin: var(--profile-mobile-photo-pills-gap, 16px) 0;
+        padding: 0 28px;
+        box-sizing: border-box;
+    }
+
+    .profile-info-pill,
+    .profile-app--dashboard-profile .profile-info-pill {
+        width: var(--profile-mobile-pill-width, 217px);
+        height: var(--profile-mobile-pill-height, 35px);
+        min-height: var(--profile-mobile-pill-height, 35px);
+        max-height: var(--profile-mobile-pill-height, 35px);
+        box-sizing: border-box;
+        font-size: var(--profile-mobile-pill-font-size, 13px);
     }
 
     .profile-stat-track,
@@ -5616,14 +5728,17 @@
 
     .profile-pills-row,
     .profile-app--dashboard-profile .profile-pills-row {
-        gap: 8px;
+        gap: var(--profile-mobile-pills-gap, 8px);
     }
 
     .profile-info-pill,
     .profile-app--dashboard-profile .profile-info-pill {
-        min-height: 40px;
-        padding: 8px 10px;
-        font-size: 11px;
+        width: var(--profile-mobile-pill-width, 217px);
+        height: var(--profile-mobile-pill-height, 35px);
+        min-height: var(--profile-mobile-pill-height, 35px);
+        max-height: var(--profile-mobile-pill-height, 35px);
+        padding: 0 10px;
+        font-size: var(--profile-mobile-pill-font-size, 13px);
     }
 }
 
