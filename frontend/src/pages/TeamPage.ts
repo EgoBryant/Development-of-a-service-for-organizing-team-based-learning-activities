@@ -59,7 +59,7 @@ function syncTeamCarouselArrows(root: HTMLElement): void {
         const shouldScroll = shouldTeamCarouselScroll(memberCount);
         carouselWrap.classList.toggle("team-carousel-wrap--scrollable", shouldScroll);
         carousel.classList.toggle("team-carousel--scroll", shouldScroll);
-        const overflows = shouldScroll && carousel.scrollWidth - carousel.clientWidth > 1;
+        const overflows = carousel.scrollWidth - carousel.clientWidth > 1;
         setTeamCarouselArrowVisible(carouselPrev, overflows);
         setTeamCarouselArrowVisible(carouselNext, overflows);
     };

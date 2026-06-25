@@ -40,7 +40,7 @@ public static class SeedData
             {
                 Code = AchievementCodes.Top3Team,
                 Title = "В игре!",
-                Description = "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
+                Description = "Заработайте первые баллы за задания (не за другие достижения), чтобы попасть в рейтинг.",
                 IconUrl = string.Empty
             },
             new Achievement

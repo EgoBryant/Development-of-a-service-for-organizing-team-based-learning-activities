@@ -82,8 +82,10 @@ public class AuthController : ApiControllerBase
     private ActionResult<AuthResponse> MapAuthResult(AuthResult result) => result.Type switch
     {
         AuthResultType.Succeeded when result.Response is not null => Ok(result.Response),
-        AuthResultType.EmailAlreadyTaken => Conflict(new { message = "User with this email already exists." }),
-        AuthResultType.InvalidCredentials => Unauthorized(new { message = "Invalid email or password." }),
+        AuthResultType.EmailAlreadyTaken => Conflict(new { code = "email_taken", message = "User with this email already exists." }),
+        AuthResultType.UserNotFound => NotFound(new { code = "user_not_found", message = "User with this email was not found." }),
+        AuthResultType.InvalidPassword => Unauthorized(new { code = "invalid_password", message = "Invalid password." }),
+        AuthResultType.InvalidCredentials => Unauthorized(new { code = "invalid_credentials", message = "Invalid email or password." }),
         AuthResultType.DuplicateEmail => Problem(
             title: "Database integrity error",
             detail: "More than one account uses this email. Check PostgreSQL data and unique index on Users.Email.",

@@ -109,7 +109,7 @@
 
     .profile-app--dashboard-profile {
         padding: 18px;
-        gap: 18px;
+        gap: 18px !important;
     }
 
     .profile-app--dashboard-profile .profile-dashboard-shell {

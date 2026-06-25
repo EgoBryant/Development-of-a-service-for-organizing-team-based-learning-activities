@@ -27,6 +27,7 @@ public class TeamService : ITeamService
     /// <summary>Сервис записи событий в ленту активности команд.</summary>
     private readonly IActivityFeedService _activityFeed;
     private readonly IAchievementsService _achievementsService;
+    private readonly ITeamScoreService _teamScoreService;
     private readonly TeamOptions _teamOptions;
 
     /// <summary>
@@ -41,12 +42,14 @@ public class TeamService : ITeamService
         IKrkCalculationService krkCalculationService,
         IActivityFeedService activityFeed,
         IAchievementsService achievementsService,
+        ITeamScoreService teamScoreService,
         IOptions<TeamOptions> teamOptions)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
         _activityFeed = activityFeed;
         _achievementsService = achievementsService;
+        _teamScoreService = teamScoreService;
         _teamOptions = teamOptions.Value;
     }
 
@@ -309,6 +312,7 @@ public class TeamService : ITeamService
         await _krkCalculationService.RecalculateForTeamAsync(team.Id, cancellationToken);
 
         await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstVote, cancellationToken);
+        await _teamScoreService.RecalculateTeamScoreAsync(team.Id, recalculateKrk: false, cancellationToken);
 
         return new CreateTeamResult
         {
@@ -364,6 +368,7 @@ public class TeamService : ITeamService
             cancellationToken);
 
         await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstVote, cancellationToken);
+        await _teamScoreService.RecalculateTeamScoreAsync(team.Id, cancellationToken: cancellationToken);
 
         return new JoinTeamResult
         {
@@ -592,6 +597,7 @@ public class TeamService : ITeamService
                 cancellationToken);
 
             await _achievementsService.GrantIfMissingAsync(joinRequest.UserId, AchievementCodes.FirstVote, cancellationToken);
+            await _teamScoreService.RecalculateTeamScoreAsync(joinRequest.TeamId, cancellationToken: cancellationToken);
         }
         else if (canonicalStatus == TeamJoinRequestStatuses.Rejected)
         {
@@ -679,6 +685,56 @@ public class TeamService : ITeamService
     }
 
     /// <summary>
+    /// Обновляет название команды текущего капитана.
+    /// </summary>
+    public async Task<UpdateTeamResult> UpdateMyTeamAsync(int userId, UpdateTeamDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return new UpdateTeamResult { Type = UpdateTeamResultType.UserNotFound };
+        }
+
+        if (user.TeamId is null)
+        {
+            return new UpdateTeamResult { Type = UpdateTeamResultType.NotInTeam };
+        }
+
+        var team = await _dbContext.Teams.SingleOrDefaultAsync(existingTeam => existingTeam.Id == user.TeamId, cancellationToken);
+        if (team is null)
+        {
+            return new UpdateTeamResult { Type = UpdateTeamResultType.NotInTeam };
+        }
+
+        if (team.CaptainId != userId)
+        {
+            return new UpdateTeamResult { Type = UpdateTeamResultType.NotCaptain };
+        }
+
+        var name = request.Name.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            return new UpdateTeamResult { Type = UpdateTeamResultType.InvalidName };
+        }
+
+        team.Name = name;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _activityFeed.AppendAsync(
+            ActivityFeedItemTypes.TeamUpdated,
+            $"Капитан переименовал команду в «{team.Name}».",
+            team.Id,
+            user.Id,
+            cancellationToken);
+
+        return new UpdateTeamResult
+        {
+            Type = UpdateTeamResultType.Updated,
+            Team = await GetByIdAsync(team.Id, cancellationToken)
+        };
+    }
+
+    /// <summary>
     /// Выход участника из команды (капитан не может покинуть команду — только расформировать).
     /// </summary>
     /// <remarks>
@@ -729,32 +785,29 @@ public class TeamService : ITeamService
         await CancelPendingJoinRequestsForUserAsync(user.Id, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        await _krkCalculationService.RecalculateForTeamAsync(teamId, cancellationToken);
+        await _teamScoreService.RecalculateTeamScoreAsync(teamId, cancellationToken: cancellationToken);
 
         return new LeaveTeamResult { Type = LeaveTeamResultType.Left };
     }
 
     /// <summary>
-    /// Обновляет базовый командный счёт и пересчитывает КРК.
+    /// Пересчитывает командный счёт как сумму баллов участников и обновляет КРК.
     /// </summary>
     /// <param name="teamId">Идентификатор команды.</param>
-    /// <param name="request">Новое значение счёта.</param>
+    /// <param name="request">Зарезервировано для обратной совместимости API.</param>
     public async Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default)
     {
-        var team = await _dbContext.Teams
-            .Include(existingTeam => existingTeam.Captain)
-            .Include(existingTeam => existingTeam.Members)
-            .SingleOrDefaultAsync(existingTeam => existingTeam.Id == teamId, cancellationToken);
+        _ = request;
 
-        if (team is null)
+        var team = await _dbContext.Teams
+            .AsNoTracking()
+            .AnyAsync(existingTeam => existingTeam.Id == teamId, cancellationToken);
+        if (!team)
         {
             return null;
         }
 
-        team.Score = request.Score;
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        await _krkCalculationService.RecalculateForTeamAsync(team.Id, cancellationToken);
+        await _teamScoreService.RecalculateTeamScoreAsync(teamId, cancellationToken: cancellationToken);
 
         var refreshed = await _dbContext.Teams
             .AsNoTracking()

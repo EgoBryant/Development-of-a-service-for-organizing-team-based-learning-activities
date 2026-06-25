@@ -2196,14 +2196,46 @@
         width: 100%;
     }
 
-    .profile-modal--form .profile-pill-button {
-        width: min(100%, 248px);
+    .profile-modal--form .profile-pill-button,
+    .profile-modal--form .profile-team-flow-btn,
+    .profile-modal--form .profile-modal-team-disband-btn,
+    .profile-modal--form .profile-modal-team-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
         max-width: 100%;
         min-height: 42px;
-        box-sizing: border-box;
-        margin-inline: auto;
+        height: auto;
+        margin: 0;
         padding: 11px 18px;
+        border-radius: 999px;
+        box-sizing: border-box;
+        font-family: "Montserrat", sans-serif;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+        text-transform: uppercase;
         text-align: center;
+        white-space: nowrap;
+    }
+
+    .profile-modal--form .profile-pill-button,
+    .profile-modal--form .profile-modal-photo-row .profile-pill-button {
+        width: min(100%, 248px);
+        max-width: 100%;
+        margin-inline: auto;
+    }
+
+    .profile-modal--form .profile-team-flow-btn {
+        border: none;
+        background: var(--exam-button-gradient);
+        color: #ffffff;
+        cursor: pointer;
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+            0 10px 18px rgba(78, 95, 205, 0.26);
     }
 
     .profile-modal--form .profile-modal-input,
@@ -2221,6 +2253,61 @@
         padding-top: 2px;
         text-align: center;
         font-size: 11px;
+    }
+
+    .profile-modal--form .profile-modal-team-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 2px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(164, 185, 230, 0.35);
+    }
+
+    .profile-modal--form .profile-modal-section-title {
+        margin: 0;
+        text-align: center;
+        color: #172d9d;
+        font-family: "Montserrat", sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .profile-modal--form .profile-modal-input--team-name {
+        margin-top: 2px;
+    }
+
+    .profile-modal--form .profile-modal-team-disband-btn {
+        border: none;
+        background: var(--exam-button-gradient-red, linear-gradient(135deg, #ff6eb4 0%, #df2e80 100%));
+        color: #ffffff;
+        cursor: pointer;
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+            0 10px 18px rgba(223, 46, 128, 0.22);
+    }
+
+    .profile-modal--form .profile-modal-team-disband-btn:disabled,
+    .profile-modal--form .profile-modal-team-action:disabled,
+    .profile-modal--form .profile-team-flow-btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+    }
+
+    .profile-modal--form.profile-modal--shell .profile-modal-card.profile-modal-card--shell.profile-modal-card--form .profile-team-flow-btn {
+        width: 100%;
+        min-height: 42px;
+        padding: 11px 18px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+    }
+
+    .profile-modal--form.profile-modal--shell .profile-modal-card.profile-modal-card--shell.profile-modal-card--form:has(.profile-modal-team-section) {
+        max-height: min(calc(100dvh - 24px), 700px);
+        overflow-y: auto;
     }
 
     @media (max-width: 380px) {
@@ -2244,8 +2331,27 @@
         }
 
         .profile-modal--form .profile-modal-file,
-        .profile-modal--form .profile-pill-button {
+        .profile-modal--form .profile-pill-button,
+        .profile-modal--form .profile-team-flow-btn,
+        .profile-modal--form .profile-modal-team-disband-btn,
+        .profile-modal--form .profile-modal-team-action {
+            min-height: 40px;
+            padding: 10px 14px;
+            font-size: 10px;
+            letter-spacing: 0.06em;
+        }
+
+        .profile-modal--form .profile-modal-photo-row .profile-pill-button {
             width: 100%;
+        }
+
+        .profile-modal--form .profile-modal-team-section {
+            gap: 8px;
+            padding-top: 12px;
+        }
+
+        .profile-modal--form .profile-modal-section-title {
+            font-size: 11px;
         }
 
         .team-vote-card.profile-modal-card.profile-modal-card--shell,
@@ -2992,12 +3098,28 @@
         --team-member-card-width: clamp(132px, 36vw, 152px);
         --team-member-carousel-col-gap: 10px;
         align-items: flex-start;
+        justify-content: center;
+        width: 100%;
         min-height: 0;
         overflow: hidden;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-1 {
         --team-member-card-width: clamp(148px, 42vw, 168px);
+        justify-content: center;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-1 .team-carousel {
+        justify-items: center;
+        margin-inline: auto;
+        padding-left: 0;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--scrollable .team-carousel {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-arrow {
@@ -3754,6 +3876,21 @@
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap {
         --team-member-card-width: clamp(148px, 18vw, 168px);
         --team-member-carousel-col-gap: 14px;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-1 .team-carousel {
+        justify-items: center;
+        margin-inline: auto;
+        padding-left: 0;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--scrollable .team-carousel {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel {
@@ -3886,9 +4023,20 @@
     }
 
     .profile-app--dashboard-profile .rating-leaderboard-body {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
-        overflow: hidden;
+        overflow: visible;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard-content {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard-content::-webkit-scrollbar {
+        display: none;
     }
 
     .profile-app--dashboard-profile .rating-featured-row {
@@ -3917,15 +4065,14 @@
     }
 
     .profile-app--dashboard-profile .rating-team-podium-card {
-        min-height: clamp(140px, 20vh, 180px);
+        min-height: clamp(96px, 14vh, 124px);
     }
 
     .profile-app--dashboard-profile .rating-list-scroll {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
-        overflow-y: auto;
+        overflow: visible;
         padding-right: 4px;
-        -webkit-overflow-scrolling: touch;
     }
 
     .profile-app--dashboard-profile .rating-list-row {
@@ -4080,7 +4227,17 @@
         --team-member-carousel-col-gap: 14px;
         min-height: 0;
         align-items: flex-start;
+        justify-content: center;
+        width: 100%;
         overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-arrow {
@@ -4202,9 +4359,7 @@
     }
 
     .profile-app--dashboard-profile .rating-list-scroll {
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible;
     }
 }
 
@@ -4232,7 +4387,15 @@
         background: rgba(255, 255, 255, 0.96);
         box-shadow: 0 14px 34px rgba(33, 78, 154, 0.12);
         gap: 12px;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard-content::-webkit-scrollbar {
+        display: none;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard-tabs {
@@ -4298,12 +4461,12 @@
     }
 
     .profile-app--dashboard-profile .rating-leaderboard-body {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
         display: flex;
         flex-direction: column;
         gap: 10px;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .profile-app--dashboard-profile .rating-featured-row--users {
@@ -4313,8 +4476,8 @@
     }
 
     .profile-app--dashboard-profile .rating-featured-row--teams {
-        min-height: 230px;
-        padding: 8px 10px 0;
+        min-height: 0;
+        padding: 0;
     }
 
     .profile-app--dashboard-profile .rating-user-podium-slot,
@@ -4323,10 +4486,10 @@
     }
 
     .profile-app--dashboard-profile .rating-list-scroll {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
         gap: 8px;
-        overflow-y: auto;
+        overflow: visible;
         padding: 0 0 10px;
         scrollbar-width: none;
     }
@@ -4473,6 +4636,16 @@
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap {
         --team-member-card-width: clamp(132px, 36vw, 152px);
         --team-member-carousel-col-gap: 10px;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
@@ -4653,42 +4826,70 @@
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-featured-row--teams {
         display: block;
         width: 100%;
-        min-height: 230px;
-        padding: 8px 10px 0;
+        min-height: 0;
+        padding: 0;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium {
-        width: min(100%, 316px);
-        margin-inline: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        margin: 0;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--empty {
+        display: none;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot:not(.rating-team-podium-slot--empty) {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: end;
-        justify-items: center;
-        column-gap: 14px;
-        row-gap: 16px;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        align-items: center;
+        width: 100%;
+        max-width: none;
+        min-height: 62px;
+        padding: 0 8px 0 4px;
+        border-radius: 20px;
+        background: rgba(240, 245, 255, 0.96);
+        box-shadow: 0 6px 16px rgba(32, 90, 180, 0.16);
+        text-align: left;
+        transform: none;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        width: clamp(138px, 36vw, 152px);
-        max-width: clamp(138px, 36vw, 152px);
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first:not(.rating-team-podium-slot--empty) {
+        order: 1;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--second {
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--second:not(.rating-team-podium-slot--empty) {
+        order: 2;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--third:not(.rating-team-podium-slot--empty) {
+        order: 3;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot:not(.rating-team-podium-slot--empty)::before {
         grid-column: 1;
-        grid-row: 2;
-        justify-self: end;
-        width: clamp(124px, 32vw, 136px);
-        max-width: clamp(124px, 32vw, 136px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 34px;
+        font-weight: 700;
+        line-height: 1;
+        color: rgba(70, 90, 210, 0.9);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--third {
-        grid-column: 2;
-        grid-row: 2;
-        justify-self: start;
-        width: clamp(124px, 32vw, 136px);
-        max-width: clamp(124px, 32vw, 136px);
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first:not(.rating-team-podium-slot--empty)::before {
+        content: "1";
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--second:not(.rating-team-podium-slot--empty)::before {
+        content: "2";
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--third:not(.rating-team-podium-slot--empty)::before {
+        content: "3";
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot:hover:not(.rating-team-podium-slot--empty) {
@@ -4697,30 +4898,28 @@
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-card,
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first .rating-team-podium-card {
-        min-height: 82px;
-        padding: 10px 10px 8px;
+        grid-column: 2;
+        display: flex;
+        align-items: center;
+        min-height: 0;
+        padding: 0 10px;
         border: none;
-        border-radius: 30px;
-        background: rgba(240, 245, 255, 0.98);
-        box-shadow: 0 10px 20px rgba(29, 83, 190, 0.16);
-        gap: 6px;
-        justify-content: center;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first .rating-team-podium-card {
-        min-height: 88px;
-        padding-top: 12px;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        gap: 0;
+        justify-content: flex-start;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-name {
         width: 100%;
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 800;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.02em;
         text-transform: uppercase;
-        line-height: 1.1;
+        line-height: 1.15;
         color: rgba(32, 95, 205, 0.95);
-        text-align: center;
+        text-align: left;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -4728,22 +4927,36 @@
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points {
-        min-height: 28px;
-        padding: 0 8px;
+        grid-column: 3;
+        margin-top: 0;
+        min-height: 32px;
+        padding: 0 10px;
         border-radius: 999px;
-        gap: 5px;
-        font-size: 17px;
+        gap: 6px;
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: 1;
+        letter-spacing: 0;
+        text-transform: none;
+        background: rgba(240, 245, 255, 1);
+        color: rgba(47, 98, 214, 1);
+        box-shadow: inset 0 0 0 1px rgba(47, 98, 214, 0.12);
+        white-space: nowrap;
+        max-width: none;
+        width: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points .rating-points-value {
+        font-size: 20px;
         font-weight: 800;
         line-height: 1;
         letter-spacing: -0.02em;
-        text-transform: none;
-        background: #f0f5ff;
-        color: rgba(47, 98, 214, 1);
-        box-shadow: inset 0 0 0 1px rgba(47, 98, 214, 0.2);
-        white-space: nowrap;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points .rating-points-icon--trophy,
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points .rating-points-icon--trophy {
+        display: none;
+    }
+
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points .rating-points-icon--score {
         width: 12px;
         height: 12px;
@@ -4751,16 +4964,16 @@
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-scroll--teams {
-        gap: 12px;
-        padding: 2px 0 10px;
+        gap: 10px;
+        padding: 0 0 10px;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-label {
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-points .rating-points-value {
-        font-size: 22px;
+        font-size: 20px;
     }
 }
 
@@ -4950,7 +5163,17 @@
         --team-member-card-width: clamp(132px, 36vw, 152px);
         --team-member-carousel-col-gap: 10px;
         min-height: 0;
+        justify-content: center;
+        width: 100%;
         overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-arrow {
@@ -5140,12 +5363,14 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap {
         --team-member-card-width: clamp(132px, 36vw, 152px);
         --team-member-carousel-col-gap: 10px;
+        justify-content: center;
+        width: 100%;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
         display: grid !important;
-        grid-template-rows: repeat(2, auto) !important;
+        grid-template-rows: auto !important;
         grid-auto-flow: column !important;
         grid-auto-columns: var(--team-member-card-width) !important;
         column-gap: var(--team-member-carousel-col-gap) !important;
@@ -5264,13 +5489,24 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap {
         --team-member-card-width: clamp(132px, 36vw, 152px);
         --team-member-carousel-col-gap: 10px;
+        justify-content: center;
+        width: 100%;
         overflow: hidden !important;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
         display: grid !important;
-        grid-template-rows: repeat(2, auto) !important;
+        grid-template-rows: auto !important;
         grid-auto-flow: column !important;
         grid-auto-columns: var(--team-member-card-width) !important;
         column-gap: var(--team-member-carousel-col-gap) !important;
@@ -5859,13 +6095,24 @@
         --team-member-carousel-col-gap: 10px;
         min-height: 0;
         max-height: none;
+        justify-content: center;
+        width: 100%;
         overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        margin-inline: auto;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
         display: grid !important;
-        grid-template-rows: repeat(2, auto) !important;
+        grid-template-rows: auto !important;
         grid-auto-flow: column !important;
         grid-auto-columns: var(--team-member-card-width) !important;
         column-gap: var(--team-member-carousel-col-gap) !important;
@@ -5964,5 +6211,72 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-history-empty-text {
         font-size: 9px;
         line-height: 1.45;
+    }
+}
+
+/* Team member cards: single horizontal row on mobile/tablet */
+@media (max-width: 1024px) {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel.team-carousel--scroll,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel.team-carousel--scroll,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        display: grid !important;
+        grid-template-rows: auto !important;
+        grid-template-columns: none !important;
+        grid-auto-flow: column !important;
+        grid-auto-columns: var(--team-member-card-width) !important;
+        column-gap: var(--team-member-carousel-col-gap) !important;
+        row-gap: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 auto !important;
+        margin-inline: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scroll-snap-type: x proximity !important;
+        -webkit-overflow-scrolling: touch !important;
+        justify-items: stretch !important;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card:nth-child(1),
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card:nth-child(2),
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card:nth-child(3),
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card:nth-child(1),
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card:nth-child(2),
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card:nth-child(3),
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card:nth-child(1),
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card:nth-child(2),
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card:nth-child(3) {
+        grid-column: auto !important;
+        justify-self: stretch !important;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-2 .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-4 .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--scrollable .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel.team-carousel--scroll .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-2 .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-4 .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--scrollable .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel.team-carousel--scroll .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll .team-member-card {
+        scroll-snap-align: start !important;
     }
 }

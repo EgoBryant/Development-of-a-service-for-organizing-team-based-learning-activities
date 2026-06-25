@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using TeamExamProject.Data;
+using TeamExamProject.Services;
 
 namespace TeamExamProject.Infrastructure.Extensions;
 
@@ -23,7 +24,7 @@ public static class WebApplicationExtensions
             .CreateLogger("DatabaseStartup");
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        await InitializeDatabaseCoreAsync(app, dbContext, logger, connectionString);
+        await InitializeDatabaseCoreAsync(app, dbContext, logger, connectionString, scope.ServiceProvider);
     }
 
     /// <summary>Регистрирует middleware: Swagger, обработку ошибок, CORS, аутентификацию и авторизацию.</summary>
@@ -66,7 +67,8 @@ public static class WebApplicationExtensions
         WebApplication app,
         AppDbContext dbContext,
         ILogger logger,
-        string connectionString)
+        string connectionString,
+        IServiceProvider services)
     {
         const int MaxAttempts = 10;
         var delay = TimeSpan.FromSeconds(3);
@@ -77,6 +79,7 @@ public static class WebApplicationExtensions
             {
                 await dbContext.Database.MigrateAsync();
                 await SeedData.InitializeAsync(dbContext);
+                await services.GetRequiredService<ITeamScoreService>().RecalculateAllTeamScoresAsync();
                 logger.LogInformation("Database migration and seed completed successfully.");
                 return;
             }

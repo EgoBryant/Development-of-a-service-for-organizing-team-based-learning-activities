@@ -91,12 +91,12 @@ public class AuthService : IAuthService
         var user = candidates.Count == 0 ? null : candidates[0];
         if (user is null || string.IsNullOrWhiteSpace(user.PasswordHash))
         {
-            return new AuthResult { Type = AuthResultType.InvalidCredentials };
+            return new AuthResult { Type = AuthResultType.UserNotFound };
         }
 
         if (!VerifyPassword(user, request.Password))
         {
-            return new AuthResult { Type = AuthResultType.InvalidCredentials };
+            return new AuthResult { Type = AuthResultType.InvalidPassword };
         }
 
         return new AuthResult

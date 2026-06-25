@@ -1296,7 +1296,7 @@
 .profile-app--dashboard-profile {
     position: relative;
     isolation: isolate;
-    gap: clamp(18px, 1.7vw, 30px);
+    gap: clamp(18px, 1.7vw, 30px) !important;
     height: 100dvh;
     min-height: 100dvh;
     max-height: 100dvh;

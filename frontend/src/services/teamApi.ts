@@ -209,3 +209,19 @@ export function leaveMyTeam(token: string): Promise<void> {
         body: JSON.stringify({})
     });
 }
+
+export function updateMyTeam(token: string, body: { name: string }): Promise<TeamResponse> {
+    return request<TeamResponse>("/api/teams/me", {
+        method: "PATCH",
+        headers: authHeaders(token),
+        body: JSON.stringify(body)
+    });
+}
+
+export function disbandMyTeam(token: string): Promise<void> {
+    return request<void>("/api/teams/me/disband", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({})
+    });
+}

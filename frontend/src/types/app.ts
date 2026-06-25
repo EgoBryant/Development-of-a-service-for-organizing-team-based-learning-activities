@@ -92,5 +92,6 @@ export interface AppState {
     teamMyVotes: MyVoteResponse[];
     statusMessage: string;
     statusTone: "default" | "error";
+    authFormError: string;
     isSubmitting: boolean;
 }

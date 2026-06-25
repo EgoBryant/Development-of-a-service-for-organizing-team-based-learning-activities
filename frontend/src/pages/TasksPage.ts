@@ -40,7 +40,7 @@ function wireTasksKrcMarkerSwipe(root: HTMLElement): void {
     };
 
     const isInsideKrcPocket = (target: Node): boolean =>
-        root.querySelectorAll(".tasks-krc-marker-pocket").some((pocket) => pocket.contains(target));
+        Array.from(pockets).some((pocket) => pocket.contains(target));
 
     pockets.forEach((pocket) => {
         if (pocket.dataset.krcSwipeWired === "true") {

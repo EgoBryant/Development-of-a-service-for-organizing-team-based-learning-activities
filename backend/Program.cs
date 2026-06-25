@@ -47,6 +47,7 @@ builder.Services.AddScoped<IHelpRequestsService, HelpRequestsService>();
 builder.Services.AddScoped<IVotesService, VotesService>();
 builder.Services.AddScoped<ICheckInsService, CheckInsService>();
 builder.Services.AddScoped<IKrkCalculationService, KrkCalculationService>();
+builder.Services.AddScoped<ITeamScoreService, TeamScoreService>();
 builder.Services.AddScoped<IRatingsService, RatingsService>();
 builder.Services.AddScoped<IChallengesService, ChallengesService>();
 builder.Services.AddScoped<IEventsService, EventsService>();
@@ -151,7 +152,8 @@ static async Task InitializeDatabaseAsync(
     WebApplication app,
     AppDbContext dbContext,
     ILogger logger,
-    string connectionString)
+    string connectionString,
+    IServiceProvider services)
 {
     const int maxAttempts = 10;
     var delay = TimeSpan.FromSeconds(3);
@@ -163,6 +165,7 @@ static async Task InitializeDatabaseAsync(
             await dbContext.Database.MigrateAsync();
             await DatabaseSchemaRepair.ApplyAsync(dbContext, logger);
             await SeedData.InitializeAsync(dbContext);
+            await services.GetRequiredService<ITeamScoreService>().RecalculateAllTeamScoresAsync();
             logger.LogInformation("Database migration and seed completed successfully.");
             return;
         }
@@ -244,7 +247,7 @@ using (var scope = app.Services.CreateScope())
         .CreateLogger("DatabaseStartup");
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    await InitializeDatabaseAsync(app, dbContext, logger, connectionString);
+    await InitializeDatabaseAsync(app, dbContext, logger, connectionString, scope.ServiceProvider);
 }
 
 if (app.Environment.IsDevelopment())
