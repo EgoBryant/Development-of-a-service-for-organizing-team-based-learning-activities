@@ -5,7 +5,20 @@
     flex: 1;
     min-height: 0;
     gap: 0;
-    overflow: hidden;
+    overflow-x: visible;
+    overflow-y: hidden;
+    box-sizing: border-box;
+}
+
+.profile-app--dashboard-profile .profile-main.tasks-dashboard-main {
+    --tasks-block-radius: 32px;
+    --tasks-inline-pad-left: 70px;
+    --tasks-inline-pad-right: 40px;
+    --tasks-challenge-left-outset: 24px;
+    padding-left: var(--tasks-inline-pad-left);
+    padding-right: var(--tasks-inline-pad-right);
+    overflow-x: visible;
+    overflow-y: hidden;
 }
 
 .tasks-shell {
@@ -21,14 +34,15 @@
 .tasks-krc-card,
 .tasks-market-card,
 .tasks-challenge-bar {
-    border-radius: 32px;
+    border-radius: var(--tasks-block-radius, 32px);
     background: var(--exam-surface);
     box-shadow: var(--exam-soft-shadow);
 }
 
 .tasks-krc-card {
     flex: 0 0 auto;
-    padding: clamp(18px, 2.3vh, 26px) clamp(24px, 4vw, 64px) clamp(20px, 2.4vh, 28px);
+    margin-top: 20px;
+    padding: 36px clamp(24px, 4vw, 64px) 0;
     box-sizing: border-box;
     overflow: visible;
 }
@@ -48,14 +62,28 @@
 }
 
 .tasks-krc-title {
-    margin-bottom: clamp(14px, 1.8vh, 20px);
-    font-size: clamp(18px, 2.1vw, 34px);
+    margin-bottom: 34px;
+    font-size: clamp(13px, 2.1vw, 29px);
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.tasks-krc-title-short {
+    display: none;
+}
+
+.tasks-krc-option-label.tasks-krc-option-label--short {
+    display: none;
+}
+
+.tasks-krc-option-swipe-hint {
+    display: none;
 }
 
 .tasks-krc-scale {
     position: relative;
     width: 100%;
-    padding-bottom: 48px;
+    padding-bottom: 12px;
     overflow: visible;
 }
 
@@ -475,6 +503,7 @@
 
 .tasks-assignment-card-tag {
     align-self: center;
+    max-width: 100%;
     padding: 8px 18px;
     border-radius: 999px;
     background: rgba(236, 243, 255, 0.96);
@@ -484,6 +513,10 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
 }
 
 .tasks-assignment-card-body {
@@ -491,7 +524,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    min-width: 0;
     padding: 18px 8px;
+    box-sizing: border-box;
 }
 
 .tasks-assignment-card-title {
@@ -504,22 +540,13 @@
     line-height: 1.15;
 }
 
-.tasks-assignment-card-deadline-panel {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 72px;
-    padding: 10px;
-    border-radius: 22px;
-    background: rgba(244, 248, 255, 0.96);
-    box-shadow: inset 0 0 0 1px rgba(116, 158, 226, 0.12);
-}
-
 .tasks-assignment-card-deadline {
+    align-self: center;
+    margin-top: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 132px;
+    max-width: calc(100% - 8px);
     padding: 10px 18px;
     border-radius: 999px;
     background: #ffffff;
@@ -527,7 +554,12 @@
     font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     box-shadow: 0 8px 18px rgba(78, 95, 205, 0.16);
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 @keyframes tasks-lane-rise {
@@ -988,8 +1020,14 @@
     grid-template-columns: minmax(0, 1fr) minmax(180px, 0.34fr);
     align-items: center;
     gap: 18px;
+    margin-left: calc(-1 * var(--tasks-challenge-left-outset, 24px));
+    margin-right: calc(-1 * var(--tasks-inline-pad-right, 40px));
     padding: clamp(14px, 2vh, 22px) clamp(18px, 2.4vw, 32px) clamp(14px, 2vh, 22px) clamp(36px, 5vw, 72px);
+    border-radius: var(--tasks-block-radius, 32px);
     box-sizing: border-box;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
 }
 
 .tasks-challenge-button {
@@ -1006,63 +1044,250 @@
 }
 
 @media (max-width: 1024px) {
+    .profile-app--dashboard-profile .profile-main.tasks-dashboard-main {
+        --tasks-block-radius: 24px;
+        --tasks-inline-pad-left: 8px;
+        --tasks-inline-pad-right: 12px;
+        --tasks-krc-track-height: 24px;
+        --tasks-krc-btn-width: 50px;
+        --tasks-krc-btn-height: 32px;
+        padding-left: var(--tasks-inline-pad-left);
+        padding-right: var(--tasks-inline-pad-right);
+        padding-bottom: 8px;
+    }
+
     .tasks-dashboard-main {
         overflow: visible;
     }
 
     .tasks-shell {
-        gap: 14px;
+        gap: 10px;
+        min-height: 0;
     }
 
     .tasks-krc-card {
-        padding: 18px 14px 22px;
-        border-radius: 24px;
+        margin-top: 0;
+        padding: 12px;
         overflow: visible;
     }
 
+    .tasks-krc-title {
+        margin-bottom: 10px;
+        font-size: 18px;
+        letter-spacing: 0.1em;
+        text-align: center;
+    }
+
+    .tasks-krc-title-full {
+        display: none;
+    }
+
+    .tasks-krc-title-short {
+        display: inline;
+    }
+
     .tasks-krc-scale {
-        padding-bottom: 48px;
+        padding-bottom: 12px;
+        overflow: visible;
     }
 
     .tasks-krc-scale-track {
-        height: 48px;
+        height: var(--tasks-krc-btn-height);
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .tasks-krc-scale-track::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: var(--tasks-krc-track-height);
+        border-radius: 999px;
+        background: rgba(222, 231, 252, 0.96);
+        box-shadow:
+            inset 0 0 0 2px rgba(116, 158, 226, 0.14),
+            0 6px 14px rgba(33, 78, 154, 0.08);
+        transform: translateY(-50%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .tasks-krc-scale-fill {
+        top: calc(50% - var(--tasks-krc-track-height) / 2);
+        height: var(--tasks-krc-track-height);
+    }
+
+    .tasks-krc-markers {
+        inset: 0;
+        height: 100%;
     }
 
     .tasks-krc-marker {
-        height: 44px;
+        top: 0;
+        height: var(--tasks-krc-btn-height);
+        max-height: 100%;
+        align-items: center;
+        overflow: visible;
+    }
+
+    .tasks-krc-marker--novice {
+        left: 0;
+        transform: none;
+    }
+
+    .tasks-krc-marker--pro {
+        transform: translateX(-50%);
+    }
+
+    .tasks-krc-marker--legend {
+        right: 0;
+        left: auto;
+        transform: none;
     }
 
     .tasks-krc-marker-pocket {
-        width: min(192px, 42vw);
-        height: 44px;
+        width: var(--tasks-krc-btn-width);
+        height: var(--tasks-krc-btn-height);
+        overflow: visible;
+        touch-action: none;
+    }
+
+    .tasks-krc-marker-pocket .tasks-krc-option {
+        touch-action: none;
+    }
+
+    .tasks-krc-marker-pocket:hover .tasks-krc-marker-tooltip-wrap,
+    .tasks-krc-marker-pocket:focus-within .tasks-krc-marker-tooltip-wrap {
+        transform: scaleY(0);
+    }
+
+    .tasks-krc-marker-pocket.is-revealed .tasks-krc-marker-tooltip-wrap {
+        transform: scaleY(1);
+    }
+
+    .tasks-krc-marker-pocket:has(.tasks-krc-option.is-locked).is-revealed .tasks-krc-marker-tooltip-wrap,
+    .tasks-krc-marker-pocket:has(.tasks-krc-option:disabled).is-revealed .tasks-krc-marker-tooltip-wrap {
+        transform: scaleY(0);
+    }
+
+    .tasks-krc-marker-pocket.is-revealed {
+        z-index: 8;
+    }
+
+    .tasks-krc-marker-pocket.is-revealed .tasks-krc-option {
+        box-shadow: 0 10px 22px rgba(33, 78, 154, 0.26);
+    }
+
+    .tasks-krc-marker-pocket.is-revealed .tasks-krc-option.is-active {
+        box-shadow:
+            0 10px 22px rgba(33, 78, 154, 0.26),
+            inset 0 0 0 2px rgba(120, 124, 254, 0.28);
     }
 
     .tasks-krc-marker-tooltip-wrap {
-        height: 50px;
+        height: 32px;
+        border-radius: 0 0 12px 12px;
     }
 
     .tasks-krc-marker-tooltip {
-        height: 50px;
-        padding-top: 22px;
+        height: 32px;
+        padding-top: 12px;
+        font-size: clamp(10px, 2.8vw, 14px);
     }
 
     .tasks-krc-option {
-        height: 44px;
-        min-height: 44px;
-        font-size: 10px;
+        width: var(--tasks-krc-btn-width);
+        height: var(--tasks-krc-btn-height);
+        min-height: var(--tasks-krc-btn-height);
+        padding: 0 8px;
+        border-radius: 999px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 2px;
+        overflow: visible;
+    }
+
+    .tasks-krc-option-label.tasks-krc-option-label--full {
+        display: none;
+    }
+
+    .tasks-krc-option-label.tasks-krc-option-label--short {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(11px, 1vw, 14px);
+        line-height: 1;
+        letter-spacing: 0.08em;
+    }
+
+    .tasks-krc-option-swipe-hint {
+        display: block;
+        width: 10px;
+        height: 2px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(120, 124, 254, 0.55) 0%, rgba(0, 169, 242, 0.55) 100%);
+        flex-shrink: 0;
+    }
+
+    .tasks-krc-option.is-locked .tasks-krc-option-swipe-hint,
+    .tasks-krc-option:disabled .tasks-krc-option-swipe-hint {
+        background: linear-gradient(90deg, rgba(154, 164, 198, 0.55) 0%, rgba(126, 146, 176, 0.55) 100%);
+    }
+
+    .tasks-krc-marker-pocket:hover .tasks-krc-option,
+    .tasks-krc-marker-pocket:focus-within .tasks-krc-option {
+        box-shadow: 0 6px 14px rgba(33, 78, 154, 0.2);
+    }
+
+    .tasks-krc-marker-pocket:hover .tasks-krc-option.is-active,
+    .tasks-krc-marker-pocket:focus-within .tasks-krc-option.is-active {
+        box-shadow:
+            0 6px 14px rgba(33, 78, 154, 0.2),
+            inset 0 0 0 2px rgba(120, 124, 254, 0.28);
     }
 
     .tasks-market-row {
         display: block;
     }
 
-    .tasks-market-card,
-    .tasks-challenge-bar {
+    .tasks-market-card {
         width: 100%;
         grid-template-columns: 1fr;
         justify-items: stretch;
-        border-radius: 24px;
-        padding: 16px;
+        padding: 12px;
+        border-radius: var(--tasks-block-radius, 24px);
+    }
+
+    .tasks-market-card .tasks-section-title {
+        font-size: 18px;
+    }
+
+    .tasks-challenge-bar {
+        width: 100%;
+        min-height: auto;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        justify-items: stretch;
+        gap: 10px;
+        margin: 0;
+        padding: 12px;
+    }
+
+    .tasks-challenge-bar .tasks-section-title {
+        font-size: 18px;
+        text-align: left;
+    }
+
+    .tasks-challenge-button {
+        width: auto;
+        min-width: 128px;
+        min-height: 36px;
+        padding: 0 30px;
+        font-size: 12px;
+        box-sizing: border-box;
     }
 
     .tasks-market-actions {
@@ -1090,10 +1315,15 @@
         text-align: center;
     }
 
-    .tasks-market-button,
-    .tasks-challenge-button {
+    .tasks-challenge-bar .tasks-section-title {
+        text-align: left;
+    }
+
+    .tasks-market-button {
         width: 100%;
         min-width: 0;
+        min-height: 32px;
+        font-size: 12px;
         box-sizing: border-box;
     }
 
@@ -1102,33 +1332,41 @@
     }
 
     .tasks-picker-placeholder {
-        min-height: 280px;
+        min-height: 220px;
+        max-height: 34vh;
         border-radius: 24px;
     }
 
     .tasks-assignment-feed-viewport {
         gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .tasks-assignment-card {
-        width: min(100%, 170px);
-        height: 232px;
-        padding: 14px 12px 12px;
+        width: calc(100% - 8px);
+        max-width: none;
+        height: 188px;
+        padding: 10px 12px 8px;
         border-radius: 22px;
     }
 
     .tasks-assignment-card-tag {
-        font-size: 10px;
-        padding: 6px 12px;
+        font-size: clamp(8px, 2.2vw, 10px);
+        padding: 4px 9px;
     }
 
     .tasks-assignment-card-body {
-        padding: 12px 4px;
+        padding: 6px 2px;
     }
 
-    .tasks-assignment-card-deadline-panel {
-        min-height: 54px;
-        border-radius: 18px;
+    .tasks-assignment-card-title {
+        font-size: clamp(9px, 2.8vw, 13px);
+        -webkit-line-clamp: 3;
+    }
+
+    .tasks-assignment-card-deadline {
+        padding: 5px 9px;
+        font-size: clamp(9px, 2.4vw, 11px);
     }
 
     .tasks-assignment-modal-panel--files,
@@ -1166,22 +1404,25 @@
 
 @media (max-width: 520px) {
     .tasks-krc-title {
-        font-size: 16px;
-        line-height: 1.2;
+        font-size: 18px;
+        line-height: 1;
     }
 
-    .tasks-krc-option {
-        font-size: 9px;
-        letter-spacing: 0.04em;
+    .tasks-krc-option-label.tasks-krc-option-label--short {
+        font-size: 11px;
+    }
+
+    .tasks-krc-option-swipe-hint {
+        width: 8px;
     }
 
     .tasks-assignment-card-title {
-        font-size: 14px;
+        font-size: clamp(8px, 2.6vw, 12px);
+        -webkit-line-clamp: 3;
     }
 
     .tasks-assignment-card-deadline {
-        min-width: 108px;
-        padding: 7px 12px;
-        font-size: 10px;
+        font-size: clamp(8px, 2.2vw, 10px);
+        padding: 5px 8px;
     }
 }

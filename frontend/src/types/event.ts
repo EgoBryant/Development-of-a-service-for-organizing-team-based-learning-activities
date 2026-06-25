@@ -17,7 +17,7 @@ export interface CalendarEventItem {
     isMine: boolean;
 }
 
-export type EventFormIdPrefix = "eventCreate" | "teamEventCreate";
+export type EventFormIdPrefix = "eventCreate" | "teamEventCreate" | "ratingRescue";
 
 export function createCalendarEventFromDraft(
     draft: EventCreateDraft,

@@ -371,6 +371,44 @@ function wireEventFormatDropdown(
     updateTrigger();
 }
 
+export function renderEventCreateDuoRow(
+    prefix: EventFormIdPrefix,
+    format: string,
+    dateTime: string
+): string {
+    return `
+        <div class="team-rescue-duo-row">
+            ${renderEventFormatDropdown(prefix, format)}
+            ${renderEventDateTimePicker(prefix, dateTime)}
+        </div>`;
+}
+
+export function syncEventCreateDuoFromForm(
+    root: HTMLElement,
+    prefix: EventFormIdPrefix,
+    draft: Pick<EventCreateDraft, "format" | "dateTime">
+): void {
+    const format = root.querySelector(`#${prefix}FormatInput`);
+    const dateTime = root.querySelector(`#${prefix}DateTimeInput`);
+
+    if (isHTMLInputElement(format)) {
+        draft.format = format.value;
+    }
+    if (isHTMLInputElement(dateTime)) {
+        draft.dateTime = dateTime.value;
+    }
+}
+
+export function wireEventCreateDuoRow(
+    root: HTMLElement,
+    prefix: EventFormIdPrefix,
+    draft: Pick<EventCreateDraft, "format" | "dateTime">,
+    onFieldChange?: () => void
+): void {
+    wireEventFormatDropdown(root, prefix, draft as EventCreateDraft, onFieldChange);
+    wireEventDateTimePicker(root, prefix, draft as EventCreateDraft, onFieldChange);
+}
+
 export function renderEventCreateFormFields(prefix: EventFormIdPrefix, draft: EventCreateDraft): string {
     return `
         <input
@@ -389,10 +427,7 @@ export function renderEventCreateFormFields(prefix: EventFormIdPrefix, draft: Ev
             aria-label="Описание события"
             required
         >${escapeHtml(draft.description)}</textarea>
-        <div class="team-rescue-duo-row">
-            ${renderEventFormatDropdown(prefix, draft.format)}
-            ${renderEventDateTimePicker(prefix, draft.dateTime)}
-        </div>`;
+        ${renderEventCreateDuoRow(prefix, draft.format, draft.dateTime)}`;
 }
 
 export function syncEventCreateDraftFromForm(

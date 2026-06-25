@@ -31,6 +31,43 @@ export function formatRescueDeadlineDisplay(isoDate: string): string {
     return `${match[3]}.${match[2]}.${match[1].slice(-2)}`;
 }
 
+export function formatAssignmentCardDeadlineDisplay(
+    deadlineLabel: string,
+    deadlineUtc?: string | null
+): string {
+    if (deadlineUtc) {
+        const date = new Date(deadlineUtc);
+        if (!Number.isNaN(date.getTime())) {
+            const day = String(date.getUTCDate()).padStart(2, "0");
+            const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+            const year = String(date.getUTCFullYear()).slice(-2);
+            return `${day}.${month}.${year}`;
+        }
+    }
+
+    const trimmed = deadlineLabel.trim();
+    if (!trimmed) {
+        return "";
+    }
+
+    const dateWithTimeMatch = /^(\d{2}\.\d{2}(?:\.\d{2,4})?)\s+\S+/.exec(trimmed);
+    if (dateWithTimeMatch) {
+        return dateWithTimeMatch[1];
+    }
+
+    const dateOnlyMatch = /^(\d{2}\.\d{2}(?:\.\d{2,4})?)$/.exec(trimmed);
+    if (dateOnlyMatch) {
+        return dateOnlyMatch[1];
+    }
+
+    const isoFormatted = formatRescueDeadlineDisplay(trimmed);
+    if (isoFormatted) {
+        return isoFormatted;
+    }
+
+    return trimmed.split(/\s+/)[0] ?? trimmed;
+}
+
 export function createRescueAttachmentId(): string {
     return `rescue-file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

@@ -7,15 +7,37 @@ import { tasksFlowState, isAssignmentVisibleInFeed } from "../../state/tasksFlow
 import type { AssignmentItem } from "../../types/assignment";
 import type { TasksKrcTier } from "../../types/app";
 import { shouldShowAssignmentTag } from "../../constants/assignmentTags";
+import { formatAssignmentCardDeadlineDisplay } from "../../utils/rescueFormUi";
 import { escapeHtml } from "../../utils/html";
 
-const LANE_COUNT = 4;
+const DESKTOP_LANE_COUNT = 4;
+const MOBILE_LANE_COUNT = 2;
+const MOBILE_FEED_QUERY = "(max-width: 1024px)";
 const SPAWN_TICK_MS = 100;
 const CARD_TRAVEL_MS = 15000;
 const LANE_CARD_GAP_PX = 4;
 const DEFAULT_CARD_HEIGHT_PX = 325;
 const RECENT_SPAWN_WINDOW = 10;
 const MAX_SPAWN_ATTEMPTS = 5;
+
+export function getTasksAssignmentFeedLaneCount(): number {
+    if (typeof window !== "undefined" && window.matchMedia(MOBILE_FEED_QUERY).matches) {
+        return MOBILE_LANE_COUNT;
+    }
+
+    return DESKTOP_LANE_COUNT;
+}
+
+function resolveLaneCount(root?: ParentNode): number {
+    if (root) {
+        const laneCount = root.querySelectorAll("[data-tasks-lane]").length;
+        if (laneCount > 0) {
+            return laneCount;
+        }
+    }
+
+    return getTasksAssignmentFeedLaneCount();
+}
 
 function getLaneCardSeparationPx(cardHeightPx: number): number {
     return cardHeightPx + LANE_CARD_GAP_PX;
@@ -27,11 +49,11 @@ function computeLaneSpawnGapMs(feedHeightPx: number, cardHeightPx: number): numb
     return Math.ceil((separationPx / Math.max(totalTravelPx, 1)) * CARD_TRAVEL_MS);
 }
 
-function createStaggeredLaneTimestamps(gapMs: number): number[] {
+function createStaggeredLaneTimestamps(gapMs: number, laneCount: number): number[] {
     const now = Date.now();
-    const laneOffsetMs = gapMs / LANE_COUNT;
+    const laneOffsetMs = gapMs / laneCount;
 
-    return Array.from({ length: LANE_COUNT }, (_, laneIndex) =>
+    return Array.from({ length: laneCount }, (_, laneIndex) =>
         now - gapMs + laneIndex * laneOffsetMs
     );
 }
@@ -62,9 +84,7 @@ function createCardHeightProbe(): HTMLButtonElement {
         <div class="tasks-assignment-card-body">
             <span class="tasks-assignment-card-title">TITLE</span>
         </div>
-        <div class="tasks-assignment-card-deadline-panel">
-            <span class="tasks-assignment-card-deadline">01.01 00:00</span>
-        </div>`;
+        <span class="tasks-assignment-card-deadline">01.01 00:00</span>`;
     return probe;
 }
 
@@ -80,7 +100,8 @@ export function stopTasksAssignmentFeed(): void {
 }
 
 export function renderTasksAssignmentFeed(): string {
-    const lanesHtml = Array.from({ length: LANE_COUNT }, (_, laneIndex) => `
+    const laneCount = getTasksAssignmentFeedLaneCount();
+    const lanesHtml = Array.from({ length: laneCount }, (_, laneIndex) => `
         <div class="tasks-assignment-lane" data-tasks-lane="${laneIndex}" aria-hidden="true"></div>`
     ).join("");
 
@@ -107,12 +128,15 @@ function buildAssignmentCard(assignment: AssignmentItem): HTMLButtonElement {
         ? `<span class="tasks-assignment-card-tag">${escapeHtml(assignment.tag)}</span>`
         : "";
 
+    const deadlineLabel = formatAssignmentCardDeadlineDisplay(
+        assignment.deadlineLabel,
+        assignment.deadlineUtc
+    );
+
     card.innerHTML = `
         ${tagHtml}
         <div class="tasks-assignment-card-body">${titleHtml}</div>
-        <div class="tasks-assignment-card-deadline-panel">
-            <span class="tasks-assignment-card-deadline">${escapeHtml(assignment.deadlineLabel)}</span>
-        </div>`;
+        <span class="tasks-assignment-card-deadline">${escapeHtml(deadlineLabel)}</span>`;
     return card;
 }
 
@@ -246,8 +270,9 @@ export function startTasksAssignmentFeed(
     const activeReservedIds = new Set<number>();
     const recentlySpawnedIds: number[] = [];
     const spawnQueue = createSpawnQueueState();
+    const laneCount = resolveLaneCount(root);
     let laneSpawnGapMs = computeLaneSpawnGapMs(350, DEFAULT_CARD_HEIGHT_PX);
-    const laneLastSpawnAt = createStaggeredLaneTimestamps(laneSpawnGapMs);
+    let laneLastSpawnAt = createStaggeredLaneTimestamps(laneSpawnGapMs, laneCount);
     let cardHeightPx = DEFAULT_CARD_HEIGHT_PX;
 
     const viewport = root.querySelector<HTMLElement>(".tasks-assignment-feed-viewport");

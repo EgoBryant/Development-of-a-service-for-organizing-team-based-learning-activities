@@ -1,6 +1,7 @@
 import rating1IconUrl from "../../assets/icons/Rating_1.svg";
 import rating2IconUrl from "../../assets/icons/Rating_2.svg";
 import rating3IconUrl from "../../assets/icons/Rating_3.svg";
+import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import type { RatingLeaderboardEntry, RatingSortKey } from "../../types/rating";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
 import { escapeHtml } from "../../utils/html";
@@ -47,6 +48,21 @@ function formatPointsLabel(points: number): string {
     return `${points} ${word}`;
 }
 
+function renderPointsBadgeHtml(points: number, trophyIconUrl?: string): string {
+    const pointsLabel = formatPointsLabel(points);
+    const pointsText = String(points);
+    const suffix = pointsLabel.slice(pointsText.length);
+    const trophyIcon = trophyIconUrl
+        ? `<img class="rating-points-icon rating-points-icon--trophy" src="${escapeHtml(trophyIconUrl)}" alt="" aria-hidden="true">`
+        : "";
+
+    return `
+        <span class="rating-points-value gradient-text">${escapeHtml(pointsText)}</span>
+        <span class="rating-points-suffix gradient-text">${escapeHtml(suffix)}</span>
+        ${trophyIcon}
+        <img class="rating-points-icon rating-points-icon--score" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">`;
+}
+
 export const RATING_SORT_OPTIONS: { key: RatingSortKey; label: string }[] = [
     { key: "points-desc", label: "БАЛЛЫ ↓" },
     { key: "points-asc", label: "БАЛЛЫ ↑" },
@@ -88,7 +104,7 @@ function renderUserPodiumSlot(
         return `<div class="rating-user-podium-slot ${placeClass} rating-user-podium-slot--empty" aria-hidden="true"></div>`;
     }
 
-    const pointsText = formatPointsLabel(entry.points);
+    const pointsLabel = formatPointsLabel(entry.points);
     const placeIconUrl = place === 1 ? rating1IconUrl : place === 2 ? rating2IconUrl : rating3IconUrl;
     const avatarSrc = resolveUserAvatarUrl(entry.id, entry.avatarUrl);
     const photoInner = avatarSrc
@@ -100,13 +116,12 @@ function renderUserPodiumSlot(
             type="button"
             class="rating-user-podium-slot ${placeClass}"
             ${dataAttr}="${escapeHtml(entry.id)}"
-            aria-label="${place} место — ${escapeHtml(entry.label)}"
+            aria-label="${place} место — ${escapeHtml(entry.label)}, ${escapeHtml(pointsLabel)}"
         >
             <div class="rating-user-podium-card">
                 <div class="rating-user-podium-photo" aria-hidden="true">${photoInner}</div>
-                <span class="rating-user-podium-points">
-                    <img class="rating-user-podium-points-icon" src="${escapeHtml(placeIconUrl)}" alt="" aria-hidden="true">
-                    <span class="gradient-text">${escapeHtml(pointsText)}</span>
+                <span class="rating-user-podium-points" aria-hidden="true">
+                    ${renderPointsBadgeHtml(entry.points, placeIconUrl)}
                 </span>
             </div>
         </button>`;
@@ -138,21 +153,20 @@ function renderTeamPodiumSlot(
         return `<div class="rating-team-podium-slot ${placeClass} rating-team-podium-slot--empty" aria-hidden="true"></div>`;
     }
 
-    const pointsText = formatPointsLabel(entry.points);
+    const pointsLabel = formatPointsLabel(entry.points);
 
     return `
         <button
             type="button"
             class="rating-team-podium-slot ${placeClass}"
             ${dataAttr}="${escapeHtml(entry.id)}"
-            aria-label="${place} место — ${escapeHtml(entry.label)}"
+            aria-label="${place} место — ${escapeHtml(entry.label)}, ${escapeHtml(pointsLabel)}"
         >
             <div class="rating-team-podium-card">
                 <span class="rating-team-podium-name gradient-text">${escapeHtml(entry.label)}</span>
             </div>
-            <span class="rating-team-podium-points">
-                <img class="rating-team-podium-points-icon" src="${escapeHtml(iconUrl)}" alt="" aria-hidden="true">
-                <span class="gradient-text">${escapeHtml(pointsText)}</span>
+            <span class="rating-team-podium-points" aria-hidden="true">
+                ${renderPointsBadgeHtml(entry.points, iconUrl)}
             </span>
         </button>`;
 }
@@ -171,17 +185,19 @@ export function renderTeamPodiumHtml(entries: RatingLeaderboardEntry[]): string 
 }
 
 export function renderListRowHtml(entry: RatingLeaderboardEntry, dataAttr: string, variant: "users" | "teams" = "users"): string {
-    const pointsText = formatPointsLabel(entry.points);
+    const pointsLabel = formatPointsLabel(entry.points);
     const rowClass =
         variant === "teams"
             ? "rating-list-row rating-list-row--clickable rating-list-row--team"
             : "rating-list-row rating-list-row--clickable rating-list-row--user";
 
     return `
-        <button type="button" class="${rowClass}" role="listitem" ${dataAttr}="${escapeHtml(entry.id)}">
+        <button type="button" class="${rowClass}" role="listitem" ${dataAttr}="${escapeHtml(entry.id)}" aria-label="${escapeHtml(entry.label)}, ${escapeHtml(pointsLabel)}">
             <span class="rating-list-main gradient-text">${escapeHtml(String(entry.rank))}</span>
             <span class="rating-list-label gradient-text">${escapeHtml(entry.label)}</span>
-            <span class="rating-list-points"><span class="gradient-text">${escapeHtml(pointsText)}</span></span>
+            <span class="rating-list-points" aria-hidden="true">
+                ${renderPointsBadgeHtml(entry.points)}
+            </span>
         </button>`;
 }
 

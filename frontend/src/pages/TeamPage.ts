@@ -16,6 +16,7 @@ import {
     resetTeamEventDraft,
     teamFlowState
 } from "../state/teamFlowState";
+import { shouldTeamCarouselScroll } from "../utils/teamCarouselLayout";
 import {
     isHTMLButtonElement,
     isHTMLFormElement,
@@ -54,8 +55,11 @@ function syncTeamCarouselArrows(root: HTMLElement): void {
     }
 
     const sync = (): void => {
-        const overflows = carousel.scrollWidth - carousel.clientWidth > 1;
-        carouselWrap.classList.toggle("team-carousel-wrap--scrollable", overflows);
+        const memberCount = carousel.querySelectorAll(".team-member-card").length;
+        const shouldScroll = shouldTeamCarouselScroll(memberCount);
+        carouselWrap.classList.toggle("team-carousel-wrap--scrollable", shouldScroll);
+        carousel.classList.toggle("team-carousel--scroll", shouldScroll);
+        const overflows = shouldScroll && carousel.scrollWidth - carousel.clientWidth > 1;
         setTeamCarouselArrowVisible(carouselPrev, overflows);
         setTeamCarouselArrowVisible(carouselNext, overflows);
     };
@@ -276,13 +280,13 @@ export function wireTeamPageEvents(root: HTMLElement): void {
 
     if (isHTMLButtonElement(carouselPrev) && carousel) {
         carouselPrev.addEventListener("click", () => {
-            carousel.scrollBy({ left: -212, behavior: "smooth" });
+            carousel.scrollBy({ left: -carousel.clientWidth, behavior: "smooth" });
         });
     }
 
     if (isHTMLButtonElement(carouselNext) && carousel) {
         carouselNext.addEventListener("click", () => {
-            carousel.scrollBy({ left: 212, behavior: "smooth" });
+            carousel.scrollBy({ left: carousel.clientWidth, behavior: "smooth" });
         });
     }
 
