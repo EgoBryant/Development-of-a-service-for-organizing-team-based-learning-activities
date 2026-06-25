@@ -1,6 +1,7 @@
 import { ratingFlowState } from "../../state/ratingFlowState";
 import { escapeHtml } from "../../utils/html";
 import { renderProfileModalShell } from "../profile/ProfileModalShell";
+import { renderEventCreateDuoRow } from "./eventCreateForm";
 
 export function isRescueDraftComplete(): boolean {
     const draft = ratingFlowState.rescueDraft;
@@ -53,24 +54,7 @@ export function renderRescueModal(): string {
                     placeholder=" "
                     aria-label="Описание ситуации"
                 >${escapeHtml(draft.description)}</textarea>
-                <div class="team-rescue-duo-row">
-                    <input
-                        id="ratingRescueFormatInput"
-                        class="team-rescue-field team-rescue-field--duo"
-                        type="text"
-                        placeholder="ФОРМАТ"
-                        value="${escapeHtml(draft.format)}"
-                        autocomplete="off"
-                    >
-                    <input
-                        id="ratingRescueDateTimeInput"
-                        class="team-rescue-field team-rescue-field--duo"
-                        type="text"
-                        placeholder="ДАТА, ВРЕМЯ"
-                        value="${escapeHtml(draft.dateTime)}"
-                        autocomplete="off"
-                    >
-                </div>
+                ${renderEventCreateDuoRow("ratingRescue", draft.format, draft.dateTime)}
                 <button type="submit" class="profile-team-flow-btn profile-team-flow-btn--search team-rescue-submit">ОТПРАВИТЬ</button>
             </form>
         `

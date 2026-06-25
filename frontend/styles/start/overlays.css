@@ -466,6 +466,12 @@
     background: #F0F5FF;
     box-shadow: 0 16px 34px rgba(19, 60, 150, 0.18);
     transform: none;
+    color: rgba(23, 45, 157, 1);
+}
+
+.event-create-modal .event-create-datetime-panel .event-create-datetime-segment {
+    color: rgba(23, 45, 157, 1);
+    -webkit-text-fill-color: rgba(23, 45, 157, 1);
 }
 
 .event-create-modal .event-create-datetime-picker.is-open .event-create-datetime-panel {

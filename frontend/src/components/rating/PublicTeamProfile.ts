@@ -4,6 +4,7 @@ import { getRatingTeamById } from "../../state/ratingDataState";
 import { openRatingUserProfile } from "../../state/ratingFlowState";
 import { escapeHtml } from "../../utils/html";
 import { resolveUserAvatarUrl } from "../../utils/ratingAvatars";
+import { getTeamCarouselClasses, getTeamCarouselWrapClasses, shouldTeamCarouselScroll } from "../../utils/teamCarouselLayout";
 
 function resolveMemberAvatar(memberId: string, memberAvatar?: string): string {
     return resolveUserAvatarUrl(memberId, memberAvatar);
@@ -16,7 +17,7 @@ export function renderPublicTeamProfile(teamId: string): string {
     }
 
     const krkLabel = team.krk % 1 === 0 ? String(team.krk) : team.krk.toFixed(1);
-    const shouldUseCarouselScroll = team.members.length > 4;
+    const shouldUseCarouselScroll = shouldTeamCarouselScroll(team.members.length);
 
     const memberCards = team.members
         .map((member) => {
@@ -47,20 +48,23 @@ export function renderPublicTeamProfile(teamId: string): string {
               .join("");
 
     return `
-        <div class="rating-toolbar rating-toolbar--public">
-            <input
-                type="search"
-                class="rating-search-input"
-                placeholder="ПОИСК"
-                disabled
-            >
-            <div class="rating-filter-wrap">
-                <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+        <div class="rating-public-profile rating-public-profile--team">
+            <div class="rating-public-topbar">
+                <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
+                <div class="rating-toolbar rating-toolbar--public">
+                    <input
+                        type="search"
+                        class="rating-search-input"
+                        placeholder="ПОИСК"
+                        disabled
+                    >
+                    <div class="rating-filter-wrap">
+                        <button type="button" class="rating-filter-btn" disabled>ФИЛЬТР</button>
+                    </div>
+                </div>
             </div>
-        </div>
-        <button type="button" class="rating-back-btn rating-back-btn--profile" data-rating-back>НАЗАД</button>
-        <div class="team-active-wrap">
-            <div class="team-active-upper">
+            <div class="team-active-wrap">
+                <div class="team-active-upper">
                 <div class="team-topbar">
                     <div class="team-topbar-tabs">
                         <span class="team-topbar-tab team-topbar-tab--name">${escapeHtml(team.name)}</span>
@@ -72,7 +76,7 @@ export function renderPublicTeamProfile(teamId: string): string {
                     </div>
                 </div>
 
-                <div class="team-carousel-wrap${team.members.length <= 1 ? " team-carousel-wrap--single" : ""}">
+                <div class="${getTeamCarouselWrapClasses(team.members.length)}">
                     <button
                         type="button"
                         class="team-carousel-arrow team-carousel-arrow--prev${shouldUseCarouselScroll ? "" : " team-carousel-arrow--hidden"}"
@@ -81,7 +85,7 @@ export function renderPublicTeamProfile(teamId: string): string {
                     >
                         <img src="${escapeHtml(scrollLeftIconUrl)}" alt="" aria-hidden="true">
                     </button>
-                    <div class="team-carousel${shouldUseCarouselScroll ? " team-carousel--scroll" : ""}" id="ratingTeamCarousel">
+                    <div class="${getTeamCarouselClasses(team.members.length)}" id="ratingTeamCarousel">
                         ${memberCards || `<p class="rating-team-members-empty">Участники пока не добавлены.</p>`}
                     </div>
                     <button
@@ -96,7 +100,7 @@ export function renderPublicTeamProfile(teamId: string): string {
             </div>
 
             <div class="team-active-lower">
-                <div class="team-history-panel">
+                <div class="team-history-panel${isHistoryEmpty ? "" : " team-history-panel--filled"}">
                     <div class="team-history-head">
                         <h3 class="team-history-title">ИСТОРИЯ АКТИВНОСТИ</h3>
                     </div>
@@ -113,6 +117,7 @@ export function renderPublicTeamProfile(teamId: string): string {
                         <button type="button" class="team-action-btn team-action-btn--pink" data-rating-open-rescue="1">СПАСЕНИЕ</button>
                     </div>
                 </div>
+            </div>
             </div>
         </div>`;
 }
