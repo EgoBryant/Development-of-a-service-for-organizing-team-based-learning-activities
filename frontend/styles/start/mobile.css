@@ -521,6 +521,30 @@
         gap: 12px;
     }
 
+    .profile-app--dashboard-profile .rating-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 20px;
+    }
+
+    .profile-app--dashboard-profile .rating-filter-wrap {
+        width: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-filter-btn {
+        width: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-list-row {
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+    }
+
+    .profile-app--dashboard-profile .rating-list-points {
+        grid-column: auto;
+    }
+
     .rating-panel,
     .rating-page .rating-profile-card,
     .rating-team-block {
@@ -528,6 +552,30 @@
         border-radius: 22px;
         max-height: none;
         overflow: visible;
+    }
+
+    .profile-app--dashboard-profile .rating-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 20px;
+    }
+
+    .profile-app--dashboard-profile .rating-filter-wrap {
+        width: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-filter-btn {
+        width: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-list-row {
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+    }
+
+    .profile-app--dashboard-profile .rating-list-points {
+        grid-column: auto;
     }
 
     .rating-toolbar {
@@ -2941,9 +2989,15 @@
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap {
+        --team-member-card-width: clamp(132px, 36vw, 152px);
+        --team-member-carousel-col-gap: 10px;
         align-items: flex-start;
         min-height: 0;
         overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-1 {
+        --team-member-card-width: clamp(148px, 42vw, 168px);
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-arrow {
@@ -2951,63 +3005,44 @@
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel {
-        gap: 14px;
-        padding: 0 4px 0 27px;
-        scroll-padding-left: 27px;
-        scroll-snap-type: x proximity;
+        padding: 0 4px;
+        row-gap: 8px;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-card {
-        width: 96px;
-        max-width: 96px;
-        scroll-snap-align: start;
-    }
-
-    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--single .team-member-card {
-        width: 96px;
-        max-width: 96px;
+        width: var(--team-member-card-width);
+        max-width: var(--team-member-card-width);
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-avatar {
-        width: 96px;
-        aspect-ratio: 3 / 4;
-        border-radius: 18px;
-        box-shadow: 0 12px 24px rgba(34, 79, 155, 0.18);
+        width: 100%;
+        border-radius: 20px;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-card-photo-placeholder {
-        font-size: 10px;
+        font-size: 11px;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-role {
-        position: relative;
-        z-index: 2;
-        width: 96px;
-        max-width: 96px;
-        min-height: 26px;
-        align-self: center;
+        width: 100%;
+        max-width: 100%;
+        min-height: 30px;
         margin-top: -16px;
-        padding: 5px 8px;
-        border-radius: 999px;
-        font-size: 9px;
+        padding: 6px 10px;
+        font-size: 10px;
         letter-spacing: 0.04em;
-        box-shadow: 0 8px 16px rgba(34, 79, 155, 0.16);
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-action {
-        position: relative;
-        z-index: 1;
-        width: 96px;
-        max-width: 96px;
-        min-height: 26px;
-        align-self: center;
-        margin-top: -5px;
-        padding: 6px 6px;
-        font-size: 9px;
+        width: 100%;
+        max-width: 100%;
+        min-height: 30px;
+        margin-top: 4px;
+        padding: 6px 8px;
+        font-size: 10px;
         line-height: 1.15;
         letter-spacing: 0.03em;
         white-space: normal;
-        box-shadow: 0 8px 16px rgba(41, 126, 220, 0.22);
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-active-lower {
@@ -3716,21 +3751,23 @@
         max-width: none;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel {
-        gap: 20px;
-        padding: 0 4px;
-        scroll-padding-left: 4px;
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap {
+        --team-member-card-width: clamp(148px, 18vw, 168px);
+        --team-member-carousel-col-gap: 14px;
     }
 
-    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-card,
-    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--single .team-member-card {
-        width: clamp(122px, 18vw, 158px);
-        max-width: clamp(122px, 18vw, 158px);
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel {
+        padding: 0 4px;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-card {
+        width: var(--team-member-card-width);
+        max-width: var(--team-member-card-width);
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-avatar {
         width: 100%;
-        border-radius: 24px;
+        border-radius: 22px;
     }
 
     .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-role,
@@ -3932,7 +3969,7 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-back-btn--profile,
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team > .rating-back-btn--profile {
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar .rating-back-btn--profile {
         min-height: 48px;
         padding: 0 18px;
     }
@@ -4039,6 +4076,8 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap {
+        --team-member-card-width: clamp(148px, 18vw, 168px);
+        --team-member-carousel-col-gap: 14px;
         min-height: 0;
         align-items: flex-start;
         overflow: hidden;
@@ -4049,33 +4088,26 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
-        gap: 20px;
         padding: 0 4px 8px;
-        scroll-padding-left: 4px;
-        overflow-x: auto;
-        scroll-snap-type: x proximity;
+        row-gap: 10px;
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card,
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--single .team-member-card {
-        flex: 0 0 clamp(122px, 18vw, 158px);
-        width: clamp(122px, 18vw, 158px);
-        max-width: clamp(122px, 18vw, 158px);
-        scroll-snap-align: start;
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card {
+        width: var(--team-member-card-width);
+        max-width: var(--team-member-card-width);
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-avatar {
         width: 100%;
-        aspect-ratio: 3 / 4;
-        border-radius: 24px;
+        border-radius: 22px;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-role {
         width: 100%;
         max-width: 100%;
         min-height: 34px;
-        margin-top: -18px;
-        padding: 7px 10px;
+        margin-top: -16px;
+        padding: 6px 10px;
         font-size: 11px;
         letter-spacing: 0.05em;
     }
@@ -4187,51 +4219,82 @@
         height: 100%;
         min-height: 0;
         gap: 12px;
-        padding: 5px 6px 0;
+        padding: 4px 8px 0;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-top: 0;
+        padding: 14px 12px 12px;
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 14px 34px rgba(33, 78, 154, 0.12);
+        gap: 12px;
         overflow: hidden;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard-tabs {
         flex: 0 0 auto;
-        min-height: 74px;
-        padding: 8px;
+        min-height: 52px;
+        padding: 5px;
         border-radius: 999px;
+        background: rgba(240, 245, 255, 0.96);
+        box-shadow: 0 9px 18px rgba(33, 78, 154, 0.14);
     }
 
     .profile-app--dashboard-profile .rating-leaderboard-tab {
-        min-height: 58px;
+        min-height: 40px;
         padding: 0 10px;
-        font-size: 12px;
-        letter-spacing: 0.08em;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard-tab.is-active {
+        background: var(--exam-button-gradient);
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(120, 124, 254, 0.28);
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard-tab:not(.is-active) {
+        background: transparent;
+        color: rgba(55, 100, 180, 1);
+        box-shadow: none;
     }
 
     .profile-app--dashboard-profile .rating-toolbar {
         flex: 0 0 auto;
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
         gap: 8px;
-        padding: 10px;
-        border-radius: 24px;
+        padding: 8px;
+        border-radius: 20px;
+        background: rgba(240, 245, 255, 0.98);
+        box-shadow: 0 8px 20px rgba(33, 78, 154, 0.1);
     }
 
     .profile-app--dashboard-profile .rating-search-input {
-        min-height: 54px;
-        padding: 0 14px;
-        border-radius: 18px;
-        font-size: 11px;
-        background: transparent;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 12px;
+        font-size: 10px;
+        background: rgba(225, 233, 255, 0.7);
+        box-shadow: none;
     }
 
     .profile-app--dashboard-profile .rating-filter-wrap {
-        width: 100%;
+        width: auto;
         padding: 0;
     }
 
     .profile-app--dashboard-profile .rating-filter-btn {
-        width: 100%;
-        min-height: 52px;
-        padding: 0 14px;
-        font-size: 11px;
+        width: auto;
+        min-height: 34px;
+        padding: 0 16px;
+        font-size: 10px;
+        border-radius: 999px;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard-body {
@@ -4243,86 +4306,20 @@
         overflow: hidden;
     }
 
-    .profile-app--dashboard-profile .rating-featured-row {
-        flex: 0 0 auto;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-items: end;
-        gap: 10px;
-        padding: 0 2px;
-        overflow: visible;
-    }
-
     .profile-app--dashboard-profile .rating-featured-row--users {
-        min-height: 178px;
+        min-height: 236px;
+        display: block;
+        padding: 2px 6px 0;
     }
 
     .profile-app--dashboard-profile .rating-featured-row--teams {
-        min-height: 196px;
-        padding-top: 6px;
+        min-height: 230px;
+        padding: 8px 10px 0;
     }
 
-    .profile-app--dashboard-profile .rating-featured-card,
+    .profile-app--dashboard-profile .rating-user-podium-slot,
     .profile-app--dashboard-profile .rating-team-podium-slot {
         min-width: 0;
-    }
-
-    .profile-app--dashboard-profile .rating-featured-card-photo {
-        max-height: 142px;
-        min-height: 0;
-        border-radius: 18px;
-    }
-
-    .profile-app--dashboard-profile .rating-featured-card-rank {
-        top: 8px;
-        left: 8px;
-        min-width: 42px;
-        min-height: 42px;
-        font-size: 16px;
-    }
-
-    .profile-app--dashboard-profile .rating-featured-card-name {
-        width: calc(100% - 10px);
-        margin-top: -17px;
-        padding: 8px 6px;
-        font-size: 8px;
-        letter-spacing: 0.04em;
-    }
-
-    .profile-app--dashboard-profile .rating-featured-card-points {
-        margin-top: 8px;
-        padding: 8px 10px;
-        font-size: 9px;
-        letter-spacing: 0.04em;
-    }
-
-    .profile-app--dashboard-profile .rating-team-podium {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        align-items: end;
-    }
-
-    .profile-app--dashboard-profile .rating-team-podium-card,
-    .profile-app--dashboard-profile .rating-team-podium-slot--first .rating-team-podium-card {
-        min-height: 164px;
-        padding: 18px 8px 16px;
-        border-radius: 22px;
-    }
-
-    .profile-app--dashboard-profile .rating-team-podium-icon {
-        width: 28px;
-        height: 28px;
-    }
-
-    .profile-app--dashboard-profile .rating-team-podium-name {
-        font-size: 11px;
-        line-height: 1.15;
-    }
-
-    .profile-app--dashboard-profile .rating-team-podium-points {
-        font-size: 10px;
-        white-space: normal;
     }
 
     .profile-app--dashboard-profile .rating-list-scroll {
@@ -4339,32 +4336,74 @@
     }
 
     .profile-app--dashboard-profile .rating-list-row {
-        min-height: 58px;
+        min-height: 62px;
         display: grid;
-        grid-template-columns: 34px minmax(0, 1fr);
-        align-items: stretch;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        align-items: center;
         border-radius: 20px;
-        overflow: hidden;
+        padding: 0 8px 0 4px;
+        background: rgba(240, 245, 255, 0.96);
+        box-shadow: 0 6px 16px rgba(32, 90, 180, 0.16);
+        overflow: visible;
     }
 
     .profile-app--dashboard-profile .rating-list-main {
-        min-width: 0;
+        justify-content: center;
+        font-size: 34px;
+        font-weight: 700;
+        color: rgba(70, 90, 210, 0.9);
     }
 
     .profile-app--dashboard-profile .rating-list-label {
         min-width: 0;
         padding: 0 10px;
-        font-size: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: rgba(32, 95, 205, 0.95);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         text-align: left;
     }
 
     .profile-app--dashboard-profile .rating-list-points {
-        grid-column: 1 / -1;
-        min-height: 34px;
-        justify-content: flex-start;
-        padding: 8px 12px;
-        border-radius: 0 0 20px 20px;
-        font-size: 10px;
+        grid-column: auto;
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: rgba(240, 245, 255, 1);
+        color: rgba(47, 98, 214, 1);
+        box-shadow: inset 0 0 0 1px rgba(47, 98, 214, 0.12);
+    }
+
+    .profile-app--dashboard-profile .rating-points-suffix {
+        display: none;
+    }
+
+    .profile-app--dashboard-profile .rating-points-icon {
+        display: block;
+        width: 12px;
+        height: 12px;
+        flex: 0 0 12px;
+        object-fit: contain;
+    }
+
+    .profile-app--dashboard-profile .rating-list-points .rating-points-icon--trophy {
+        display: none;
+    }
+
+    .profile-app--dashboard-profile .rating-points-value {
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1;
+        color: rgba(47, 98, 214, 1);
+        letter-spacing: -0.02em;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile {
@@ -4380,7 +4419,7 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-back-btn--profile,
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team > .rating-back-btn--profile {
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar .rating-back-btn--profile {
         min-height: 40px;
         padding: 0 16px;
         font-size: 10px;
@@ -4431,30 +4470,33 @@
         max-height: var(--team-topbar-height);
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
-        gap: 14px;
-        padding: 0 4px;
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap {
+        --team-member-card-width: clamp(132px, 36vw, 152px);
+        --team-member-carousel-col-gap: 10px;
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card,
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap--single .team-member-card {
-        flex: 0 0 96px;
-        width: 96px;
-        max-width: 96px;
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
+        padding: 0 4px;
+        row-gap: 8px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card {
+        width: var(--team-member-card-width);
+        max-width: var(--team-member-card-width);
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-avatar {
-        width: 96px;
-        border-radius: 18px;
+        width: 100%;
+        border-radius: 20px;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-role {
-        width: 96px;
-        max-width: 96px;
-        min-height: 26px;
+        width: 100%;
+        max-width: 100%;
+        min-height: 30px;
         margin-top: -16px;
-        padding: 5px 8px;
-        font-size: 9px;
+        padding: 6px 10px;
+        font-size: 10px;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-lower {
@@ -4522,240 +4564,90 @@
 @media (max-width: 520px) {
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users {
         gap: 10px;
-        padding: 4px 12px 0;
+        padding: 4px 8px 0;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-leaderboard-tabs {
-        min-height: 52px;
-        padding: 5px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-leaderboard-tab {
-        min-height: 40px;
-        font-size: 10px;
-        letter-spacing: 0.05em;
-        padding: 0 8px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-toolbar {
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        border-radius: 20px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-search-input {
-        min-height: 36px;
-        font-size: 10px;
-        padding: 0 12px;
-        border-radius: 12px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-filter-btn {
-        width: auto;
-        min-height: 34px;
-        font-size: 10px;
-        padding: 0 16px;
-        border-radius: 999px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-filter-wrap {
-        width: auto;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-row--users {
-        min-height: 236px;
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium {
+        width: min(100%, 316px);
+        margin-inline: auto;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: end;
         justify-items: center;
-        gap: 14px 16px;
-        padding: 2px 6px 0;
+        column-gap: 14px;
+        row-gap: 16px;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card {
-        position: relative;
-        z-index: 2;
-        width: min(100%, 128px);
-        max-width: 128px;
-        justify-self: center;
-        gap: 0;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card:nth-child(1) {
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-slot--first {
         grid-column: 1 / -1;
-        z-index: 4;
-        width: min(100%, 146px);
-        max-width: 146px;
-        transform: translateY(0);
+        grid-row: 1;
+        width: clamp(138px, 36vw, 152px);
+        max-width: clamp(138px, 36vw, 152px);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card:nth-child(2) {
-        z-index: 3;
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-slot--second {
+        grid-column: 1;
+        grid-row: 2;
         justify-self: end;
+        width: clamp(124px, 32vw, 136px);
+        max-width: clamp(124px, 32vw, 136px);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card:nth-child(3) {
-        z-index: 3;
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-slot--third {
+        grid-column: 2;
+        grid-row: 2;
         justify-self: start;
+        width: clamp(124px, 32vw, 136px);
+        max-width: clamp(124px, 32vw, 136px);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card-photo {
-        position: relative;
-        z-index: 1;
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-slot:hover:not(.rating-user-podium-slot--empty) {
+        transform: none;
+    }
+
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-photo {
         width: 100%;
-        max-height: 132px;
+        height: auto;
+        aspect-ratio: 0.92;
+        max-height: 148px;
         border-radius: 24px;
         box-shadow: 0 10px 20px rgba(29, 83, 190, 0.18);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card:nth-child(1) .rating-featured-card-photo {
-        max-height: 148px;
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-slot--first .rating-user-podium-photo {
+        max-height: 168px;
+        box-shadow: 0 14px 28px rgba(29, 83, 190, 0.22);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card-name {
-        display: none;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-featured-card-points {
-        position: relative;
-        z-index: 6;
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-points {
         margin-top: -14px;
         min-height: 28px;
         padding: 0 10px;
         border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
         gap: 8px;
-        letter-spacing: 0;
         background: #f0f5ff;
-        color: rgba(47, 98, 214, 1);
         box-shadow:
             0 8px 16px rgba(22, 64, 146, 0.24),
             inset 0 0 0 1px rgba(47, 98, 214, 0.2);
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-points-icon {
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-points .rating-points-icon--trophy,
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-user-podium-points .rating-points-icon--score {
         width: 12px;
         height: 12px;
         flex: 0 0 12px;
-        object-fit: contain;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-points-value {
-        font-size: 20px;
-        font-weight: 800;
-        line-height: 1;
-        color: rgba(47, 98, 214, 1);
-        letter-spacing: -0.02em;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-scroll--users {
         gap: 12px;
         padding: 2px 0 10px;
     }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-row {
-        min-height: 62px;
-        grid-template-columns: 32px minmax(0, 1fr) auto;
-        border-radius: 20px;
-        padding: 0 8px 0 2px;
-        background: rgba(240, 245, 255, 0.96);
-        box-shadow: 0 6px 16px rgba(32, 90, 180, 0.16);
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-main {
-        justify-content: center;
-        font-size: 34px;
-        font-weight: 700;
-        color: rgba(70, 90, 210, 0.9);
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-label {
-        align-items: center;
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        color: rgba(32, 95, 205, 0.95);
-        padding: 0 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-points {
-        grid-column: auto;
-        min-height: 32px;
-        padding: 0 10px;
-        border-radius: 999px;
-        justify-content: center;
-        align-items: center;
-        gap: 6px;
-        background: rgba(240, 245, 255, 1);
-        color: rgba(47, 98, 214, 1);
-        box-shadow: inset 0 0 0 1px rgba(47, 98, 214, 0.12);
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-points .rating-points-icon {
-        width: 12px;
-        height: 12px;
-        flex: 0 0 12px;
-        object-fit: contain;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--users .rating-list-points .rating-points-value {
-        font-size: 20px;
-        font-weight: 800;
-        line-height: 1;
-        letter-spacing: -0.02em;
-    }
 }
 
 @media (max-width: 520px) {
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams {
         gap: 10px;
-        padding: 4px 12px 0;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-leaderboard-tabs {
-        min-height: 52px;
-        padding: 5px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-leaderboard-tab {
-        min-height: 40px;
-        font-size: 10px;
-        letter-spacing: 0.05em;
-        padding: 0 8px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-toolbar {
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        border-radius: 20px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-search-input {
-        min-height: 36px;
-        font-size: 10px;
-        padding: 0 12px;
-        border-radius: 12px;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-filter-wrap {
-        width: auto;
-        padding: 0;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-filter-btn {
-        width: auto;
-        min-height: 34px;
-        padding: 0 16px;
-        font-size: 10px;
+        padding: 4px 8px 0;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-featured-row--teams {
@@ -4779,16 +4671,6 @@
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first {
         grid-column: 1 / -1;
         grid-row: 1;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot {
-        width: clamp(124px, 32vw, 136px);
-        max-width: clamp(124px, 32vw, 136px);
-        min-width: 0;
-        transform: none;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first {
         width: clamp(138px, 36vw, 152px);
         max-width: clamp(138px, 36vw, 152px);
     }
@@ -4796,11 +4678,17 @@
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--second {
         grid-column: 1;
         grid-row: 2;
+        justify-self: end;
+        width: clamp(124px, 32vw, 136px);
+        max-width: clamp(124px, 32vw, 136px);
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--third {
         grid-column: 2;
         grid-row: 2;
+        justify-self: start;
+        width: clamp(124px, 32vw, 136px);
+        max-width: clamp(124px, 32vw, 136px);
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot:hover:not(.rating-team-podium-slot--empty) {
@@ -4824,10 +4712,6 @@
         padding-top: 12px;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-icon {
-        display: none;
-    }
-
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-name {
         width: 100%;
         font-size: 10px;
@@ -4847,9 +4731,6 @@
         min-height: 28px;
         padding: 0 8px;
         border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
         gap: 5px;
         font-size: 17px;
         font-weight: 800;
@@ -4862,23 +4743,11 @@
         white-space: nowrap;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points::before,
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points::after {
-        content: "";
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points .rating-points-icon--trophy,
+    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points .rating-points-icon--score {
         width: 12px;
         height: 12px;
         flex: 0 0 12px;
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points::before {
-        background-image: url("../../src/assets/icons/Liga_mobile.svg");
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points::after {
-        background-image: url("../../src/assets/icons/Score_mobile.svg");
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-scroll--teams {
@@ -4886,64 +4755,12 @@
         padding: 2px 0 10px;
     }
 
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team {
-        min-height: 62px;
-        display: grid;
-        grid-template-columns: 32px minmax(0, 1fr) auto;
-        align-items: center;
-        border-radius: 20px;
-        padding: 0 8px 0 4px;
-        background: rgba(240, 245, 255, 0.96);
-        box-shadow: 0 6px 16px rgba(32, 90, 180, 0.16);
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-main {
-        justify-content: center;
-        font-size: 34px;
-        font-weight: 700;
-        color: rgba(70, 90, 210, 0.9);
-    }
-
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-label {
-        min-width: 0;
-        padding: 0 10px;
         font-size: 14px;
-        font-weight: 800;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        color: rgba(32, 95, 205, 0.95);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-points {
-        grid-column: auto;
-        min-height: 34px;
-        padding: 0 10px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        background: rgba(240, 245, 255, 1);
-        box-shadow: inset 0 0 0 1px rgba(47, 98, 214, 0.12);
-        white-space: nowrap;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-points .rating-points-value {
         font-size: 22px;
-        font-weight: 800;
-        line-height: 1;
-        letter-spacing: -0.02em;
-        color: rgba(47, 98, 214, 1);
-    }
-
-    .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-list-row--team .rating-list-points .rating-points-icon {
-        width: 12px;
-        height: 12px;
-        flex: 0 0 12px;
-        object-fit: contain;
     }
 }
 
@@ -4954,18 +4771,30 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar {
-        margin: 8px 8px 0;
+        margin: 8px 0 0;
         gap: 8px;
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-back-btn--profile {
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar {
+        margin: 8px 0 0;
+        gap: 8px;
+    }
+
+    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-back-btn--profile,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar .rating-back-btn--profile {
         display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        align-self: stretch;
+        flex: 0 0 auto;
         min-height: 46px;
+        margin: 0;
         padding: 0 14px;
         font-size: 10px;
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-toolbar--public {
+    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-toolbar--public,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar .rating-toolbar--public {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 8px;
@@ -4976,22 +4805,18 @@
         box-shadow: 0 8px 18px rgba(33, 78, 154, 0.14);
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-back-btn--profile {
-        display: none;
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-profile--team {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        gap: 10px;
+        padding: 0;
+        overflow: hidden;
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-toolbar--public {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
-        padding: 6px;
-        border-radius: 20px;
-        background: rgba(240, 245, 255, 0.95);
-        box-shadow: 0 8px 18px rgba(33, 78, 154, 0.14);
-    }
-
-    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-toolbar--public .rating-search-input,
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-toolbar--public .rating-search-input {
+    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-search-input,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar .rating-search-input {
         min-height: 34px;
         border-radius: 12px;
         padding: 0 12px;
@@ -4999,8 +4824,8 @@
         background: rgba(231, 237, 251, 0.9);
     }
 
-    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-toolbar--public .rating-filter-btn,
-    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-toolbar--public .rating-filter-btn {
+    .profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-topbar .rating-filter-btn,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-public-topbar .rating-filter-btn {
         min-height: 34px;
         padding: 0 16px;
         border-radius: 999px;
@@ -5122,6 +4947,8 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap {
+        --team-member-card-width: clamp(132px, 36vw, 152px);
+        --team-member-carousel-col-gap: 10px;
         min-height: 0;
         overflow: hidden;
     }
@@ -5131,34 +4958,30 @@
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        padding: 0;
-        overflow: visible;
+        padding: 0 4px 8px;
+        row-gap: 8px;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card {
-        width: auto;
-        max-width: none;
+        width: var(--team-member-card-width);
+        max-width: var(--team-member-card-width);
         min-width: 0;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-avatar {
         width: 100%;
-        aspect-ratio: 1 / 1;
-        border-radius: 14px;
+        border-radius: 20px;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-role {
         width: 100%;
         max-width: 100%;
-        min-height: 24px;
-        margin-top: -12px;
-        padding: 4px 6px;
+        min-height: 30px;
+        margin-top: -16px;
+        padding: 6px 10px;
         border-radius: 999px;
-        font-size: 8px;
-        letter-spacing: 0.03em;
+        font-size: 10px;
+        letter-spacing: 0.04em;
     }
 
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-lower {
@@ -5231,7 +5054,10 @@
     .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-history-actions {
         display: flex;
         justify-content: center;
-        margin-top: -6px;
+        position: static;
+        transform: none;
+        flex: 0 0 auto;
+        margin-top: 8px;
         padding: 0;
     }
 
@@ -5265,13 +5091,16 @@
         overflow: hidden;
     }
 
-    .profile-app--dashboard-profile .rating-page--public-user .rating-back-btn--profile,
-    .profile-app--dashboard-profile .rating-page--public-team > .rating-back-btn--profile {
+    .profile-app--dashboard-profile .rating-page--public-user .rating-public-topbar .rating-back-btn--profile,
+    .profile-app--dashboard-profile .rating-page--public-team .rating-public-topbar .rating-back-btn--profile {
         display: inline-flex !important;
-        align-self: flex-start;
-        min-height: 32px;
+        align-items: center;
+        justify-content: center;
+        align-self: stretch;
+        flex: 0 0 auto;
+        min-height: 46px;
         padding: 0 14px;
-        margin: 0 0 8px;
+        margin: 0;
         border-radius: 999px;
         font-size: 10px;
         letter-spacing: 0.05em;
@@ -5308,37 +5137,64 @@
         overflow: hidden;
     }
 
-    .profile-app--dashboard-profile .rating-page--public-team .team-carousel {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 12px !important;
-        padding: 0 2px !important;
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap {
+        --team-member-card-width: clamp(132px, 36vw, 152px);
+        --team-member-carousel-col-gap: 10px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        display: grid !important;
+        grid-template-rows: repeat(2, auto) !important;
+        grid-auto-flow: column !important;
+        grid-auto-columns: var(--team-member-card-width) !important;
+        column-gap: var(--team-member-carousel-col-gap) !important;
+        row-gap: 8px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding: 0 4px 8px !important;
+        scroll-snap-type: x proximity !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap)) !important;
+        max-width: 100% !important;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel {
+        overflow: visible !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-member-card {
-        width: auto !important;
-        max-width: none !important;
+        width: var(--team-member-card-width) !important;
+        max-width: var(--team-member-card-width) !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-member-avatar {
-        aspect-ratio: 1 / 1;
-        border-radius: 14px;
-        min-height: 120px;
+        aspect-ratio: 3 / 4;
+        border-radius: 20px;
+        min-height: 0;
+        max-height: none;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-member-role {
-        min-height: 26px;
-        margin-top: -12px;
+        min-height: 30px;
+        margin-top: -16px;
         font-size: 10px;
-        padding: 4px 8px;
+        padding: 6px 10px;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-panel {
-        flex: 0 0 146px !important;
-        min-height: 146px !important;
-        max-height: 146px !important;
-        padding: 10px 10px 8px !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 12px 12px 10px !important;
         border-radius: 18px;
-        gap: 6px;
+        gap: 8px;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-title {
@@ -5370,8 +5226,12 @@
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-actions {
+        position: static !important;
+        transform: none !important;
         justify-content: center;
-        margin-top: -4px !important;
+        flex: 0 0 auto;
+        margin-top: 8px !important;
+        padding: 0;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-actions .team-action-btn--pink {
@@ -5397,58 +5257,67 @@
 /* ABSOLUTE FINAL OVERRIDES FOR PUBLIC RATING PROFILES */
 @media (max-width: 520px) {
     .profile-app--dashboard-profile .rating-page--public-user .rating-back-btn--profile,
-    .profile-app--dashboard-profile .rating-page--public-team > .rating-back-btn--profile {
+    .profile-app--dashboard-profile .rating-page--public-team .rating-back-btn--profile {
         display: inline-flex !important;
     }
 
-    .profile-app--dashboard-profile .rating-page--public-team .team-carousel {
-        display: grid !important;
-        grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 10px 12px !important;
-        overflow-x: hidden !important;
-        overflow-y: hidden !important;
-        padding: 0 2px 6px !important;
-    }
-
-    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
-        grid-auto-flow: column !important;
-        grid-template-columns: none !important;
-        grid-auto-columns: clamp(126px, 38vw, 164px) !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        scroll-snap-type: x proximity !important;
-        padding: 0 2px 8px !important;
-    }
-
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap {
+        --team-member-card-width: clamp(132px, 36vw, 152px);
+        --team-member-carousel-col-gap: 10px;
+        overflow: hidden !important;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        display: grid !important;
+        grid-template-rows: repeat(2, auto) !important;
+        grid-auto-flow: column !important;
+        grid-auto-columns: var(--team-member-card-width) !important;
+        column-gap: var(--team-member-carousel-col-gap) !important;
+        row-gap: 8px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding: 0 4px 8px !important;
+        scroll-snap-type: x proximity !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap)) !important;
+        max-width: 100% !important;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel {
         overflow: visible !important;
     }
 
-    .profile-app--dashboard-profile .rating-page--public-team .team-member-card {
-        flex: none !important;
-        width: auto !important;
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-1 {
+        --team-member-card-width: clamp(148px, 42vw, 168px);
     }
 
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-member-card,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll .team-member-card {
         scroll-snap-align: start !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-member-avatar {
-        min-height: 108px !important;
-        border-radius: 16px !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        aspect-ratio: 3 / 4 !important;
+        border-radius: 20px !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-member-role {
-        min-height: 28px !important;
+        min-height: 30px !important;
         font-size: 10px !important;
+        padding: 6px 10px !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-panel {
-        flex: 0 0 234px !important;
-        min-height: 234px !important;
-        max-height: 234px !important;
-        padding: 14px 12px 12px !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 12px 12px 10px !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-title {
@@ -5476,7 +5345,9 @@
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-actions {
-        margin-top: -2px !important;
+        position: static !important;
+        transform: none !important;
+        margin-top: 8px !important;
     }
 
     .profile-app--dashboard-profile .rating-page--public-team .team-history-actions .team-action-btn--pink {
@@ -5809,5 +5680,289 @@
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
+    }
+}
+
+/* Публичные профили рейтинга — финальная мобильная раскладка */
+@media (max-width: 520px) {
+    .profile-app--dashboard-profile .rating-page--public-user,
+    .profile-app--dashboard-profile .rating-page--public-team {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        padding: 0 8px 4px;
+        box-sizing: border-box;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .rating-public-profile {
+        flex: 1 1 auto;
+        min-height: 0;
+        gap: 10px;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .rating-public-profile--team {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .rating-public-topbar,
+    .profile-app--dashboard-profile .rating-page--public-team .rating-public-topbar {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        flex: 0 0 auto;
+        width: 100%;
+        margin: 8px 0 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .rating-public-topbar .rating-back-btn--profile,
+    .profile-app--dashboard-profile .rating-page--public-team .rating-public-topbar .rating-back-btn--profile {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        align-self: stretch;
+        flex: 0 0 auto;
+        min-height: 46px;
+        margin: 0;
+        padding: 0 14px;
+        border: none;
+        border-radius: 999px;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        background: rgba(240, 245, 255, 0.95);
+        color: rgba(47, 98, 214, 0.95);
+        box-shadow: 0 6px 14px rgba(33, 78, 154, 0.16);
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .rating-public-topbar .rating-toolbar--public,
+    .profile-app--dashboard-profile .rating-page--public-team .rating-public-topbar .rating-toolbar--public {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 46px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 20px;
+        background: rgba(240, 245, 255, 0.95);
+        box-shadow: 0 8px 18px rgba(33, 78, 154, 0.14);
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-hero-card {
+        flex: 0 0 auto;
+        min-height: 0;
+        padding: 0;
+        gap: 12px;
+        overflow: visible;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-pills-row {
+        padding: 0 12px;
+        gap: 8px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievements {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+        padding: 14px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 20px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievements-title {
+        flex: 0 0 auto;
+        margin: 0 0 10px;
+        font-size: 18px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievements-scroll-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievements-scroll {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 2px 2px 6px;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievement-item {
+        flex: 0 0 74px;
+        width: 74px;
+        min-width: 74px;
+        gap: 6px;
+        padding: 0;
+        scroll-snap-align: start;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievement-circle {
+        width: 58px;
+        height: 58px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievement-caption {
+        max-width: 74px;
+        font-size: 9px;
+        line-height: 1.15;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-user .profile-achievement-progress {
+        display: none;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team > .rating-toolbar--public {
+        flex: 0 0 auto;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-active-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-active-upper {
+        flex: 0 0 auto;
+        min-height: 0;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap {
+        --team-member-card-width: clamp(132px, 36vw, 152px);
+        --team-member-carousel-col-gap: 10px;
+        min-height: 0;
+        max-height: none;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        display: grid !important;
+        grid-template-rows: repeat(2, auto) !important;
+        grid-auto-flow: column !important;
+        grid-auto-columns: var(--team-member-card-width) !important;
+        column-gap: var(--team-member-carousel-col-gap) !important;
+        row-gap: 8px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding: 0 4px 8px !important;
+        scroll-snap-type: x proximity;
+        width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
+        max-width: 100%;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-1 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel {
+        overflow: visible !important;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll .team-member-card {
+        width: var(--team-member-card-width);
+        scroll-snap-align: start;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-active-lower {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-panel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-panel--filled {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        position: relative;
+        padding: 12px 12px 10px !important;
+        gap: 8px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-panel--filled .team-history-body::after {
+        display: none;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-rows,
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-panel--filled .team-history-rows {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        mask-image: none;
+        -webkit-mask-image: none;
+        padding: 0 2px 4px;
+        gap: 6px;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-actions,
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-panel--filled .team-history-actions {
+        position: static !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        flex: 0 0 auto;
+        margin-top: 8px !important;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        pointer-events: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-empty-state {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        overflow-y: auto;
+    }
+
+    .profile-app--dashboard-profile .rating-page--public-team .team-history-empty-text {
+        font-size: 9px;
+        line-height: 1.45;
     }
 }

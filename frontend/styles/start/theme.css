@@ -615,13 +615,23 @@
 
 .team-no-team-input:focus,
 .profile-modal-input:focus,
-.team-rescue-field:focus,
+.team-rescue-field:not(.team-rescue-field--duo):not(.event-create-datetime-trigger):not(.event-create-format-trigger):focus,
 .team-rescue-textarea:focus,
 .rating-search-input:focus,
 .news-create-textarea:focus {
     border-color: rgba(50, 134, 255, 0.62);
     box-shadow: 0 0 0 5px rgba(62, 151, 255, 0.12);
     background: #f7faff;
+}
+
+.team-rescue-field--duo:focus,
+.team-rescue-field--duo:focus-visible,
+.team-rescue-select.team-rescue-field--duo:focus,
+.team-rescue-select.team-rescue-field--duo:focus-visible {
+    background: linear-gradient(180deg, rgba(120, 124, 254, 1) 0%, rgba(0, 226, 224, 1) 100%);
+    color: rgba(255, 255, 255, 1);
+    border-color: rgba(255, 255, 255, 0.42);
+    box-shadow: 0 8px 20px rgba(120, 124, 254, 0.24), 0 0 0 5px rgba(62, 151, 255, 0.12);
 }
 
 .profile-modal-photo-row,
@@ -997,23 +1007,30 @@
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap {
-    min-height: 280px;
+    --team-member-card-width: 168px;
+    --team-member-carousel-col-gap: 14px;
+    min-height: 0;
     align-items: flex-start;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel {
-    gap: 40px;
-    padding: 0 0 0 10px;
+    column-gap: var(--team-member-carousel-col-gap);
+    row-gap: 12px;
+    padding: 0 2px;
 }
 
-.profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--single .team-carousel {
-    padding-left: 24px;
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-1 {
+    --team-member-card-width: 188px;
+}
+
+.profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-1 .team-carousel {
+    padding-left: 8px;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-arrow {
     width: 40px;
     height: 40px;
-    margin-top: 118px;
+    margin-top: 108px;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-arrow img {
@@ -1026,7 +1043,7 @@
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-card {
-    width: 172px;
+    width: var(--team-member-card-width, 168px);
     gap: 0;
     padding: 0;
     border-radius: 0;
@@ -1037,7 +1054,7 @@
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--single .team-member-card {
-    width: 220px;
+    width: var(--team-member-card-width, 188px);
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-avatar {
@@ -1049,11 +1066,11 @@
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-role {
     width: 100%;
-    margin-top: -20px;
-    min-height: 40px;
-    padding: 0 16px;
+    margin-top: -18px;
+    min-height: 36px;
+    padding: 0 12px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.08em;
     background: rgba(255, 255, 255, 1);
@@ -1063,10 +1080,10 @@
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-member-action {
     width: 100%;
-    margin-top: 0;
-    min-height: 40px;
+    margin-top: 6px;
+    min-height: 36px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .profile-app--dashboard-profile:has(.team-dashboard-main) .team-history-panel {
@@ -1201,15 +1218,15 @@
 }
 
 .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-leaderboard-tab.is-active {
-    background: transparent;
-    color: rgba(55, 100, 180, 1);
-    box-shadow: none;
-}
-
-.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-leaderboard-tab:not(.is-active) {
     background: var(--exam-button-gradient);
     color: #ffffff;
     box-shadow: 0 8px 18px rgba(120, 124, 254, 0.28);
+}
+
+.profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-leaderboard-tab:not(.is-active) {
+    background: transparent;
+    color: rgba(55, 100, 180, 1);
+    box-shadow: none;
 }
 
 .profile-app--dashboard-profile:has(.rating-leaderboard--users) .rating-toolbar {
@@ -1305,19 +1322,22 @@
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-wrap {
-    min-height: 280px;
+    --team-member-card-width: 168px;
+    --team-member-carousel-col-gap: 14px;
+    min-height: 0;
     align-items: flex-start;
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel {
-    gap: 40px;
-    padding: 0 0 0 10px;
+    column-gap: var(--team-member-carousel-col-gap);
+    row-gap: 12px;
+    padding: 0 2px;
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-carousel-arrow {
     width: 40px;
     height: 40px;
-    margin-top: 118px;
+    margin-top: 96px;
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-active-lower {
@@ -1406,7 +1426,7 @@
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-card {
-    width: 172px;
+    width: var(--team-member-card-width, 168px);
     gap: 0;
     padding: 0;
     border-radius: 0;
@@ -1425,11 +1445,11 @@
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team .team-member-role {
     width: 100%;
-    margin-top: -20px;
-    min-height: 40px;
-    padding: 0 16px;
+    margin-top: -18px;
+    min-height: 36px;
+    padding: 0 12px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.08em;
     background: rgba(255, 255, 255, 1);

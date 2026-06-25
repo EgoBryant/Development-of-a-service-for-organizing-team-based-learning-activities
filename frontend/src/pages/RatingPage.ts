@@ -1,4 +1,5 @@
 import { getAppBridge } from "../app/bridge";
+import { syncEventCreateDuoFromForm, wireEventCreateDuoRow } from "../components/modals/eventCreateForm";
 import { isRescueDraftComplete, renderRescueModal } from "../components/modals/RescueModal";
 import { renderRatingLeaderboardBlock } from "../components/rating/RatingLeaderboardBlock";
 import { handleTeamMemberClick, renderPublicTeamProfile } from "../components/rating/PublicTeamProfile";
@@ -36,7 +37,7 @@ function resolveRatingMainClass(): string {
         return "profile-main rating-dashboard-main rating-page rating-page--public-user";
     }
     if (ratingFlowState.view === "team") {
-        return "profile-main team-dashboard-main team-page rating-page rating-page--public-team";
+        return "profile-main rating-dashboard-main rating-page rating-page--public-team";
     }
     return "profile-main rating-dashboard-main rating-page";
 }
@@ -57,9 +58,6 @@ function syncRescueDraftFromForm(root: HTMLElement): void {
     const topic = root.querySelector("#ratingRescueTopicInput");
     const tag = root.querySelector("#ratingRescueTagInput");
     const description = root.querySelector("#ratingRescueDescriptionInput");
-    const format = root.querySelector("#ratingRescueFormatInput");
-    const dateTime = root.querySelector("#ratingRescueDateTimeInput");
-
     if (isHTMLInputElement(topic)) {
         ratingFlowState.rescueDraft.topic = topic.value;
     }
@@ -69,12 +67,7 @@ function syncRescueDraftFromForm(root: HTMLElement): void {
     if (isHTMLTextAreaElement(description)) {
         ratingFlowState.rescueDraft.description = description.value;
     }
-    if (isHTMLInputElement(format)) {
-        ratingFlowState.rescueDraft.format = format.value;
-    }
-    if (isHTMLInputElement(dateTime)) {
-        ratingFlowState.rescueDraft.dateTime = dateTime.value;
-    }
+    syncEventCreateDuoFromForm(root, "ratingRescue", ratingFlowState.rescueDraft);
 }
 
 function restoreSearchFocus(root: HTMLElement): void {
@@ -225,13 +218,13 @@ export function wireRatingPageEvents(root: HTMLElement): void {
 
         if (isHTMLButtonElement(carouselPrev) && carousel) {
             carouselPrev.addEventListener("click", () => {
-                carousel.scrollBy({ left: -212, behavior: "smooth" });
+                carousel.scrollBy({ left: -carousel.clientWidth, behavior: "smooth" });
             });
         }
 
         if (isHTMLButtonElement(carouselNext) && carousel) {
             carouselNext.addEventListener("click", () => {
-                carousel.scrollBy({ left: 212, behavior: "smooth" });
+                carousel.scrollBy({ left: carousel.clientWidth, behavior: "smooth" });
             });
         }
     }
@@ -283,8 +276,9 @@ export function wireRatingPageEvents(root: HTMLElement): void {
     bindRescueInput("#ratingRescueTopicInput", "topic");
     bindRescueInput("#ratingRescueTagInput", "tag");
     bindRescueInput("#ratingRescueDescriptionInput", "description");
-    bindRescueInput("#ratingRescueFormatInput", "format");
-    bindRescueInput("#ratingRescueDateTimeInput", "dateTime");
+    wireEventCreateDuoRow(root, "ratingRescue", ratingFlowState.rescueDraft, () => {
+        ratingFlowState.rescueShowError = false;
+    });
 
     if (isHTMLFormElement(rescueForm)) {
         rescueForm.addEventListener("submit", (event) => {

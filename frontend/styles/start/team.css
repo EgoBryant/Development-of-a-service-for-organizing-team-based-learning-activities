@@ -166,6 +166,9 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
 
 /* ─── Carousel участников ─── */
 .team-carousel-wrap {
+    --team-member-card-width: 168px;
+    --team-member-carousel-col-gap: 12px;
+    --team-member-carousel-row-gap: 10px;
     position: relative;
     display: flex;
     align-items: center;
@@ -174,15 +177,91 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
 }
 
 .team-carousel {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
+    display: grid;
+    column-gap: var(--team-member-carousel-col-gap);
+    row-gap: var(--team-member-carousel-row-gap);
+    overflow: visible;
     scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
     flex: 1;
     min-width: 0;
     padding: 4px 2px;
+    align-content: start;
+}
+
+/* 1 участник — в углу */
+.team-carousel-wrap--count-1 {
+    --team-member-card-width: 188px;
+    align-items: flex-start;
+}
+
+.team-carousel-wrap--count-1 .team-carousel {
+    grid-template-columns: var(--team-member-card-width);
+    grid-template-rows: auto;
+    width: var(--team-member-card-width);
+    flex: 0 0 auto;
+    justify-items: start;
+    align-content: start;
+}
+
+/* 2 участника — в ряд */
+.team-carousel-wrap--count-2 .team-carousel {
+    grid-template-columns: repeat(2, var(--team-member-card-width));
+    grid-template-rows: auto;
+    grid-auto-flow: row;
+    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
+    flex: 0 0 auto;
+}
+
+/* 3 участника — треугольник */
+.team-carousel-wrap--count-3 .team-carousel {
+    grid-template-columns: repeat(2, var(--team-member-card-width));
+    grid-template-rows: auto auto;
+    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
+    flex: 0 0 auto;
+    justify-items: center;
+}
+
+.team-carousel-wrap--count-3 .team-member-card:nth-child(1) {
+    grid-column: 1 / -1;
+    justify-self: center;
+}
+
+.team-carousel-wrap--count-3 .team-member-card:nth-child(2) {
+    justify-self: end;
+}
+
+.team-carousel-wrap--count-3 .team-member-card:nth-child(3) {
+    justify-self: start;
+}
+
+/* 4 участника — квадрат 2×2 */
+.team-carousel-wrap--count-4 .team-carousel {
+    grid-template-columns: repeat(2, var(--team-member-card-width));
+    grid-template-rows: repeat(2, auto);
+    grid-auto-flow: row;
+    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
+    flex: 0 0 auto;
+}
+
+/* 5+ — две строки, горизонтальная прокрутка */
+.team-carousel-wrap--scrollable .team-carousel,
+.team-carousel.team-carousel--scroll {
+    grid-template-rows: repeat(2, auto);
+    grid-auto-flow: column;
+    grid-auto-columns: var(--team-member-card-width);
+    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    flex: 1 1 auto;
+}
+
+.team-carousel-wrap--scrollable .team-member-card,
+.team-carousel.team-carousel--scroll .team-member-card {
+    scroll-snap-align: start;
 }
 
 .team-carousel::-webkit-scrollbar {
@@ -236,7 +315,7 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
 /* ─── Карточка участника ─── */
 .team-member-card {
     flex-shrink: 0;
-    width: 172px;
+    width: var(--team-member-card-width, 168px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -302,10 +381,10 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    margin-top: -18px;
-    padding: 8px 12px;
+    margin-top: -20px;
+    padding: 10px 14px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -322,12 +401,12 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    margin-top: 8px;
-    padding: 8px 8px;
+    margin-top: 10px;
+    padding: 10px 10px;
     background: var(--exam-button-gradient);
     color: #fff;
     box-sizing: border-box;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
