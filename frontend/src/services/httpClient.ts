@@ -76,7 +76,29 @@ export function getErrorMessage(error: unknown): string {
         return "Нет доступа к этому действию.";
     }
 
+    if (isTransientApiError(error)) {
+        return "Сервер временно недоступен. Подождите несколько секунд и повторите попытку.";
+    }
+
     return error instanceof Error ? error.message : "Не удалось выполнить запрос.";
+}
+
+export function isTransientApiError(error: unknown): boolean {
+    if (error instanceof TypeError) {
+        return true;
+    }
+
+    const status = (error as ApiRequestError | undefined)?.status;
+    return status === 502 || status === 503 || status === 504;
+}
+
+export function shouldClearSessionOnAuthError(error: unknown): boolean {
+    if (isTransientApiError(error)) {
+        return false;
+    }
+
+    const status = (error as ApiRequestError | undefined)?.status;
+    return status === 401 || status === 404;
 }
 
 function translateApiErrorMessage(message: string, code?: string): string {

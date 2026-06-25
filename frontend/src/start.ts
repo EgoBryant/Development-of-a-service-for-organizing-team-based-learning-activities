@@ -166,7 +166,7 @@ import {
     updateHelpRequestStatus,
     updateTeamJoinRequestStatus
 } from "./services/teamApi";
-import { getErrorMessage } from "./services/httpClient";
+import { getErrorMessage, shouldClearSessionOnAuthError } from "./services/httpClient";
 import { createAssignment, mapTeamRescueDraftToCreatePayload, mapTasksRequestDraftToCreatePayload } from "./services/assignmentsApi";
 import { persistDraftAttachments } from "./services/assignmentAttachmentsStore";
 import { buildUserProfileFromAuthResponse } from "./services/profileMapper";
@@ -1037,11 +1037,15 @@ async function bootstrap(): Promise<void> {
         applyPersistedClientStateAfterMe();
         await refreshUserActivityWorkspace(session.token);
         await refreshTeamWorkspace();
-        await refreshRatingWorkspace();
+        if (appState.dashboardSection === "rating") {
+            await refreshRatingWorkspace(session.token);
+        }
         appState.view = "account";
         clearStatus();
     } catch (error) {
-        clearSession();
+        if (shouldClearSessionOnAuthError(error)) {
+            clearSession();
+        }
         setStatus(getErrorMessage(error), "error");
         appState.view = "sign-in";
     } finally {
@@ -2896,29 +2900,21 @@ async function refreshTeamWorkspace(): Promise<void> {
         return;
     }
 
-    try {
-        appState.teamCatalog = await fetchTeams(token);
-    } catch {
-        appState.teamCatalog = [];
-    }
+    const [teamsResult, joinRequestsResult, myVotesResult, teamDataResult] = await Promise.allSettled([
+        fetchTeams(token),
+        fetchTeamJoinRequests(token),
+        fetchMyVotes(token),
+        fetchMyTeam(token)
+    ]);
 
-    try {
-        appState.teamJoinRequests = await fetchTeamJoinRequests(token);
-    } catch {
-        appState.teamJoinRequests = [];
-    }
+    appState.teamCatalog = teamsResult.status === "fulfilled" ? teamsResult.value : [];
+    appState.teamJoinRequests = joinRequestsResult.status === "fulfilled" ? joinRequestsResult.value : [];
+    appState.teamMyVotes = myVotesResult.status === "fulfilled" ? myVotesResult.value : [];
 
-    try {
-        appState.teamMyVotes = await fetchMyVotes(token);
-    } catch {
-        appState.teamMyVotes = [];
-    }
+    if (teamDataResult.status === "fulfilled") {
+        const teamData = teamDataResult.value;
 
-    try {
-        const teamData = await fetchMyTeam(token);
-        
         if (teamData) {
-            // Если команда успешно вернулась
             appState.currentTeam = teamData;
             appState.localCreatedTeam = null;
             if (appState.profile) {
@@ -2947,36 +2943,22 @@ async function refreshTeamWorkspace(): Promise<void> {
                 };
             }
         }
-    } catch {
-        if (!appState.currentTeam) {
-            appState.currentTeam = null;
-        }
+    } else if (!appState.currentTeam) {
+        appState.currentTeam = null;
     }
 
     if (appState.currentTeam || appState.profile?.teamId) {
-        try {
-            appState.teamCheckIns = await fetchCheckIns(token);
-        } catch {
-            appState.teamCheckIns = [];
-        }
+        const [checkInsResult, helpRequestsResult, activityResult, weeklyStatsResult] = await Promise.allSettled([
+            fetchCheckIns(token),
+            fetchHelpRequests(token),
+            fetchTeamActivity(token),
+            fetchTeamWeeklyStats(token)
+        ]);
 
-        try {
-            appState.teamHelpRequests = await fetchHelpRequests(token);
-        } catch {
-            appState.teamHelpRequests = [];
-        }
-
-        try {
-            appState.teamActivityFeed = await fetchTeamActivity(token);
-        } catch {
-            appState.teamActivityFeed = [];
-        }
-
-        try {
-            appState.teamWeeklyStats = await fetchTeamWeeklyStats(token);
-        } catch {
-            appState.teamWeeklyStats = null;
-        }
+        appState.teamCheckIns = checkInsResult.status === "fulfilled" ? checkInsResult.value : [];
+        appState.teamHelpRequests = helpRequestsResult.status === "fulfilled" ? helpRequestsResult.value : [];
+        appState.teamActivityFeed = activityResult.status === "fulfilled" ? activityResult.value : [];
+        appState.teamWeeklyStats = weeklyStatsResult.status === "fulfilled" ? weeklyStatsResult.value : null;
     } else {
         appState.teamCheckIns = [];
         appState.teamHelpRequests = [];

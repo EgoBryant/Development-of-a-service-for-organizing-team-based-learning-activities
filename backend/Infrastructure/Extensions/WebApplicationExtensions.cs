@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using TeamExamProject.Data;
-using TeamExamProject.Services;
+using TeamExamProject.Infrastructure;
 
 namespace TeamExamProject.Infrastructure.Extensions;
 
@@ -10,21 +9,33 @@ public static class WebApplicationExtensions
 {
     private const string FrontendCorsPolicyName = "Frontend";
 
+    /// <summary>Регистрирует фоновую инициализацию PostgreSQL.</summary>
+    public static IServiceCollection AddDatabaseInitialization(this IServiceCollection services)
+    {
+        services.AddSingleton<DatabaseReadiness>();
+        services.AddSingleton<DatabaseInitializationService>();
+        services.AddHostedService<DatabaseInitializationHostedService>();
+        return services;
+    }
+
+    /// <summary>Применяет middleware готовности БД.</summary>
+    public static WebApplication UseDatabaseReadiness(this WebApplication app)
+    {
+        app.UseMiddleware<DatabaseReadinessMiddleware>();
+        return app;
+    }
+
     /// <summary>Применяет миграции EF Core и заполняет начальные данные с повторными попытками подключения.</summary>
     /// <param name="app">Экземпляр веб-приложения.</param>
     /// <param name="connectionString">Строка подключения к PostgreSQL.</param>
+    [Obsolete("Use AddDatabaseInitialization and DatabaseInitializationHostedService instead.")]
     public static async Task InitializeDatabaseAsync(
         this WebApplication app,
         string connectionString)
     {
         await using var scope = app.Services.CreateAsyncScope();
-
-        var logger = scope.ServiceProvider
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger("DatabaseStartup");
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        await InitializeDatabaseCoreAsync(app, dbContext, logger, connectionString, scope.ServiceProvider);
+        var initializationService = scope.ServiceProvider.GetRequiredService<DatabaseInitializationService>();
+        await initializationService.InitializeAsync();
     }
 
     /// <summary>Регистрирует middleware: Swagger, обработку ошибок, CORS, аутентификацию и авторизацию.</summary>
@@ -52,8 +63,19 @@ public static class WebApplicationExtensions
     public static WebApplication MapApplicationEndpoints(this WebApplication app)
     {
         app.MapControllers();
-        app.MapGet("/health", async (AppDbContext dbContext) =>
+        app.MapGet("/health", async (AppDbContext dbContext, DatabaseReadiness readiness) =>
         {
+            if (!readiness.IsReady)
+            {
+                return Results.Json(
+                    new
+                    {
+                        status = readiness.HasFailed ? "failed" : "starting",
+                        database = "initializing"
+                    },
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+
             var canConnect = await dbContext.Database.CanConnectAsync();
             return canConnect
                 ? Results.Ok(new { status = "ok", database = "up" })
@@ -61,85 +83,5 @@ public static class WebApplicationExtensions
         });
 
         return app;
-    }
-
-    private static async Task InitializeDatabaseCoreAsync(
-        WebApplication app,
-        AppDbContext dbContext,
-        ILogger logger,
-        string connectionString,
-        IServiceProvider services)
-    {
-        const int MaxAttempts = 10;
-        var delay = TimeSpan.FromSeconds(3);
-
-        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
-        {
-            try
-            {
-                await dbContext.Database.MigrateAsync();
-                await SeedData.InitializeAsync(dbContext);
-                await services.GetRequiredService<ITeamScoreService>().RecalculateAllTeamScoresAsync();
-                logger.LogInformation("Database migration and seed completed successfully.");
-                return;
-            }
-            catch (Exception exception) when (IsDatabaseConnectionError(exception))
-            {
-                logger.LogWarning(
-                    exception,
-                    "Database connection attempt {Attempt}/{MaxAttempts} failed for {ConnectionTarget}.",
-                    attempt,
-                    MaxAttempts,
-                    DescribeConnectionTarget(connectionString));
-
-                if (attempt == MaxAttempts)
-                {
-                    var message =
-                        $"Could not connect to PostgreSQL at {DescribeConnectionTarget(connectionString)} after {MaxAttempts} attempts. " +
-                        "Start PostgreSQL first, or override ConnectionStrings__DefaultConnection with a reachable host.";
-
-                    if (app.Environment.IsDevelopment())
-                    {
-                        logger.LogError("{Message} The API will continue to start in degraded mode.", message);
-                        return;
-                    }
-
-                    throw new InvalidOperationException(message, exception);
-                }
-
-                await Task.Delay(delay);
-            }
-        }
-    }
-
-    private static bool IsDatabaseConnectionError(Exception exception)
-    {
-        if (exception is TimeoutException || exception.InnerException is TimeoutException)
-        {
-            return true;
-        }
-
-        if (exception is PostgresException postgresException)
-        {
-            return postgresException.SqlState.StartsWith("08", StringComparison.Ordinal);
-        }
-
-        if (exception.InnerException is PostgresException innerPostgresException)
-        {
-            return innerPostgresException.SqlState.StartsWith("08", StringComparison.Ordinal);
-        }
-
-        return exception is NpgsqlException
-               || exception.InnerException is NpgsqlException;
-    }
-
-    private static string DescribeConnectionTarget(string connectionString)
-    {
-        var builder = new NpgsqlConnectionStringBuilder(connectionString);
-        var host = string.IsNullOrWhiteSpace(builder.Host) ? "unknown-host" : builder.Host;
-        var port = builder.Port == 0 ? 5432 : builder.Port;
-        var database = string.IsNullOrWhiteSpace(builder.Database) ? "unknown-db" : builder.Database;
-
-        return $"{host}:{port}/{database}";
     }
 }

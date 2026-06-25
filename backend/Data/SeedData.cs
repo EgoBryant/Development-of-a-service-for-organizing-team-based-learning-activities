@@ -208,15 +208,15 @@ public static class SeedData
     {
         var year = DateTime.UtcNow.Year;
         var catalog = BuildAssignmentCatalog(year);
+        var existingAssignments = await dbContext.Assignments.ToListAsync();
+        var existingByKey = existingAssignments.ToDictionary(
+            assignment => (assignment.LeagueTier, assignment.Title),
+            assignment => assignment);
         var changed = false;
 
         foreach (var template in catalog)
         {
-            var existing = await dbContext.Assignments
-                .FirstOrDefaultAsync(assignment =>
-                    assignment.LeagueTier == template.LeagueTier && assignment.Title == template.Title);
-
-            if (existing is null)
+            if (!existingByKey.TryGetValue((template.LeagueTier, template.Title), out var existing))
             {
                 dbContext.Assignments.Add(template);
                 changed = true;
