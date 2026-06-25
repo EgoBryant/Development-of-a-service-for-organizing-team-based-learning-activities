@@ -14,6 +14,7 @@ public class ChallengesService : IChallengesService
     private readonly IKrkCalculationService _krkCalculationService;
     private readonly IActivityFeedService _activityFeed;
     private readonly IAchievementsService _achievements;
+    private readonly ITeamScoreService _teamScoreService;
 
     /// <summary>
     /// Создаёт сервис челленджей.
@@ -22,12 +23,14 @@ public class ChallengesService : IChallengesService
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
         IActivityFeedService activityFeed,
-        IAchievementsService achievements)
+        IAchievementsService achievements,
+        ITeamScoreService teamScoreService)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
         _activityFeed = activityFeed;
         _achievements = achievements;
+        _teamScoreService = teamScoreService;
     }
 
     /// <summary>
@@ -184,6 +187,7 @@ public class ChallengesService : IChallengesService
         var progressEntry = await _dbContext.TeamChallengeProgresses
             .Include(progress => progress.Challenge)
             .Include(progress => progress.Team)
+            .Include(progress => progress.SubmittedByUser)
             .SingleOrDefaultAsync(progress => progress.Id == progressId, cancellationToken);
 
         if (progressEntry is null)
@@ -203,23 +207,39 @@ public class ChallengesService : IChallengesService
 
         if (!wasApproved && willBeApproved && progressEntry.Challenge is not null && progressEntry.Team is not null)
         {
-            progressEntry.Team.Score += progressEntry.Challenge.BonusPoints;
+            var submitter = progressEntry.SubmittedByUser
+                ?? await _dbContext.Users.SingleOrDefaultAsync(
+                    user => user.Id == progressEntry.SubmittedByUserId,
+                    cancellationToken);
+            if (submitter is not null)
+            {
+                submitter.UserPoints += progressEntry.Challenge.BonusPoints;
+            }
+
             await _activityFeed.AppendAsync(
                 ActivityFeedItemTypes.ChallengeApproved,
                 $"Команде «{progressEntry.Team.Name}» засчитали челлендж «{progressEntry.Challenge.Title}» (+{progressEntry.Challenge.BonusPoints} баллов).",
                 progressEntry.TeamId,
-                null,
+                progressEntry.SubmittedByUserId,
                 cancellationToken);
         }
         else if (wasApproved && !willBeApproved && progressEntry.Challenge is not null && progressEntry.Team is not null)
         {
-            progressEntry.Team.Score = Math.Max(0, progressEntry.Team.Score - progressEntry.Challenge.BonusPoints);
+            var submitter = progressEntry.SubmittedByUser
+                ?? await _dbContext.Users.SingleOrDefaultAsync(
+                    user => user.Id == progressEntry.SubmittedByUserId,
+                    cancellationToken);
+            if (submitter is not null)
+            {
+                submitter.UserPoints = Math.Max(0, submitter.UserPoints - progressEntry.Challenge.BonusPoints);
+            }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         if (wasApproved != willBeApproved)
         {
+            await _teamScoreService.RecalculateTeamScoreAsync(progressEntry.TeamId, recalculateKrk: false, cancellationToken);
             await _krkCalculationService.RecalculateForTeamAsync(progressEntry.TeamId, cancellationToken);
         }
 

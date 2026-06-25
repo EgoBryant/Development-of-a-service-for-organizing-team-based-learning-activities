@@ -34,6 +34,8 @@ public static class ActivityFeedItemTypes
     public const string TeamJoinRequestAccepted = "TEAM_JOIN_REQUEST_ACCEPTED";
     /// <summary>Заявка на вступление отклонена.</summary>
     public const string TeamJoinRequestRejected = "TEAM_JOIN_REQUEST_REJECTED";
+    /// <summary>Команда обновлена (например, переименована).</summary>
+    public const string TeamUpdated = "TEAM_UPDATED";
     /// <summary>Сдан еженедельный check-in.</summary>
     public const string CheckIn = "CHECKIN";
     /// <summary>Проголосовали за участника команды.</summary>

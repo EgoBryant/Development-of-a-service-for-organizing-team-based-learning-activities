@@ -11,14 +11,19 @@ public class AdminUserService : IAdminUserService
 {
     private readonly AppDbContext _dbContext;
     private readonly IAchievementsService _achievementsService;
+    private readonly ITeamScoreService _teamScoreService;
 
     /// <summary>
     /// Создаёт сервис администрирования пользователей.
     /// </summary>
-    public AdminUserService(AppDbContext dbContext, IAchievementsService achievementsService)
+    public AdminUserService(
+        AppDbContext dbContext,
+        IAchievementsService achievementsService,
+        ITeamScoreService teamScoreService)
     {
         _dbContext = dbContext;
         _achievementsService = achievementsService;
+        _teamScoreService = teamScoreService;
     }
 
     /// <summary>
@@ -36,10 +41,8 @@ public class AdminUserService : IAdminUserService
         user.UserPoints = userPoints;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        if (userPoints > 0)
-        {
-            await _achievementsService.GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
-        }
+        await _achievementsService.TryGrantTop3TeamWhenTaskPointsEarnedAsync(userId, cancellationToken);
+        await _teamScoreService.RecalculateForUserTeamAsync(userId, cancellationToken: cancellationToken);
 
         return true;
     }
@@ -60,10 +63,8 @@ public class AdminUserService : IAdminUserService
         user.UserPoints = userPoints;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        if (userPoints > 0)
-        {
-            await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.Top3Team, cancellationToken);
-        }
+        await _achievementsService.TryGrantTop3TeamWhenTaskPointsEarnedAsync(user.Id, cancellationToken);
+        await _teamScoreService.RecalculateForUserTeamAsync(user.Id, cancellationToken: cancellationToken);
 
         return true;
     }

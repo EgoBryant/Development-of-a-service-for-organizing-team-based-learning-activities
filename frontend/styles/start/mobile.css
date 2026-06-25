@@ -2094,14 +2094,46 @@
         width: 100%;
     }
 
-    .profile-modal--form .profile-pill-button {
-        width: min(100%, 248px);
+    .profile-modal--form .profile-pill-button,
+    .profile-modal--form .profile-team-flow-btn,
+    .profile-modal--form .profile-modal-team-disband-btn,
+    .profile-modal--form .profile-modal-team-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
         max-width: 100%;
         min-height: 42px;
-        box-sizing: border-box;
-        margin-inline: auto;
+        height: auto;
+        margin: 0;
         padding: 11px 18px;
+        border-radius: 999px;
+        box-sizing: border-box;
+        font-family: "Montserrat", sans-serif;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+        text-transform: uppercase;
         text-align: center;
+        white-space: nowrap;
+    }
+
+    .profile-modal--form .profile-pill-button,
+    .profile-modal--form .profile-modal-photo-row .profile-pill-button {
+        width: min(100%, 248px);
+        max-width: 100%;
+        margin-inline: auto;
+    }
+
+    .profile-modal--form .profile-team-flow-btn {
+        border: none;
+        background: var(--exam-button-gradient);
+        color: #ffffff;
+        cursor: pointer;
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+            0 10px 18px rgba(78, 95, 205, 0.26);
     }
 
     .profile-modal--form .profile-modal-input,
@@ -2119,6 +2151,61 @@
         padding-top: 2px;
         text-align: center;
         font-size: 11px;
+    }
+
+    .profile-modal--form .profile-modal-team-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 2px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(164, 185, 230, 0.35);
+    }
+
+    .profile-modal--form .profile-modal-section-title {
+        margin: 0;
+        text-align: center;
+        color: #172d9d;
+        font-family: "Montserrat", sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .profile-modal--form .profile-modal-input--team-name {
+        margin-top: 2px;
+    }
+
+    .profile-modal--form .profile-modal-team-disband-btn {
+        border: none;
+        background: var(--exam-button-gradient-red, linear-gradient(135deg, #ff6eb4 0%, #df2e80 100%));
+        color: #ffffff;
+        cursor: pointer;
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+            0 10px 18px rgba(223, 46, 128, 0.22);
+    }
+
+    .profile-modal--form .profile-modal-team-disband-btn:disabled,
+    .profile-modal--form .profile-modal-team-action:disabled,
+    .profile-modal--form .profile-team-flow-btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+    }
+
+    .profile-modal--form.profile-modal--shell .profile-modal-card.profile-modal-card--shell.profile-modal-card--form .profile-team-flow-btn {
+        width: 100%;
+        min-height: 42px;
+        padding: 11px 18px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+    }
+
+    .profile-modal--form.profile-modal--shell .profile-modal-card.profile-modal-card--shell.profile-modal-card--form:has(.profile-modal-team-section) {
+        max-height: min(calc(100dvh - 24px), 700px);
+        overflow-y: auto;
     }
 
     @media (max-width: 380px) {
@@ -2142,8 +2229,27 @@
         }
 
         .profile-modal--form .profile-modal-file,
-        .profile-modal--form .profile-pill-button {
+        .profile-modal--form .profile-pill-button,
+        .profile-modal--form .profile-team-flow-btn,
+        .profile-modal--form .profile-modal-team-disband-btn,
+        .profile-modal--form .profile-modal-team-action {
+            min-height: 40px;
+            padding: 10px 14px;
+            font-size: 10px;
+            letter-spacing: 0.06em;
+        }
+
+        .profile-modal--form .profile-modal-photo-row .profile-pill-button {
             width: 100%;
+        }
+
+        .profile-modal--form .profile-modal-team-section {
+            gap: 8px;
+            padding-top: 12px;
+        }
+
+        .profile-modal--form .profile-modal-section-title {
+            font-size: 11px;
         }
 
         .team-vote-card.profile-modal-card.profile-modal-card--shell,
@@ -3809,7 +3915,7 @@
     }
 
     .profile-app--dashboard-profile .rating-team-podium-card {
-        min-height: clamp(140px, 20vh, 180px);
+        min-height: clamp(96px, 14vh, 124px);
     }
 
     .profile-app--dashboard-profile .rating-list-scroll {
@@ -4187,7 +4293,7 @@
     }
 
     .profile-app--dashboard-profile .rating-featured-row--teams {
-        min-height: 196px;
+        min-height: 150px;
         padding-top: 6px;
     }
 
@@ -4234,8 +4340,8 @@
 
     .profile-app--dashboard-profile .rating-team-podium-card,
     .profile-app--dashboard-profile .rating-team-podium-slot--first .rating-team-podium-card {
-        min-height: 164px;
-        padding: 18px 8px 16px;
+        min-height: 96px;
+        padding: 12px 8px 10px;
         border-radius: 22px;
     }
 
@@ -4690,7 +4796,7 @@
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-featured-row--teams {
         display: block;
         width: 100%;
-        min-height: 230px;
+        min-height: 168px;
         padding: 8px 10px 0;
     }
 
@@ -4702,7 +4808,7 @@
         align-items: end;
         justify-items: center;
         column-gap: 14px;
-        row-gap: 16px;
+        row-gap: 12px;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first {
@@ -4738,19 +4844,19 @@
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-card,
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first .rating-team-podium-card {
-        min-height: 82px;
-        padding: 10px 10px 8px;
+        min-height: 54px;
+        padding: 7px 8px 4px;
         border: none;
-        border-radius: 30px;
+        border-radius: 24px;
         background: rgba(240, 245, 255, 0.98);
         box-shadow: 0 10px 20px rgba(29, 83, 190, 0.16);
-        gap: 6px;
+        gap: 4px;
         justify-content: center;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-slot--first .rating-team-podium-card {
-        min-height: 88px;
-        padding-top: 12px;
+        min-height: 58px;
+        padding-top: 8px;
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-icon {
@@ -4759,11 +4865,11 @@
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-name {
         width: 100%;
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 800;
         letter-spacing: 0.03em;
         text-transform: uppercase;
-        line-height: 1.1;
+        line-height: 1.05;
         color: rgba(32, 95, 205, 0.95);
         text-align: center;
         white-space: nowrap;
@@ -4773,14 +4879,15 @@
     }
 
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points {
-        min-height: 28px;
-        padding: 0 8px;
+        min-height: 22px;
+        margin-top: -12px;
+        padding: 0 6px;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
-        font-size: 17px;
+        gap: 4px;
+        font-size: 13px;
         font-weight: 800;
         line-height: 1;
         letter-spacing: -0.02em;
@@ -4794,9 +4901,9 @@
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points::before,
     .profile-app--dashboard-profile .rating-leaderboard.rating-leaderboard--teams .rating-team-podium-points::after {
         content: "";
-        width: 12px;
-        height: 12px;
-        flex: 0 0 12px;
+        width: 10px;
+        height: 10px;
+        flex: 0 0 10px;
         background-repeat: no-repeat;
         background-position: center;
         background-size: contain;

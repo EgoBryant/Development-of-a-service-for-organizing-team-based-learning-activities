@@ -360,6 +360,49 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
+    /// PATCH <c>api/teams/me</c> — обновляет название команды текущего капитана.
+    /// Требуется JWT и политика Student. 200 с обновлённой командой; 403 — не капитан; 404 — нет команды.
+    /// </summary>
+    [HttpPatch("me")]
+    [Authorize(Policy = PolicyNames.Student)]
+    [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TeamResponse>> UpdateMyTeam(UpdateTeamDto request)
+    {
+        var userId = CurrentUserId;
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _teamService.UpdateMyTeamAsync(userId.Value, request, HttpContext.RequestAborted);
+        return result.Type switch
+        {
+            UpdateTeamResultType.UserNotFound => NotFound(Problem(
+                title: "User not found",
+                detail: "The current user was not found.",
+                statusCode: StatusCodes.Status404NotFound)),
+            UpdateTeamResultType.NotInTeam => NotFound(Problem(
+                title: "Team not found",
+                detail: "The current user is not in a team.",
+                statusCode: StatusCodes.Status404NotFound)),
+            UpdateTeamResultType.NotCaptain => Forbid(),
+            UpdateTeamResultType.InvalidName => BadRequest(Problem(
+                title: "Invalid team name",
+                detail: "Team name must not be empty.",
+                statusCode: StatusCodes.Status400BadRequest)),
+            UpdateTeamResultType.Updated when result.Team is not null => Ok(result.Team),
+            _ => Problem(
+                title: "Team update failed",
+                detail: "The team could not be updated.",
+                statusCode: StatusCodes.Status500InternalServerError)
+        };
+    }
+
+    /// <summary>
     /// POST <c>api/teams/me/leave</c> — покидает команду (только участник, не капитан).
     /// Требуется JWT и политика Student. 204 при успехе; 400 — капитан не может покинуть команду;
     /// 404 — пользователь не в команде.

@@ -18,4 +18,9 @@ public interface IAchievementsService
     /// </summary>
     /// <returns><c>true</c>, если достижение было выдано; <c>false</c>, если уже было у пользователя.</returns>
     Task<bool> GrantIfMissingAsync(int userId, string achievementCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Выдаёт «В игре!», если у пользователя есть баллы за задания, не считая бонусов от других ачивок.
+    /// </summary>
+    Task TryGrantTop3TeamWhenTaskPointsEarnedAsync(int userId, CancellationToken cancellationToken = default);
 }

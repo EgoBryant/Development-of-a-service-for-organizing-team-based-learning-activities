@@ -11,7 +11,7 @@ public class Team
     public string Description { get; set; } = string.Empty;
     /// <summary>Код приглашения для вступления в команду.</summary>
     public string InviteCode { get; set; } = string.Empty;
-    /// <summary>Командный счёт (baseRating). Источники: импорт оценок, ручные правки админа, начисление за «спасение» и челленджи.</summary>
+    /// <summary>Командный счёт: сумма <see cref="User.UserPoints"/> всех участников команды.</summary>
     public int Score { get; set; } = 0;
     /// <summary>Кэш последнего рассчитанного КРК (0–10). Пересчитывается KrkCalculationService при изменениях.</summary>
     public double KrkCached { get; set; }

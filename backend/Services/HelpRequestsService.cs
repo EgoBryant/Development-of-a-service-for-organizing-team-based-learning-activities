@@ -22,6 +22,7 @@ public class HelpRequestsService : IHelpRequestsService
     private readonly IKrkCalculationService _krkCalculationService;
     private readonly IActivityFeedService _activityFeed;
     private readonly IAchievementsService _achievements;
+    private readonly ITeamScoreService _teamScoreService;
 
     /// <summary>
     /// Создаёт сервис запросов на помощь.
@@ -30,12 +31,14 @@ public class HelpRequestsService : IHelpRequestsService
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
         IActivityFeedService activityFeed,
-        IAchievementsService achievements)
+        IAchievementsService achievements,
+        ITeamScoreService teamScoreService)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
         _activityFeed = activityFeed;
         _achievements = achievements;
+        _teamScoreService = teamScoreService;
     }
 
     /// <summary>
@@ -195,15 +198,22 @@ public class HelpRequestsService : IHelpRequestsService
 
         if (becameCompleted && !helpRequest.BonusAwarded && helpRequest.BonusPoints > 0)
         {
-            var helpingTeam = helpRequest.ToTeam ?? await _dbContext.Teams.SingleOrDefaultAsync(team => team.Id == helpingTeamId, cancellationToken);
-            if (helpingTeam is not null)
+            var bonusPoints = (int)Math.Round(helpRequest.BonusPoints, MidpointRounding.AwayFromZero);
+            var awardingUser = await _dbContext.Users
+                .SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
+            if (awardingUser is not null && bonusPoints > 0)
             {
-                helpingTeam.Score += (int)Math.Round(helpRequest.BonusPoints, MidpointRounding.AwayFromZero);
+                awardingUser.UserPoints += bonusPoints;
                 helpRequest.BonusAwarded = true;
             }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (becameCompleted && helpRequest.BonusAwarded)
+        {
+            await _teamScoreService.RecalculateTeamScoreAsync(helpingTeamId, recalculateKrk: false, cancellationToken);
+        }
 
         if (becameAccepted)
         {

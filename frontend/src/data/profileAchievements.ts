@@ -51,7 +51,7 @@ export const FALLBACK_ACHIEVEMENT_CATALOG: readonly AchievementCatalogItem[] = [
         id: 3,
         code: "TOP3_TEAM",
         title: "В игре!",
-        description: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
+        description: "Заработайте первые баллы за задания (не за другие достижения), чтобы попасть в рейтинг.",
         iconUrl: ""
     },
     {
@@ -96,8 +96,8 @@ const PRESENTATION_BY_CODE: Record<string, AchievementPresentation> = {
         iconLabel: "В игре!",
         iconUrl: rTaskAchievementIconUrl,
         modalTitle: "В ИГРЕ!",
-        modalDescription: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
-        criterion: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
+        modalDescription: "Заработайте первые баллы за задания (не за другие достижения), чтобы попасть в рейтинг.",
+        criterion: "Заработайте первые баллы за задания (не за другие достижения), чтобы попасть в рейтинг.",
         points: 10,
         tone: "amber"
     },

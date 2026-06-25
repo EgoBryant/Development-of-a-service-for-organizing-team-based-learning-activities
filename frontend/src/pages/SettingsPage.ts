@@ -50,6 +50,13 @@ export function getSettingsGroupDisplay(group: string): SettingsFieldDisplay {
         : { text: "ГРУППА", isPlaceholder: true };
 }
 
+export function getSettingsTeamNameDisplay(teamName: string): SettingsFieldDisplay {
+    const trimmed = teamName.trim();
+    return trimmed
+        ? { text: trimmed, isPlaceholder: false }
+        : { text: "НАЗВАНИЕ КОМАНДЫ", isPlaceholder: true };
+}
+
 function renderSettingsFieldValue(display: SettingsFieldDisplay, dataAttr: string): string {
     const stateClass = display.isPlaceholder ? "is-placeholder" : "is-filled";
     return `<span class="settings-field-value ${stateClass}" ${dataAttr}>${escapeHtml(display.text)}</span>`;
@@ -58,11 +65,36 @@ function renderSettingsFieldValue(display: SettingsFieldDisplay, dataAttr: strin
 export function renderSettingsPageMain(
     statusHtml: string,
     draft: ProfileEdits,
-    avatarFileName = ""
+    avatarFileName = "",
+    teamName: string | null = null
 ): string {
     const photoDisplay = getSettingsPhotoDisplay(draft.avatarDataUrl, avatarFileName);
     const nameDisplay = getSettingsNameDisplay(draft.fullName);
     const groupDisplay = getSettingsGroupDisplay(draft.group);
+    const teamBlockHtml =
+        teamName !== null
+            ? `
+                <article class="settings-card settings-card--team">
+                    <h2 class="settings-card-title">Команда</h2>
+                    <div class="settings-fields">
+                        <div class="settings-field-row" data-settings-row="teamName">
+                            ${renderSettingsFieldValue(getSettingsTeamNameDisplay(teamName), "data-settings-team-name-label")}
+                            <input
+                                id="settingsTeamNameInput"
+                                class="settings-field-input"
+                                type="text"
+                                value="${escapeHtml(teamName)}"
+                                maxlength="150"
+                                autocomplete="organization"
+                            >
+                            <button type="button" class="settings-field-action" data-settings-edit="teamName">ИЗМЕНИТЬ</button>
+                        </div>
+                        <div class="settings-team-disband-row">
+                            <button type="button" class="settings-team-disband-btn" id="settingsDisbandTeamButton">УДАЛИТЬ КОМАНДУ</button>
+                        </div>
+                    </div>
+                </article>`
+            : "";
 
     return `
         <section class="profile-main settings-dashboard-main settings-page-shell">
@@ -106,6 +138,33 @@ export function renderSettingsPageMain(
                         </div>
                     </div>
                 </article>
+                ${teamBlockHtml}
             </div>
         </section>`;
+}
+
+export function renderMobileTeamSettingsSection(teamName: string): string {
+    return `
+        <div class="profile-modal-team-section">
+            <h3 class="profile-modal-section-title">Команда</h3>
+            <input
+                id="settingsTeamNameInput"
+                class="profile-modal-input profile-modal-input--team-name"
+                type="text"
+                placeholder="НАЗВАНИЕ КОМАНДЫ"
+                value="${escapeHtml(teamName)}"
+                maxlength="150"
+                autocomplete="organization"
+            >
+            <button
+                type="button"
+                class="profile-team-flow-btn profile-team-flow-btn--search profile-modal-team-action"
+                id="profileApplyTeamNameButton"
+            >ИЗМЕНИТЬ</button>
+            <button
+                type="button"
+                class="profile-modal-team-disband-btn"
+                id="settingsDisbandTeamButton"
+            >УДАЛИТЬ КОМАНДУ</button>
+        </div>`;
 }

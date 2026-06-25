@@ -28,6 +28,8 @@ import {
     getSettingsGroupDisplay,
     getSettingsNameDisplay,
     getSettingsPhotoDisplay,
+    getSettingsTeamNameDisplay,
+    renderMobileTeamSettingsSection,
     renderSettingsPageMain
 } from "./pages/SettingsPage";
 import { renderTasksPageMain, wireTasksPageEvents, mountTasksAssignmentModal, renderTasksPageModals } from "./pages/TasksPage";
@@ -100,6 +102,7 @@ import type {
     TeamMemberRow,
     TeamResponse,
     TeamHistoryItem,
+    TeamActivityFeedItem,
     TeamModalKind,
     TeamRescueDraft,
     TeamMemberView,
@@ -155,6 +158,8 @@ import {
     fetchTeamJoinRequests,
     joinTeam as joinTeamApi,
     leaveMyTeam,
+    disbandMyTeam,
+    updateMyTeam,
     searchTeams,
     updateHelpRequestStatus,
     updateTeamJoinRequestStatus
@@ -3081,77 +3086,80 @@ function formatShortDate(value: string | null | undefined): string {
     return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }
 
-function getTempTeamHistoryPreview(): TeamHistoryItem[] {
-    return [
-        {
-            label: "WORKSHOP",
-            title: "Команда «организаторы» провела воркшоп по проектированию API.",
-            meta: "",
-            pointsLabel: "50"
-        },
-        {
-            label: "ACHIEVEMENT",
-            title: "Егор Габов получил ачивку «Свой вклад».",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "CHECK-IN",
-            title: "Команда «Кодеры» завершила check-in 6 недели.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "TRAINING",
-            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "RESCUE",
-            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "WORKSHOP",
-            title: "Команда «организаторы» провела воркшоп по проектированию API.",
-            meta: "",
-            pointsLabel: "50"
-        },
-        {
-            label: "ACHIEVEMENT",
-            title: "Егор Габов получил ачивку «Свой вклад».",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "CHECK-IN",
-            title: "Команда «Кодеры» завершила check-in 6 недели.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "TRAINING",
-            title: "Команда «Конфигураторы» провела обучение по настройке ПО.",
-            meta: "",
-            pointsLabel: "15"
-        },
-        {
-            label: "RESCUE",
-            title: "Команда «Зануда» получила заявку на помощь от команды «Построители».",
-            meta: "",
-            pointsLabel: "15"
-        }
-    ];
+const ACTIVITY_POINTS_IN_MESSAGE_PATTERN = /(?:\+|\()(\d+)\s*бал/i;
+const HELP_COMPLETED_TOPIC_PATTERN = /«Спасение» завершено: «(.+?)»/i;
+
+function mapActivityTypeToHistoryLabel(type: string): string {
+    switch (type) {
+        case "CHECKIN":
+            return "CHECK-IN";
+        case "HELP_CREATED":
+        case "HELP_COMPLETED":
+            return "СПАСЕНИЕ";
+        case "CHALLENGE_APPROVED":
+        case "CHALLENGE_SUBMITTED":
+            return "ЧЕЛЛЕНДЖ";
+        case "ACHIEVEMENT_EARNED":
+            return "АЧИВКА";
+        case "EVENT_CREATED":
+            return "СОБЫТИЕ";
+        case "VOTE":
+            return "ГОЛОС";
+        case "TEAM_JOIN_REQUEST_CREATED":
+        case "TEAM_JOIN_REQUEST_ACCEPTED":
+        case "TEAM_JOIN_REQUEST_REJECTED":
+            return "ЗАЯВКА";
+        default:
+            return type.replace(/_/g, " ");
+    }
 }
 
-function getTeamHistoryItems(): TeamHistoryItem[] {
+function extractPointsFromActivityMessage(message: string): string | undefined {
+    const match = ACTIVITY_POINTS_IN_MESSAGE_PATTERN.exec(message);
+    return match ? match[1] : undefined;
+}
+
+function resolveActivityFeedItemPoints(activity: TeamActivityFeedItem): string | undefined {
+    const fromMessage = extractPointsFromActivityMessage(activity.message);
+    if (fromMessage) {
+        return fromMessage;
+    }
+
+    if (activity.type !== "HELP_COMPLETED") {
+        return undefined;
+    }
+
+    const topicMatch = HELP_COMPLETED_TOPIC_PATTERN.exec(activity.message);
+    if (!topicMatch) {
+        return undefined;
+    }
+
+    const topic = topicMatch[1].trim().toLowerCase();
+    const matchedRequest = appState.teamHelpRequests.find(
+        (request) =>
+            request.status === "Completed" &&
+            request.topic.trim().toLowerCase() === topic &&
+            request.bonusPoints > 0
+    );
+
+    return matchedRequest ? String(matchedRequest.bonusPoints) : undefined;
+}
+
+function mapActivityFeedItemToHistoryItem(activity: TeamActivityFeedItem): TeamHistoryItem {
+    return {
+        label: mapActivityTypeToHistoryLabel(activity.type),
+        title: activity.message,
+        meta: formatShortDate(activity.createdAtUtc),
+        pointsLabel: resolveActivityFeedItemPoints(activity),
+        occurredAtUtc: activity.createdAtUtc
+    };
+}
+
+function buildFallbackTeamHistoryItems(): TeamHistoryItem[] {
     const checkIns = appState.teamCheckIns.map<TeamHistoryItem>((checkIn) => ({
         label: "CHECK-IN",
         title: `Команда завершила check-in ${checkIn.weekNumber} недели.`,
         meta: checkIn.reportText || formatShortDate(checkIn.submittedAtUtc ?? checkIn.createdAtUtc),
-        pointsLabel: "15",
         occurredAtUtc: checkIn.submittedAtUtc ?? checkIn.createdAtUtc
     }));
 
@@ -3179,42 +3187,32 @@ function getTeamHistoryItems(): TeamHistoryItem[] {
         occurredAtUtc: vote.createdAtUtc
     }));
 
-    const items = [...checkIns, ...rescues, ...joinRequests, ...votes];
-    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
-        return getTempTeamHistoryPreview();
-    }
-
-    return items.length > 0
-        ? items
-        : [
-              {
-                  label: "СТАРТ",
-                  title: "История активности появится после check-in, спасения или голосования.",
-                  meta: "MVP"
-              }
-          ];
+    return [...checkIns, ...rescues, ...joinRequests, ...votes].sort((left, right) => {
+        const leftTime = left.occurredAtUtc ? new Date(left.occurredAtUtc).getTime() : 0;
+        const rightTime = right.occurredAtUtc ? new Date(right.occurredAtUtc).getTime() : 0;
+        return rightTime - leftTime;
+    });
 }
 
-const USE_TEMP_TEAM_HISTORY_PREVIEW = true;
-
-function resolveCheckInWeeklyStats(): CheckInWeeklyStats {
-    const computed = computeCheckInWeeklyStats({
-        history: getTeamHistoryItems(),
-        helpRequests: appState.teamHelpRequests,
-        activityItems: [...appState.teamActivityFeed, ...getActivityFeedItems()],
-        currentTeamId: appState.currentTeam?.id ?? appState.profile?.teamId ?? null,
-        includeUndatedHistory: USE_TEMP_TEAM_HISTORY_PREVIEW
-    });
-
-    if (USE_TEMP_TEAM_HISTORY_PREVIEW) {
-        return computed;
+function getTeamHistoryItems(): TeamHistoryItem[] {
+    if (appState.teamActivityFeed.length > 0) {
+        return appState.teamActivityFeed.map(mapActivityFeedItemToHistoryItem);
     }
 
+    return buildFallbackTeamHistoryItems();
+}
+
+function resolveCheckInWeeklyStats(): CheckInWeeklyStats {
     if (appState.teamWeeklyStats) {
         return mapApiWeeklyStats(appState.teamWeeklyStats);
     }
 
-    return computed;
+    return computeCheckInWeeklyStats({
+        history: getTeamHistoryItems(),
+        helpRequests: appState.teamHelpRequests,
+        activityItems: [...appState.teamActivityFeed, ...getActivityFeedItems()],
+        currentTeamId: appState.currentTeam?.id ?? appState.profile?.teamId ?? null
+    });
 }
 
 function getJoinableTeams(searchQuery?: string): TeamSearchItem[] {
@@ -3607,6 +3605,61 @@ function wireTeamLeaveModalEvents(): void {
             void submitLeaveTeam();
         }
     });
+}
+
+async function submitDisbandTeam(): Promise<void> {
+    if (appState.isSubmitting) {
+        return;
+    }
+
+    if (!isTeamCaptain() || !hasTeamAccess()) {
+        setStatus("Удалить команду может только капитан.", "error");
+        render();
+        return;
+    }
+
+    const confirmed = window.confirm("Удалить команду? Все участники будут исключены, действие нельзя отменить.");
+    if (!confirmed) {
+        return;
+    }
+
+    const session = loadSession();
+    if (!session) {
+        setStatus("Сессия не найдена.", "error");
+        render();
+        return;
+    }
+
+    appState.isSubmitting = true;
+    render();
+
+    try {
+        await disbandMyTeam(session.token);
+        clearTeamMembershipState();
+
+        try {
+            appState.profile = await fetchCurrentUser(session.token);
+        } catch {
+            /* локально уже сбросили членство */
+        }
+
+        hydrateProfileClientStateFromStorage();
+        await refreshTeamWorkspace();
+
+        if (hasTeamAccess()) {
+            setStatus("Не удалось удалить команду.", "error");
+            render();
+            return;
+        }
+
+        navigateToProfileDashboard();
+        setStatus("Команда удалена.");
+    } catch (error) {
+        setStatus(getErrorMessage(error), "error");
+    } finally {
+        appState.isSubmitting = false;
+        render();
+    }
 }
 
 async function submitLeaveTeam(): Promise<void> {
@@ -4052,6 +4105,8 @@ function openSettingsView(): void {
 
 const SETTINGS_FIELD_EDIT_LABEL = "ИЗМЕНИТЬ";
 const SETTINGS_FIELD_APPLY_LABEL = "ПРИМЕНИТЬ";
+
+type SettingsTextFieldKey = "name" | "group" | "teamName";
 const SETTINGS_FIELD_SELECT_LABEL = "ВЫБРАТЬ";
 
 function updateSettingsFieldDisplay(node: HTMLElement, display: { text: string; isPlaceholder: boolean }): void {
@@ -4077,14 +4132,22 @@ function syncSettingsFieldDisplaysFromDraft(): void {
     profileMount.querySelectorAll<HTMLElement>("[data-settings-group-label]").forEach((node) => {
         updateSettingsFieldDisplay(node, getSettingsGroupDisplay(draft.group));
     });
+    profileMount.querySelectorAll<HTMLElement>("[data-settings-team-name-label]").forEach((node) => {
+        updateSettingsFieldDisplay(node, getSettingsTeamNameDisplay(getEffectiveTeamName()));
+    });
 }
 
-function getSettingsEditInput(rowKey: "name" | "group"): HTMLInputElement | null {
+function getSettingsEditInput(rowKey: SettingsTextFieldKey): HTMLInputElement | null {
     if (!isHTMLElement(profileMount)) {
         return null;
     }
 
-    const inputId = rowKey === "name" ? "profileNameInput" : "profileGroupInput";
+    const inputId =
+        rowKey === "name"
+            ? "profileNameInput"
+            : rowKey === "group"
+              ? "profileGroupInput"
+              : "settingsTeamNameInput";
     const input = profileMount.querySelector(`#${inputId}`);
     return isHTMLInputElement(input) ? input : null;
 }
@@ -4094,17 +4157,25 @@ function getSettingsEditButton(row: HTMLElement): HTMLButtonElement | null {
     return button ?? null;
 }
 
-function getSettingsFieldOriginalValue(rowKey: "name" | "group"): string {
+function getSettingsFieldOriginalValue(rowKey: SettingsTextFieldKey): string {
     if (rowKey === "name") {
         return (appState.profileFormDraft?.fullName ?? getFullNameDisplay()).trim();
+    }
+
+    if (rowKey === "teamName") {
+        return getEffectiveTeamName().trim();
     }
 
     return normalizeAcademicGroupInput(appState.profileFormDraft?.group ?? getGroupDisplay());
 }
 
-function getSettingsFieldCurrentValue(rowKey: "name" | "group", input: HTMLInputElement): string {
+function getSettingsFieldCurrentValue(rowKey: SettingsTextFieldKey, input: HTMLInputElement): string {
     if (rowKey === "group") {
         return normalizeAcademicGroupInput(input.value);
+    }
+
+    if (rowKey === "teamName") {
+        return input.value.trim();
     }
 
     return input.value.trim();
@@ -4283,7 +4354,7 @@ function resetSettingsEditButton(button: HTMLButtonElement): void {
     button.classList.remove("is-editing-idle", "is-apply-ready");
 }
 
-function canApplySettingsFieldEdit(rowKey: "name" | "group", input: HTMLInputElement, originalValue: string): boolean {
+function canApplySettingsFieldEdit(rowKey: SettingsTextFieldKey, input: HTMLInputElement, originalValue: string): boolean {
     const currentValue = getSettingsFieldCurrentValue(rowKey, input);
     if (currentValue === originalValue) {
         return false;
@@ -4293,10 +4364,14 @@ function canApplySettingsFieldEdit(rowKey: "name" | "group", input: HTMLInputEle
         return isAcademicGroupValid(currentValue);
     }
 
+    if (rowKey === "teamName") {
+        return currentValue.length > 0;
+    }
+
     return true;
 }
 
-function updateSettingsEditButtonState(row: HTMLElement, rowKey: "name" | "group"): void {
+function updateSettingsEditButtonState(row: HTMLElement, rowKey: SettingsTextFieldKey): void {
     const button = getSettingsEditButton(row);
     const input = getSettingsEditInput(rowKey);
     const originalValue = row.dataset.settingsOriginalValue ?? "";
@@ -4316,19 +4391,20 @@ function updateSettingsEditButtonState(row: HTMLElement, rowKey: "name" | "group
 
 function exitSettingsEditRow(row: HTMLElement, revert = true): void {
     const rowKey = row.dataset.settingsRow;
-    if (rowKey !== "name" && rowKey !== "group") {
+    if (rowKey !== "name" && rowKey !== "group" && rowKey !== "teamName") {
         return;
     }
 
-    const input = getSettingsEditInput(rowKey);
+    const typedRowKey = rowKey as SettingsTextFieldKey;
+    const input = getSettingsEditInput(typedRowKey);
     const originalValue = row.dataset.settingsOriginalValue ?? "";
 
     if (revert && input) {
-        input.value = rowKey === "group" ? normalizeAcademicGroupInput(originalValue) : originalValue;
+        input.value = typedRowKey === "group" ? normalizeAcademicGroupInput(originalValue) : originalValue;
         if (appState.profileFormDraft) {
-            if (rowKey === "name") {
+            if (typedRowKey === "name") {
                 appState.profileFormDraft.fullName = input.value;
-            } else {
+            } else if (typedRowKey === "group") {
                 appState.profileFormDraft.group = input.value;
             }
         }
@@ -4343,7 +4419,7 @@ function exitSettingsEditRow(row: HTMLElement, revert = true): void {
     }
 }
 
-function beginSettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): void {
+function beginSettingsFieldEdit(row: HTMLElement, rowKey: SettingsTextFieldKey): void {
     closeSettingsEditRows(row);
 
     const originalValue = getSettingsFieldOriginalValue(rowKey);
@@ -4360,9 +4436,72 @@ function beginSettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): voi
     updateSettingsEditButtonState(row, rowKey);
 }
 
-async function applySettingsFieldEdit(row: HTMLElement, rowKey: "name" | "group"): Promise<void> {
+async function submitTeamNameUpdate(teamName: string): Promise<boolean> {
+    const normalizedTeamName = teamName.trim();
+    if (!normalizedTeamName) {
+        setStatus("Введите название команды.", "error");
+        render();
+        return false;
+    }
+
+    const session = loadSession();
+    if (!session) {
+        setStatus("Сессия не найдена.", "error");
+        render();
+        return false;
+    }
+
+    if (!isTeamCaptain() || !hasTeamAccess()) {
+        setStatus("Изменить команду может только капитан.", "error");
+        render();
+        return false;
+    }
+
+    appState.isSubmitting = true;
+    render();
+
+    try {
+        const team = await updateMyTeam(session.token, { name: normalizedTeamName });
+        if (appState.currentTeam) {
+            appState.currentTeam = { ...appState.currentTeam, name: team.name };
+        }
+        if (appState.profile) {
+            appState.profile = { ...appState.profile, teamName: team.name };
+        }
+        if (appState.localCreatedTeam) {
+            appState.localCreatedTeam = { ...appState.localCreatedTeam, name: team.name };
+        }
+        clearStatus();
+        await refreshTeamWorkspace();
+        setStatus("Название команды обновлено.");
+        return true;
+    } catch (error) {
+        setStatus(getErrorMessage(error), "error");
+        return false;
+    } finally {
+        appState.isSubmitting = false;
+        render();
+    }
+}
+
+async function applySettingsFieldEdit(row: HTMLElement, rowKey: SettingsTextFieldKey): Promise<void> {
     const input = getSettingsEditInput(rowKey);
-    if (!input || !appState.profileFormDraft) {
+    if (!input) {
+        return;
+    }
+
+    if (rowKey === "teamName") {
+        const success = await submitTeamNameUpdate(getSettingsFieldCurrentValue(rowKey, input));
+        if (success) {
+            exitSettingsEditRow(row, false);
+            syncSettingsFieldDisplaysFromDraft();
+        } else {
+            updateSettingsEditButtonState(row, rowKey);
+        }
+        return;
+    }
+
+    if (!appState.profileFormDraft) {
         return;
     }
 
@@ -4407,6 +4546,33 @@ function closeSettingsEditRows(exceptRow?: HTMLElement): void {
     });
 }
 
+function wireTeamSettingsSharedControls(): void {
+    if (!isHTMLElement(profileMount)) {
+        return;
+    }
+
+    const applyTeamNameButton = profileMount.querySelector("#profileApplyTeamNameButton");
+    if (isHTMLButtonElement(applyTeamNameButton)) {
+        applyTeamNameButton.disabled = appState.isSubmitting;
+        applyTeamNameButton.addEventListener("click", () => {
+            const teamNameInput = profileMount.querySelector("#settingsTeamNameInput");
+            if (!isHTMLInputElement(teamNameInput)) {
+                return;
+            }
+
+            void submitTeamNameUpdate(teamNameInput.value);
+        });
+    }
+
+    const disbandTeamButton = profileMount.querySelector("#settingsDisbandTeamButton");
+    if (isHTMLButtonElement(disbandTeamButton)) {
+        disbandTeamButton.disabled = appState.isSubmitting;
+        disbandTeamButton.addEventListener("click", () => {
+            void submitDisbandTeam();
+        });
+    }
+}
+
 function wireSettingsPageEvents(): void {
     if (!isHTMLElement(profileMount) || appState.dashboardSection !== "settings") {
         return;
@@ -4434,21 +4600,23 @@ function wireSettingsPageEvents(): void {
                 return;
             }
 
-            if (rowKey !== "name" && rowKey !== "group") {
+            if (rowKey !== "name" && rowKey !== "group" && rowKey !== "teamName") {
                 return;
             }
 
+            const typedRowKey = rowKey as SettingsTextFieldKey;
+
             if (button.classList.contains("is-apply-ready")) {
-                void applySettingsFieldEdit(row, rowKey);
+                void applySettingsFieldEdit(row, typedRowKey);
                 return;
             }
 
             if (row.classList.contains("is-editing")) {
-                getSettingsEditInput(rowKey)?.focus();
+                getSettingsEditInput(typedRowKey)?.focus();
                 return;
             }
 
-            beginSettingsFieldEdit(row, rowKey);
+            beginSettingsFieldEdit(row, typedRowKey);
         });
     });
 
@@ -4492,6 +4660,18 @@ function wireSettingsPageEvents(): void {
             }
         });
     }
+
+    const teamNameInput = profileMount.querySelector("#settingsTeamNameInput");
+    if (isHTMLInputElement(teamNameInput)) {
+        teamNameInput.addEventListener("input", () => {
+            const row = teamNameInput.closest<HTMLElement>("[data-settings-row]");
+            if (row) {
+                updateSettingsEditButtonState(row, "teamName");
+            }
+        });
+    }
+
+    wireTeamSettingsSharedControls();
 }
 
 function openProfileModal(kind: ProfileModalKind): void {
@@ -4598,6 +4778,11 @@ function renderProfileModal(): string {
                             autocapitalize="characters"
                             spellcheck="false"
                         >
+                        ${
+                            isTeamCaptain() && hasTeamAccess()
+                                ? renderMobileTeamSettingsSection(getEffectiveTeamName())
+                                : ""
+                        }
                         <button type="button" class="profile-team-flow-btn profile-team-flow-btn--search" id="profileSavePersonalButton">СОХРАНИТЬ</button>
                     </div>
                 `
@@ -4965,7 +5150,8 @@ function renderProfileView(): void {
                     ? renderSettingsPageMain(
                         statusHtml,
                         appState.profileFormDraft ?? createProfileFormDraftFromDisplay(),
-                        appState.profileAvatarFileName
+                        appState.profileAvatarFileName,
+                        isTeamCaptain() && hasTeamAccess() ? getEffectiveTeamName() : null
                     )
                     : renderProfileMainHtml();
 
@@ -5611,6 +5797,9 @@ function wireProfileViewEvents(): void {
     }
     if (appState.dashboardSection === "settings") {
         wireSettingsPageEvents();
+    }
+    if (appState.profileModal === "personal") {
+        wireTeamSettingsSharedControls();
     }
     wireEventsDashboardEvents();
     wireEventsModalEvents();

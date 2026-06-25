@@ -55,6 +55,9 @@ public interface ITeamService
     /// <summary>Обновляет командный счёт (рейтинг) команды.</summary>
     Task<TeamResponse?> UpdateScoreAsync(int teamId, UpdateTeamScoreRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>Обновляет название команды (только капитан).</summary>
+    Task<UpdateTeamResult> UpdateMyTeamAsync(int userId, UpdateTeamDto request, CancellationToken cancellationToken = default);
+
     /// <summary>Расформировывает команду (только капитан).</summary>
     Task<DisbandTeamResult> DisbandAsync(int userId, CancellationToken cancellationToken = default);
 

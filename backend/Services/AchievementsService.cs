@@ -10,16 +10,31 @@ namespace TeamExamProject.Services;
 /// </summary>
 public class AchievementsService : IAchievementsService
 {
+    private static readonly IReadOnlyDictionary<string, int> AchievementBonusPoints =
+        new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [AchievementCodes.FirstCheckIn] = 10,
+            [AchievementCodes.FirstRescue] = 25,
+            [AchievementCodes.Top3Team] = 10,
+            [AchievementCodes.FirstVote] = 15,
+            [AchievementCodes.FirstChallenge] = 25
+        };
+
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
+    private readonly ITeamScoreService _teamScoreService;
 
     /// <summary>
     /// Создаёт сервис достижений.
     /// </summary>
-    public AchievementsService(AppDbContext dbContext, IActivityFeedService activityFeed)
+    public AchievementsService(
+        AppDbContext dbContext,
+        IActivityFeedService activityFeed,
+        ITeamScoreService teamScoreService)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
+        _teamScoreService = teamScoreService;
     }
 
     /// <summary>
@@ -89,26 +104,81 @@ public class AchievementsService : IAchievementsService
             return false;
         }
 
+        var user = await _dbContext.Users
+            .SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return false;
+        }
+
         _dbContext.UserAchievements.Add(new UserAchievement
         {
             UserId = userId,
             AchievementId = achievement.Id,
             EarnedAtUtc = DateTime.UtcNow
         });
+
+        var bonusPoints = AchievementBonusPoints.GetValueOrDefault(achievementCode, 0);
+        if (bonusPoints > 0)
+        {
+            user.UserPoints += bonusPoints;
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var displayName = DisplayNameFormatter.Format(user);
+        var message = bonusPoints > 0
+            ? $"{displayName} получил(а) ачивку «{achievement.Title}» (+{bonusPoints} баллов)."
+            : $"{displayName} получил(а) ачивку «{achievement.Title}».";
 
         await _activityFeed.AppendAsync(
             ActivityFeedItemTypes.AchievementEarned,
-            $"Игрок получил ачивку «{achievement.Title}».",
-            null,
+            message,
+            user.TeamId,
             userId,
             cancellationToken);
+
+        await _teamScoreService.RecalculateForUserTeamAsync(userId, cancellationToken: cancellationToken);
 
         return true;
     }
 
+    /// <inheritdoc />
+    public async Task TryGrantTop3TeamWhenTaskPointsEarnedAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var taskPoints = await GetTaskEarnedPointsAsync(userId, cancellationToken);
+        if (taskPoints > 0)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
+        }
+    }
+
+    private async Task<int> GetTaskEarnedPointsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var userPoints = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => (int?)user.UserPoints)
+            .SingleOrDefaultAsync(cancellationToken) ?? 0;
+
+        var earnedCodes = await _dbContext.UserAchievements
+            .AsNoTracking()
+            .Where(userAchievement => userAchievement.UserId == userId)
+            .Join(
+                _dbContext.Achievements.AsNoTracking(),
+                userAchievement => userAchievement.AchievementId,
+                achievement => achievement.Id,
+                (_, achievement) => achievement.Code)
+            .ToListAsync(cancellationToken);
+
+        var achievementBonus = earnedCodes
+            .Sum(code => AchievementBonusPoints.GetValueOrDefault(code, 0));
+
+        return Math.Max(0, userPoints - achievementBonus);
+    }
+
     /// <summary>
-    /// Проверяет, входит ли команда пользователя в топ-3 по КРК, и выдаёт соответствующую ачивку.
+    /// Проверяет условия достижений пользователя и выдаёт подходящие ачивки.
     /// </summary>
     private async Task EnsureEligibleAchievementsAsync(int userId, CancellationToken cancellationToken)
     {
@@ -130,10 +200,7 @@ public class AchievementsService : IAchievementsService
             await GrantIfMissingAsync(userId, AchievementCodes.FirstVote, cancellationToken);
         }
 
-        if (user.UserPoints > 0)
-        {
-            await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
-        }
+        await TryGrantTop3TeamWhenTaskPointsEarnedAsync(userId, cancellationToken);
 
         var hasSubmittedChallenge = await _dbContext.TeamChallengeProgresses
             .AsNoTracking()
