@@ -28,7 +28,7 @@ export function renderNewsFeedPanel(isVisible: boolean): string {
             class="events-feed-panel events-feed-panel--news"
             id="eventsFeedPanelNews"
             role="tabpanel"
-            aria-labelledby="eventsFeedTabNews"
+            aria-labelledby="eventsFeedTabActivity"
             ${isVisible ? "" : "hidden"}
         >
             <ul class="events-feed-list" role="list">

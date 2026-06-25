@@ -189,7 +189,7 @@
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-shell {
     --events-content-inline-pad: clamp(20px, 2.4vw, 32px);
-    padding: clamp(14px, 1.8vw, 24px);
+    padding: clamp(14px, 1.8vw, 24px) 0 0 0;
     box-sizing: border-box;
 }
 
@@ -212,6 +212,7 @@
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-block {
     flex: 0 0 auto;
+    padding: 0 clamp(14px, 1.8vw, 24px) 0 0;
     min-height: 0;
     height: auto;
     max-height: none;
@@ -272,6 +273,7 @@
     font-size: 17px;
     line-height: 22px;
     font-weight: 700;
+    color: rgba(36, 116, 255, 1);
     text-shadow: 0 7px 16px rgba(19, 60, 150, 0.1);
 }
 
@@ -282,8 +284,8 @@
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-calendar-grid {
-    --events-calendar-gap: clamp(28px, 4vw, 64px);
-    --events-calendar-card-width: clamp(142px, 13vw, 176px);
+    --events-calendar-gap: clamp(14px, 1.8vw, 28px);
+    grid-template-columns: repeat(var(--events-calendar-visible-cols), minmax(0, 1fr));
     gap: var(--events-calendar-gap);
 }
 
@@ -355,7 +357,10 @@
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-tabs-indicator {
-    box-shadow: 0 6px 16px rgba(60, 80, 200, 0.18);
+    background: var(--events-surface);
+    box-shadow:
+        inset 0 0 0 1px rgba(210, 222, 248, 0.72),
+        0 4px 12px rgba(19, 60, 150, 0.08);
 }
 
 .profile-app--dashboard-profile:has(.events-dashboard-main) .events-feed-tab {
