@@ -1,4 +1,4 @@
-import "../styles/start.css";
+﻿import "../styles/start.css";
 import QRCode from "qrcode";
 import calendarMenuIconUrl from "./assets/icons/Menu_Icons/Calendar.svg";
 import logoutMenuIconUrl from "./assets/icons/Menu_Icons/Log_Out.svg";
@@ -1598,12 +1598,12 @@ function getAvatarDisplay(): string {
     return appState.profileEdits?.avatarDataUrl ?? appState.profile?.avatarUrl ?? "";
 }
 
-function hasProfileAchievements(profile: UserProfileResponse | null): boolean {
+function hasProfileAchievements(_profile: UserProfileResponse | null): boolean {
     if (FORCE_DEMO_PROFILE_ACHIEVEMENTS) {
         return true;
     }
 
-    return Boolean(profile);
+    return getMyProfileAchievements().length > 0;
 }
 
 function resetProfileUi(): void {
@@ -4860,7 +4860,7 @@ function renderProfileMainHtml(): string {
                     </div>`
             : `
                     <div class="profile-achievements-empty" aria-live="polite">
-                        <p class="profile-achievements-empty-text">Каждое достижение — это твой личный вклад в КРК. Выполни челлендж, чтобы получить свою первую ачивку!</p>
+                        <p class="profile-achievements-empty-text">Здесь появятся достижения за активность: профиль, команду, челленджи и помощь другим.</p>
                         <button type="button" class="profile-achievements-empty-button">К ЧЕЛЛЕНДЖАМ</button>
                     </div>`;
     }
@@ -6288,6 +6288,7 @@ async function submitPersonalProfileSave(options: PersonalProfileSaveOptions = {
                 appState.profileEdits = savedEdits;
                 applyProfileEditsToInMemoryProfile();
                 persistSavedProfileEdits();
+                await refreshMyAchievementsWorkspace(session.token);
                 if (!silent) {
                     setStatus("Данные сохранены на сервере и в этом браузере.");
                 }

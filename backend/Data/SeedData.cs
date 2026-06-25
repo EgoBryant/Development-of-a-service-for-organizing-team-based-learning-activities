@@ -14,53 +14,59 @@ public static class SeedData
 
     private static async Task EnsureAchievementsAsync(AppDbContext dbContext)
     {
-        var existingCodes = await dbContext.Achievements.Select(achievement => achievement.Code).ToListAsync();
+        var existing = await dbContext.Achievements.ToListAsync();
+        var existingByCode = existing.ToDictionary(achievement => achievement.Code, achievement => achievement);
         var defaults = new[]
         {
             new Achievement
             {
                 Code = AchievementCodes.FirstCheckIn,
-                Title = "Первый check-in",
-                Description = "Капитан сдал первый еженедельный отчёт команды.",
+                Title = "Первые шаги",
+                Description = "Успешно пройдите авторизацию и заполните данные в своём профиле.",
                 IconUrl = string.Empty
             },
             new Achievement
             {
                 Code = AchievementCodes.FirstRescue,
-                Title = "Первое спасение",
-                Description = "Команда успешно помогла другой команде.",
+                Title = "Рука помощи",
+                Description = "Откликнитесь на запрос о помощи от другой команды.",
                 IconUrl = string.Empty
             },
             new Achievement
             {
                 Code = AchievementCodes.Top3Team,
-                Title = "Топ-3 команды",
-                Description = "Команда зашла в тройку лидеров.",
+                Title = "В игре!",
+                Description = "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
                 IconUrl = string.Empty
             },
             new Achievement
             {
                 Code = AchievementCodes.FirstVote,
-                Title = "Голос команды",
-                Description = "Игрок впервые проголосовал за тиммейта.",
+                Title = "Свой круг",
+                Description = "Создайте команду или вступите в существующую.",
                 IconUrl = string.Empty
             },
             new Achievement
             {
                 Code = AchievementCodes.FirstChallenge,
-                Title = "Челлендж принят",
-                Description = "Команда сдала первый челлендж.",
+                Title = "Вызов принят",
+                Description = "Выполните челлендж и загрузите отчёт.",
                 IconUrl = string.Empty
             }
         };
 
         foreach (var achievement in defaults)
         {
-            if (!existingCodes.Contains(achievement.Code))
+            if (existingByCode.TryGetValue(achievement.Code, out var current))
             {
-                dbContext.Achievements.Add(achievement);
+                current.Title = achievement.Title;
+                current.Description = achievement.Description;
+                continue;
             }
+
+            dbContext.Achievements.Add(achievement);
         }
+
         await dbContext.SaveChangesAsync();
     }
 

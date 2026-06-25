@@ -1227,43 +1227,11 @@
     box-shadow: 0 10px 22px rgba(60, 80, 200, 0.14);
 }
 
-.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-hero-card,
-.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-achievements {
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-}
-
-.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-top {
-    display: grid;
-    grid-template-columns: minmax(220px, 290px) minmax(0, 1fr);
-    align-items: start;
-}
-
-.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-photo {
-    aspect-ratio: 0.86;
-    max-height: clamp(270px, 42vh, 345px);
-    border-radius: 26px;
-    background: rgba(240, 245, 255, 1);
-    box-shadow: 0 18px 38px rgba(24, 76, 163, 0.22);
-}
-
-.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-stats-col {
-    justify-content: space-around;
-    gap: clamp(16px, 4vh, 100px);
-    padding: 15px clamp(34px, 3vw, 58px) 0 0;
-}
-
-.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-public-profile .profile-stat-track {
-    min-height: clamp(66px, 8.2vh, 78px);
-    display: grid;
-    grid-template-columns: minmax(190px, 0.42fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 0;
-    padding: 0 22px 0 12px;
-    border-radius: 999px;
-    background: rgba(240, 245, 255, 1);
-    box-shadow: 0 12px 24px rgba(34, 79, 155, 0.12);
+.profile-app--dashboard-profile:has(.rating-page--public-user) .rating-page--public-user {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
 }
 
 .profile-app--dashboard-profile:has(.rating-page--public-team) .rating-page--public-team {

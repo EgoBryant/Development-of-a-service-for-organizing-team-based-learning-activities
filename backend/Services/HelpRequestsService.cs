@@ -168,7 +168,11 @@ public class HelpRequestsService : IHelpRequestsService
 
         var canonicalStatus = AllowedStatuses.Single(status => status.Equals(normalizedStatus, StringComparison.OrdinalIgnoreCase));
 
-        var becameCompleted = canonicalStatus == HelpRequestStatuses.Completed && helpRequest.Status != HelpRequestStatuses.Completed;
+        var previousStatus = helpRequest.Status;
+        var becameAccepted = canonicalStatus == HelpRequestStatuses.Accepted &&
+                             !previousStatus.Equals(HelpRequestStatuses.Accepted, StringComparison.OrdinalIgnoreCase);
+        var becameCompleted = canonicalStatus == HelpRequestStatuses.Completed &&
+                              !previousStatus.Equals(HelpRequestStatuses.Completed, StringComparison.OrdinalIgnoreCase);
         helpRequest.Status = canonicalStatus;
 
         var helpingTeamId = helpRequest.ToTeamId;
@@ -186,6 +190,11 @@ public class HelpRequestsService : IHelpRequestsService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        if (becameAccepted)
+        {
+            await _achievements.GrantIfMissingAsync(userId, AchievementCodes.FirstRescue, cancellationToken);
+        }
+
         if (becameCompleted)
         {
             await _krkCalculationService.RecalculateForTeamAsync(helpingTeamId, cancellationToken);
@@ -197,15 +206,6 @@ public class HelpRequestsService : IHelpRequestsService
                 helpingTeamId,
                 null,
                 cancellationToken);
-
-            var helpingCaptainId = await _dbContext.Teams.AsNoTracking()
-                .Where(team => team.Id == helpingTeamId)
-                .Select(team => (int?)team.CaptainId)
-                .SingleOrDefaultAsync(cancellationToken);
-            if (helpingCaptainId is not null)
-            {
-                await _achievements.GrantIfMissingAsync(helpingCaptainId.Value, AchievementCodes.FirstRescue, cancellationToken);
-            }
         }
 
         return new HelpRequestStatusUpdateResult

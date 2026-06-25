@@ -1,4 +1,3 @@
-import scoreMobileIconUrl from "../../assets/icons/Score_mobile.svg";
 import { getMyProfileAchievements } from "../../state/achievementsState";
 import type { ProfileAchievement } from "../../types/profile";
 import { escapeHtml } from "../../utils/html";
@@ -6,6 +5,22 @@ import { renderProfileModalShell } from "./ProfileModalShell";
 
 interface RenderAchievementStripOptions {
     interactive?: boolean;
+}
+
+function formatAchievementPointsLabel(points: number): string {
+    const absolute = Math.abs(points);
+    const lastTwo = absolute % 100;
+    const last = absolute % 10;
+    const word =
+        lastTwo >= 11 && lastTwo <= 14
+            ? "баллов"
+            : last === 1
+              ? "балл"
+              : last >= 2 && last <= 4
+                ? "балла"
+                : "баллов";
+
+    return `${points} ${word}`;
 }
 
 export function renderProfileAchievementStrip(
@@ -40,27 +55,21 @@ export function renderProfileAchievementStrip(
 }
 
 export function renderProfileAchievementModal(achievement: ProfileAchievement): string {
-    const earnedMeta = achievement.status === "earned" && achievement.earnedAtUtc
-        ? `<p class="profile-achievement-criterion">${escapeHtml(achievement.progressLabel)}</p>`
-        : `<p class="profile-achievement-criterion">Условие: ${escapeHtml(achievement.criterion)}</p>`;
-
     return renderProfileModalShell({
         ariaLabel: "Достижение",
         closeButtonId: "profileCloseAchievementButton",
         extraModalClass: "profile-modal--achievement",
         extraCardClass: "profile-modal-card-achievement profile-modal-card--achievement-content",
         bodyHtml: `
-            <div class="profile-achievement-hero">
+            <div class="profile-achievement-hero profile-achievement-circle profile-achievement-circle--${achievement.tone}">
                 <img class="profile-achievement-icon" src="${escapeHtml(achievement.iconUrl)}" alt="" aria-hidden="true">
             </div>
-            <p class="profile-achievement-name">${escapeHtml(achievement.title)}</p>
+            <p class="profile-achievement-name">${escapeHtml(achievement.modalTitle)}</p>
             <div class="profile-achievement-body">
-                <p class="profile-achievement-description">${escapeHtml(achievement.description)}</p>
+                <p class="profile-achievement-description">${escapeHtml(achievement.modalDescription)}</p>
             </div>
-            ${earnedMeta}
             <div class="profile-achievement-points">
-                <span>${escapeHtml(String(achievement.points))}</span>
-                <img class="profile-achievement-points-icon" src="${escapeHtml(scoreMobileIconUrl)}" alt="" aria-hidden="true">
+                <span>${escapeHtml(formatAchievementPointsLabel(achievement.points))}</span>
             </div>
         `
     });

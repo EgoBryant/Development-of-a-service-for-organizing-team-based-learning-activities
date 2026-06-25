@@ -9,16 +9,13 @@ public class VotesService : IVotesService
 {
     private readonly AppDbContext _dbContext;
     private readonly IKrkCalculationService _krkCalculationService;
-    private readonly IAchievementsService _achievements;
 
     public VotesService(
         AppDbContext dbContext,
-        IKrkCalculationService krkCalculationService,
-        IAchievementsService achievements)
+        IKrkCalculationService krkCalculationService)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
-        _achievements = achievements;
     }
 
     public async Task<IReadOnlyCollection<VoteResponse>> GetForCurrentTeamAsync(int userId, CancellationToken cancellationToken = default)
@@ -123,7 +120,6 @@ public class VotesService : IVotesService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         await _krkCalculationService.RecalculateForTeamAsync(fromUser.TeamId.Value, cancellationToken);
-        await _achievements.GrantIfMissingAsync(fromUser.Id, AchievementCodes.FirstVote, cancellationToken);
 
         return new VoteCreateResult
         {

@@ -9,16 +9,13 @@ public class CheckInsService : ICheckInsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
-    private readonly IAchievementsService _achievements;
 
     public CheckInsService(
         AppDbContext dbContext,
-        IActivityFeedService activityFeed,
-        IAchievementsService achievements)
+        IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
-        _achievements = achievements;
     }
 
     public async Task<IReadOnlyCollection<CheckInResponse>> GetForCurrentTeamAsync(int userId, CancellationToken cancellationToken = default)
@@ -81,8 +78,6 @@ public class CheckInsService : ICheckInsService
             user.TeamId,
             user.Id,
             cancellationToken);
-
-        await _achievements.GrantIfMissingAsync(user.Id, AchievementCodes.FirstCheckIn, cancellationToken);
 
         return new CheckInCreateResult
         {

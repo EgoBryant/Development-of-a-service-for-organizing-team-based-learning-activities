@@ -42,6 +42,8 @@ export interface ProfileAchievement {
     iconLabel: string;
     iconUrl: string;
     description: string;
+    modalTitle: string;
+    modalDescription: string;
     criterion: string;
     points: number;
     progressLabel: string;

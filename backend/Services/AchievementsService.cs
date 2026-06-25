@@ -35,7 +35,7 @@ public class AchievementsService : IAchievementsService
 
     public async Task<IReadOnlyCollection<UserAchievementResponse>> GetUserAchievementsAsync(int userId, CancellationToken cancellationToken = default)
     {
-        await EnsureTop3TeamAchievementAsync(userId, cancellationToken);
+        await EnsureEligibleAchievementsAsync(userId, cancellationToken);
 
         var items = await _dbContext.UserAchievements
             .AsNoTracking()
@@ -91,33 +91,53 @@ public class AchievementsService : IAchievementsService
         return true;
     }
 
-    private async Task EnsureTop3TeamAchievementAsync(int userId, CancellationToken cancellationToken)
+    private async Task EnsureEligibleAchievementsAsync(int userId, CancellationToken cancellationToken)
     {
-        var teamId = await _dbContext.Users
+        var user = await _dbContext.Users
             .AsNoTracking()
-            .Where(user => user.Id == userId)
-            .Select(user => user.TeamId)
-            .SingleOrDefaultAsync(cancellationToken);
-
-        if (teamId is null)
+            .SingleOrDefaultAsync(existing => existing.Id == userId, cancellationToken);
+        if (user is null)
         {
             return;
         }
 
-        var topTeamIds = await _dbContext.Teams
-            .AsNoTracking()
-            .OrderByDescending(team => team.KrkCached)
-            .ThenByDescending(team => team.Score)
-            .ThenBy(team => team.Name)
-            .Select(team => team.Id)
-            .Take(3)
-            .ToListAsync(cancellationToken);
-
-        if (!topTeamIds.Contains(teamId.Value))
+        if (ProfileCompletion.IsComplete(user))
         {
-            return;
+            await GrantIfMissingAsync(userId, AchievementCodes.FirstCheckIn, cancellationToken);
         }
 
-        await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
+        if (user.TeamId is not null)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.FirstVote, cancellationToken);
+        }
+
+        if (user.UserPoints > 0)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.Top3Team, cancellationToken);
+        }
+
+        var hasSubmittedChallenge = await _dbContext.TeamChallengeProgresses
+            .AsNoTracking()
+            .AnyAsync(progress => progress.SubmittedByUserId == userId, cancellationToken);
+        if (hasSubmittedChallenge)
+        {
+            await GrantIfMissingAsync(userId, AchievementCodes.FirstChallenge, cancellationToken);
+        }
+
+        if (user.TeamId is not null && user.Role == Roles.Captain)
+        {
+            var hasRescueResponse = await _dbContext.HelpRequests
+                .AsNoTracking()
+                .AnyAsync(
+                    request =>
+                        request.ToTeamId == user.TeamId &&
+                        (request.Status == HelpRequestStatuses.Accepted ||
+                         request.Status == HelpRequestStatuses.Completed),
+                    cancellationToken);
+            if (hasRescueResponse)
+            {
+                await GrantIfMissingAsync(userId, AchievementCodes.FirstRescue, cancellationToken);
+            }
+        }
     }
 }

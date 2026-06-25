@@ -18,11 +18,16 @@ public class ProfileService : IProfileService
 
     private readonly AppDbContext _dbContext;
     private readonly LeagueOptions _leagueOptions;
+    private readonly IAchievementsService _achievementsService;
 
-    public ProfileService(AppDbContext dbContext, IOptions<LeagueOptions> leagueOptions)
+    public ProfileService(
+        AppDbContext dbContext,
+        IOptions<LeagueOptions> leagueOptions,
+        IAchievementsService achievementsService)
     {
         _dbContext = dbContext;
         _leagueOptions = leagueOptions.Value;
+        _achievementsService = achievementsService;
     }
 
     public async Task<UserProfileResponse?> GetProfileAsync(int userId, CancellationToken cancellationToken = default)
@@ -150,6 +155,11 @@ public class ProfileService : IProfileService
         user.GroupId = await ResolveGroupIdAsync(user.GroupId, requestGroupId, request.AcademicGroupLabel, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (ProfileCompletion.IsComplete(user))
+        {
+            await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstCheckIn, cancellationToken);
+        }
 
         return new ProfileUpdateResult
         {

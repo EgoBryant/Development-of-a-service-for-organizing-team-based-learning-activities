@@ -14,6 +14,8 @@ type AchievementPresentation = {
     shortTitle: string;
     iconLabel: string;
     iconUrl: string;
+    modalTitle: string;
+    modalDescription: string;
     criterion: string;
     points: number;
     tone: ProfileAchievementTone;
@@ -23,6 +25,8 @@ const DEFAULT_PRESENTATION: AchievementPresentation = {
     shortTitle: "Достижение",
     iconLabel: "Достижение",
     iconUrl: pTaskAchievementIconUrl,
+    modalTitle: "ДОСТИЖЕНИЕ",
+    modalDescription: "Выполните условие достижения.",
     criterion: "Выполнить условие достижения.",
     points: 10,
     tone: "blue"
@@ -32,78 +36,88 @@ export const FALLBACK_ACHIEVEMENT_CATALOG: readonly AchievementCatalogItem[] = [
     {
         id: 1,
         code: "FIRST_CHECKIN",
-        title: "Первый check-in",
-        description: "Капитан сдал первый еженедельный отчёт команды.",
+        title: "Первые шаги",
+        description: "Успешно пройдите авторизацию и заполните данные в своём профиле.",
         iconUrl: ""
     },
     {
         id: 2,
         code: "FIRST_RESCUE",
-        title: "Первое спасение",
-        description: "Команда успешно помогла другой команде.",
+        title: "Рука помощи",
+        description: "Откликнитесь на запрос о помощи от другой команды.",
         iconUrl: ""
     },
     {
         id: 3,
         code: "TOP3_TEAM",
-        title: "Топ-3 команды",
-        description: "Команда зашла в тройку лидеров.",
+        title: "В игре!",
+        description: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
         iconUrl: ""
     },
     {
         id: 4,
         code: "FIRST_VOTE",
-        title: "Голос команды",
-        description: "Игрок впервые проголосовал за тиммейта.",
+        title: "Свой круг",
+        description: "Создайте команду или вступите в существующую.",
         iconUrl: ""
     },
     {
         id: 5,
         code: "FIRST_CHALLENGE",
-        title: "Челлендж принят",
-        description: "Команда сдала первый челлендж.",
+        title: "Вызов принят",
+        description: "Выполните челлендж и загрузите отчёт.",
         iconUrl: ""
     }
 ];
 
 const PRESENTATION_BY_CODE: Record<string, AchievementPresentation> = {
     FIRST_CHECKIN: {
-        shortTitle: "Check-in",
-        iconLabel: "Первый check-in",
+        shortTitle: "Первые шаги",
+        iconLabel: "Первые шаги",
         iconUrl: pTaskAchievementIconUrl,
-        criterion: "Сдать первый еженедельный отчёт команды.",
+        modalTitle: "ПЕРВЫЕ ШАГИ",
+        modalDescription: "Успешно пройдите авторизацию и заполните данные в своём профиле.",
+        criterion: "Успешно пройдите авторизацию и заполните данные в своём профиле.",
         points: 10,
         tone: "blue"
     },
     FIRST_RESCUE: {
-        shortTitle: "Спасение",
-        iconLabel: "Первое спасение",
+        shortTitle: "Помощь",
+        iconLabel: "Рука помощи",
         iconUrl: sTaskAchievementIconUrl,
-        criterion: "Успешно помочь другой команде.",
+        modalTitle: "РУКА ПОМОЩИ",
+        modalDescription: "Откликнитесь на запрос о помощи от другой команды.",
+        criterion: "Откликнитесь на запрос о помощи от другой команды.",
         points: 25,
         tone: "green"
     },
     TOP3_TEAM: {
-        shortTitle: "Топ-3",
-        iconLabel: "Топ-3 команды",
-        iconUrl: tTaskAchievementIconUrl,
-        criterion: "Попасть командой в топ-3 рейтинга.",
-        points: 30,
+        shortTitle: "В игре!",
+        iconLabel: "В игре!",
+        iconUrl: rTaskAchievementIconUrl,
+        modalTitle: "В ИГРЕ!",
+        modalDescription: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
+        criterion: "Заработайте свои первые баллы активности, чтобы попасть в рейтинг.",
+        points: 10,
         tone: "amber"
     },
     FIRST_VOTE: {
-        shortTitle: "Голос",
-        iconLabel: "Голос команды",
-        iconUrl: rTaskAchievementIconUrl,
-        criterion: "Впервые оценить вклад тиммейта.",
+        shortTitle: "Свой круг",
+        iconLabel: "Свой круг",
+        iconUrl: tTaskAchievementIconUrl,
+        modalTitle: "СВОЙ КРУГ",
+        modalDescription: "Создайте команду или вступите в существующую.",
+        criterion: "Создайте команду или вступите в существующую.",
         points: 15,
         tone: "violet"
     },
     FIRST_CHALLENGE: {
-        shortTitle: "Челлендж",
-        iconLabel: "Челлендж принят",
+        shortTitle: "Вызов",
+        iconLabel: "Вызов принят",
         iconUrl: aTaskAchievementIconUrl,
-        criterion: "Сдать первый командный челлендж.",
+        modalTitle: "ВЫЗОВ ПРИНЯТ",
+        modalDescription: "Выполните челлендж и загрузите отчёт.",
+        criterion: "Выполните челлендж и загрузите отчёт.",
         points: 25,
         tone: "rose"
     }
@@ -126,35 +140,62 @@ export function buildProfileAchievements(
     catalog: readonly AchievementCatalogItem[],
     earnedItems: readonly UserAchievementItem[]
 ): ProfileAchievement[] {
-    const earnedByCode = new Map(earnedItems.map((item) => [item.code, item]));
+    const catalogByCode = new Map(catalog.map((item) => [item.code, item]));
 
-    return catalog.map((catalogItem) => {
-        const earned = earnedByCode.get(catalogItem.code);
-        const presentation = PRESENTATION_BY_CODE[catalogItem.code] ?? DEFAULT_PRESENTATION;
-        const iconUrl = catalogItem.iconUrl.trim() || earned?.iconUrl?.trim() || presentation.iconUrl;
+    return earnedItems.map((earned) => {
+        const catalogItem = catalogByCode.get(earned.code);
+        const presentation = PRESENTATION_BY_CODE[earned.code] ?? DEFAULT_PRESENTATION;
+        const iconUrl =
+            earned.iconUrl?.trim() ||
+            catalogItem?.iconUrl.trim() ||
+            presentation.iconUrl;
 
         return {
-            id: catalogItem.code,
-            code: catalogItem.code,
-            achievementId: catalogItem.id,
-            title: catalogItem.title || earned?.title || presentation.shortTitle,
+            id: earned.code,
+            code: earned.code,
+            achievementId: catalogItem?.id ?? earned.achievementId,
+            title: earned.title || catalogItem?.title || presentation.shortTitle,
             shortTitle: presentation.shortTitle,
             iconLabel: presentation.iconLabel,
             iconUrl,
-            description: catalogItem.description || earned?.description || "",
+            description: earned.description || catalogItem?.description || "",
+            modalTitle: presentation.modalTitle,
+            modalDescription: presentation.modalDescription,
             criterion: presentation.criterion,
             points: presentation.points,
-            progressLabel: earned ? formatEarnedDate(earned.earnedAtUtc) : "Не получено",
-            status: earned ? "earned" : "locked",
+            progressLabel: formatEarnedDate(earned.earnedAtUtc),
+            status: "earned",
             tone: presentation.tone,
-            earnedAtUtc: earned?.earnedAtUtc
+            earnedAtUtc: earned.earnedAtUtc
         };
     });
 }
 
 export function getProfileAchievementById(
     id: string,
-    achievements = buildProfileAchievements(FALLBACK_ACHIEVEMENT_CATALOG, [])
+    achievements: ProfileAchievement[] = []
 ): ProfileAchievement {
-    return achievements.find((achievement) => achievement.id === id || achievement.code === id) ?? achievements[0];
+    const found = achievements.find((achievement) => achievement.id === id || achievement.code === id);
+    if (found) {
+        return found;
+    }
+
+    const presentation = PRESENTATION_BY_CODE[id] ?? DEFAULT_PRESENTATION;
+    return {
+        id,
+        code: id,
+        achievementId: 0,
+        title: presentation.shortTitle,
+        shortTitle: presentation.shortTitle,
+        iconLabel: presentation.iconLabel,
+        iconUrl: presentation.iconUrl,
+        description: presentation.modalDescription,
+        modalTitle: presentation.modalTitle,
+        modalDescription: presentation.modalDescription,
+        criterion: presentation.criterion,
+        points: presentation.points,
+        progressLabel: "Получено",
+        status: "earned",
+        tone: presentation.tone
+    };
 }

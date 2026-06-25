@@ -16,17 +16,20 @@ public class TeamService : ITeamService
     private readonly AppDbContext _dbContext;
     private readonly IKrkCalculationService _krkCalculationService;
     private readonly IActivityFeedService _activityFeed;
+    private readonly IAchievementsService _achievementsService;
     private readonly TeamOptions _teamOptions;
 
     public TeamService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
         IActivityFeedService activityFeed,
+        IAchievementsService achievementsService,
         IOptions<TeamOptions> teamOptions)
     {
         _dbContext = dbContext;
         _krkCalculationService = krkCalculationService;
         _activityFeed = activityFeed;
+        _achievementsService = achievementsService;
         _teamOptions = teamOptions.Value;
     }
 
@@ -241,6 +244,8 @@ public class TeamService : ITeamService
 
         await _krkCalculationService.RecalculateForTeamAsync(team.Id, cancellationToken);
 
+        await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstVote, cancellationToken);
+
         return new CreateTeamResult
         {
             Type = CreateTeamResultType.Created,
@@ -284,6 +289,8 @@ public class TeamService : ITeamService
             team.Id,
             user.Id,
             cancellationToken);
+
+        await _achievementsService.GrantIfMissingAsync(user.Id, AchievementCodes.FirstVote, cancellationToken);
 
         return new JoinTeamResult
         {
@@ -477,6 +484,8 @@ public class TeamService : ITeamService
                 joinRequest.TeamId,
                 joinRequest.UserId,
                 cancellationToken);
+
+            await _achievementsService.GrantIfMissingAsync(joinRequest.UserId, AchievementCodes.FirstVote, cancellationToken);
         }
         else if (canonicalStatus == TeamJoinRequestStatuses.Rejected)
         {
