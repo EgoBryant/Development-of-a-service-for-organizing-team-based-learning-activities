@@ -1,6 +1,6 @@
 import type { NewsColorVariant, NewsPost, NewsPostPushInput } from "../types/news";
 
-const STORAGE_KEY = "team-exam-news-feed-v4";
+const STORAGE_KEY = "team-exam-news-feed-v5";
 const MAX_ITEMS = 40;
 
 const COLOR_CYCLE: NewsColorVariant[] = ["pink", "blue", "green", "purple", "amber", "rose"];
@@ -20,25 +20,23 @@ function persistNewsFeed(): void {
 }
 
 export function loadPersistedNewsFeed(): void {
+    newsFeedItems.length = 0;
+
     if (typeof localStorage === "undefined") {
-        seedDemoNewsFeedIfEmpty();
         return;
     }
 
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) {
-            seedDemoNewsFeedIfEmpty();
             return;
         }
 
         const parsed = JSON.parse(raw) as NewsPost[];
-        if (!Array.isArray(parsed) || parsed.length === 0) {
-            seedDemoNewsFeedIfEmpty();
+        if (!Array.isArray(parsed)) {
             return;
         }
 
-        newsFeedItems.length = 0;
         for (const item of parsed.slice(0, MAX_ITEMS)) {
             if (!item?.id || !item.title) {
                 continue;
@@ -55,63 +53,8 @@ export function loadPersistedNewsFeed(): void {
             });
         }
     } catch {
-        seedDemoNewsFeedIfEmpty();
+        newsFeedItems.length = 0;
     }
-}
-
-function seedDemoNewsFeedIfEmpty(): void {
-    if (newsFeedItems.length > 0) {
-        return;
-    }
-
-    const now = Date.now();
-    const seeds: NewsPostPushInput[] = [
-        {
-            title: "Событие в календаре",
-            body: "«рр» добавлено в календарь.",
-            authorName: "Система"
-        },
-        {
-            title: "Профиль",
-            body: "Личные данные сохранены.",
-            authorName: "Система"
-        },
-        {
-            title: "Челлендж",
-            body: "Команда закрыла челлендж «Неделя сплочённости».",
-            authorName: "Система",
-            pointsLabel: "+120"
-        },
-        {
-            title: "Рейтинг",
-            body: "Ваша позиция в личном рейтинге: 4 → 3 место.",
-            authorName: "Система"
-        },
-        {
-            title: "Достижение",
-            body: "Команда получила ачивку «Синхрон».",
-            authorName: "Система"
-        },
-        {
-            title: "Мероприятие",
-            body: "Воркшоп по КРК — завтра в 16:00.",
-            authorName: "Система"
-        }
-    ];
-
-    seeds.forEach((seed, index) => {
-        newsFeedItems.push({
-            id: `news-seed-${index}`,
-            title: seed.title,
-            body: seed.body,
-            authorName: seed.authorName ?? "Организатор",
-            createdAt: new Date(now - index * 86400_000).toISOString(),
-            colorVariant: COLOR_CYCLE[index % COLOR_CYCLE.length],
-            pointsLabel: seed.pointsLabel
-        });
-    });
-
-    persistNewsFeed();
 }
 
 export function pushNewsPost(input: NewsPostPushInput): NewsPost {

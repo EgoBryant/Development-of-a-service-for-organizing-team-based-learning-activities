@@ -1,4 +1,4 @@
-import { EVENTS_CALENDAR_YEAR } from "../data/demoEvents";
+import { getEventsCalendarYear } from "../state/eventsCalendarState";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -87,7 +87,7 @@ export function getWeekOffsetForDate(anchorMonday: Date, targetDate: Date): numb
     return Math.floor(diffDays / 7);
 }
 
-export function isEventInCalendarYear(dateTime: string, year: number = EVENTS_CALENDAR_YEAR): boolean {
+export function isEventInCalendarYear(dateTime: string, year: number = getEventsCalendarYear()): boolean {
     const dateKey = extractEventDateKey(dateTime);
     if (!dateKey) {
         return false;

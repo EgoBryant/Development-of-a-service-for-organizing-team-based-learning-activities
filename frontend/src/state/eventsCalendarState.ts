@@ -1,6 +1,5 @@
 import type { CalendarEventItem, EventCreateDraft } from "../types/event";
 import { createCalendarEventFromDraft } from "../types/event";
-import { EVENTS_CALENDAR_YEAR } from "../data/demoEvents";
 import {
     dateKeyToLocalDate,
     dateToDateKey,
@@ -11,6 +10,10 @@ import {
 
 export const EVENTS_CALENDAR_VISIBLE_DAYS = 4;
 export const EVENTS_CALENDAR_MOBILE_QUERY = "(max-width: 767px)";
+
+export function getEventsCalendarYear(): number {
+    return new Date().getFullYear();
+}
 
 export function getEventsCalendarVisibleDaysCount(): number {
     if (typeof window !== "undefined" && window.matchMedia(EVENTS_CALENDAR_MOBILE_QUERY).matches) {
@@ -25,6 +28,7 @@ const USER_EVENTS_STORAGE_KEY = "team-exam-user-calendar-events";
 export const eventsUserCreated: CalendarEventItem[] = [];
 
 let cachedYearDates: Date[] | null = null;
+let cachedYear: number | null = null;
 
 function buildYearDates(year: number): Date[] {
     const dates: Date[] = [];
@@ -40,8 +44,10 @@ function buildYearDates(year: number): Date[] {
 }
 
 export function getEventsCalendarYearDates(): readonly Date[] {
-    if (!cachedYearDates) {
-        cachedYearDates = buildYearDates(EVENTS_CALENDAR_YEAR);
+    const year = getEventsCalendarYear();
+    if (!cachedYearDates || cachedYear !== year) {
+        cachedYearDates = buildYearDates(year);
+        cachedYear = year;
     }
 
     return cachedYearDates;
@@ -53,14 +59,7 @@ export function getCalendarDayIndexForDate(date: Date): number {
 
 export function getTodayCalendarStartIndex(): number {
     const todayIndex = getCalendarDayIndexForDate(new Date());
-    return todayIndex >= 0 ? todayIndex : 0;
-}
-
-/** Индекс начала демо-недели (1–4 июня) для макета вкладки «События». */
-export function getDemoEventsCalendarStartIndex(): number {
-    const demoStart = new Date(EVENTS_CALENDAR_YEAR, 5, 1);
-    const dayIndex = getCalendarDayIndexForDate(demoStart);
-    return clampCalendarStartIndex(dayIndex >= 0 ? dayIndex : 0);
+    return clampCalendarStartIndex(todayIndex >= 0 ? todayIndex : 0);
 }
 
 export function clampCalendarStartIndex(index: number): number {

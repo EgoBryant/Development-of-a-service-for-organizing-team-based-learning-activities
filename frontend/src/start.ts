@@ -16,7 +16,7 @@ import scrollRightIconUrl from "./assets/icons/Scroll_button_right.svg";
 import { setAppBridge } from "./app/bridge";
 import type { JoinTeamResult } from "./app/bridge";
 import { isDemoInviteCodeValid, normalizeInviteCode } from "./data/demoTeam";
-import { EVENTS_CALENDAR_YEAR, EVENTS_MONTH_LABELS, getDemoEventsForDateKey } from "./data/demoEvents";
+import { EVENTS_MONTH_LABELS } from "./data/demoEvents";
 import { renderRatingPageMain, renderRatingPageModals, wireRatingPageEvents } from "./pages/RatingPage";
 import {
     paintTeamPageEventSuccessQr,
@@ -63,7 +63,8 @@ import {
     addUserCalendarEventFromDraft,
     clampCalendarStartIndex,
     getCalendarStartIndexForDateTime,
-    getDemoEventsCalendarStartIndex,
+    getTodayCalendarStartIndex,
+    getEventsCalendarYear,
     getEventsCalendarVisibleDaysCount,
     getEventsCalendarYearDates,
     getUserEventsForDateKey,
@@ -221,7 +222,7 @@ const appState: AppState = {
     teamRescueDraft: null,
     eventsCalendarScope: "all",
     eventsFeedTab: "activity",
-    eventsCalendarStartIndex: getDemoEventsCalendarStartIndex(),
+    eventsCalendarStartIndex: getTodayCalendarStartIndex(),
     eventsModal: "none",
     eventsCreateDraft: null,
     eventsShowValidationError: false,
@@ -245,6 +246,7 @@ const appState: AppState = {
     teamMyVotes: [],
     statusMessage: "",
     statusTone: "default",
+    authFormError: "",
     isSubmitting: false
 };
 
@@ -266,9 +268,14 @@ const MOBILE_BOTTOM_NAV_OPEN_COMMIT_PX = 10;
 const MOBILE_BOTTOM_NAV_FLING_VELOCITY = 0.32;
 const MOBILE_MENU_SNAP_MS = 680;
 const MOBILE_MENU_DRAG_SMOOTHING = 0.38;
-const INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
 const MIN_PASSWORD_LENGTH = 6;
-const SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE = `Пароль не короче ${MIN_PASSWORD_LENGTH} символов (требование сервера).`;
+const AUTH_EMAIL_TAKEN_MESSAGE = "Эта почта уже зарегистрирована.";
+const AUTH_USER_NOT_FOUND_MESSAGE = "Аккаунта с такой почтой нет.";
+const AUTH_INVALID_PASSWORD_MESSAGE = "Неверный пароль.";
+const AUTH_INVALID_CREDENTIALS_MESSAGE = "Неверная почта или пароль.";
+const AUTH_PASSWORD_MISMATCH_MESSAGE = "Пароли не совпадают.";
+const AUTH_FILL_EMAIL_PASSWORD_MESSAGE = "Заполните почту и пароль.";
+const AUTH_PASSWORD_TOO_SHORT_MESSAGE = `Минимум ${MIN_PASSWORD_LENGTH} символов в пароле.`;
 
 void bootstrap();
 
@@ -350,7 +357,18 @@ function transitionAuthView(nextView: View): void {
 }
 
 function setView(nextView: View): void {
+    if (nextView !== appState.view) {
+        clearAuthFormError();
+    }
     transitionAuthView(nextView);
+}
+
+function setAuthFormError(message: string): void {
+    appState.authFormError = message.trim();
+}
+
+function clearAuthFormError(): void {
+    appState.authFormError = "";
 }
 
 function resetSignUpDraft(): void {
@@ -1238,7 +1256,7 @@ function renderAuthView(): void {
                         <span class="auth-password-peek-icon" aria-hidden="true"></span>
                     </button>
                 </div>
-                ${renderSignInFeedbackBlock()}
+                ${renderAuthFormFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signInSubmitDisabled ? "disabled" : ""}>
                     ${appState.isSubmitting ? "ПОДКЛЮЧЕНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
@@ -1273,6 +1291,7 @@ function renderAuthView(): void {
 
             passwordInput.addEventListener("input", () => {
                 appState.signIn.password = passwordInput.value;
+                clearAuthFormError();
                 if (isHTMLButtonElement(passwordPeekButton)) {
                     syncPasswordPeekButtonState(passwordPeekButton, passwordInput, passwordRow);
                 }
@@ -1284,6 +1303,7 @@ function renderAuthView(): void {
         if (isHTMLInputElement(emailInput)) {
             emailInput.addEventListener("input", () => {
                 appState.signIn.email = emailInput.value;
+                clearAuthFormError();
                 syncSignInSubmitState();
             });
         }
@@ -1321,7 +1341,7 @@ function renderAuthView(): void {
                 <div class="auth-reveal-field ${appState.signUp.password ? "" : "hidden"}" data-signup-confirm-shell ${appState.signUp.password ? "" : "hidden"}>
                     <input class="auth-modal-field" name="passwordConfirm" type="password" placeholder="ПОДТВЕРЖДЕНИЕ ПАРОЛЯ" value="${escapeHtml(appState.signUp.passwordConfirm)}" autocomplete="new-password" required minlength="${MIN_PASSWORD_LENGTH}" ${appState.signUp.password ? "" : "disabled"}>
                 </div>
-                ${renderStatusBlock()}
+                ${renderAuthFormFeedbackBlock()}
                 <button class="auth-submit-pill" type="submit" ${signUpSubmitDisabled ? "disabled" : ""}>
                     ${appState.isSubmitting ? "СОЗДАНИЕ..." : "ПРИСОЕДИНИТЬСЯ"}
                 </button>
@@ -1439,7 +1459,7 @@ function isSignInReady(): boolean {
 
 function getSignUpPasswordLengthError(password: string): string | null {
     if (password.length > 0 && password.length < MIN_PASSWORD_LENGTH) {
-        return SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE;
+        return AUTH_PASSWORD_TOO_SHORT_MESSAGE;
     }
 
     return null;
@@ -1605,16 +1625,19 @@ function initializeSignUpForm(signUpForm: HTMLFormElement): void {
 
     emailInput.addEventListener("input", () => {
         appState.signUp.email = emailInput.value;
+        clearAuthFormError();
         syncVisibleFields();
     });
 
     passwordInput.addEventListener("input", () => {
         appState.signUp.password = passwordInput.value;
+        clearAuthFormError();
         syncVisibleFields();
     });
 
     passwordConfirmInput.addEventListener("input", () => {
         appState.signUp.passwordConfirm = passwordConfirmInput.value;
+        clearAuthFormError();
         syncVisibleFields();
     });
 
@@ -1963,7 +1986,7 @@ function applyProfileEditsToInMemoryProfile(): void {
 }
 
 function resetEventsCalendarToToday(): void {
-    appState.eventsCalendarStartIndex = getDemoEventsCalendarStartIndex();
+    appState.eventsCalendarStartIndex = getTodayCalendarStartIndex();
     appState.eventsFeedTab = "activity";
 }
 
@@ -1992,7 +2015,7 @@ function sortEventsByTime(events: CalendarEventItem[]): CalendarEventItem[] {
 
 function getMergedCalendarEventsForDate(date: Date): CalendarEventItem[] {
     const dateKey = dateToDateKey(date);
-    return sortEventsByTime([...getDemoEventsForDateKey(dateKey), ...getUserEventsForDateKey(dateKey)]);
+    return sortEventsByTime(getUserEventsForDateKey(dateKey));
 }
 
 function getFilteredCalendarEventsForDate(date: Date): CalendarEventItem[] {
@@ -2028,14 +2051,15 @@ function renderEventsCalendarColumn(dayDate: Date): string {
 
 function renderEventsCalendarBlock(): string {
     const visibleDates = getVisibleEventsCalendarDates();
-    const monthLabelDate = visibleDates[0] ?? new Date(EVENTS_CALENDAR_YEAR, 0, 1);
+    const monthLabelDate = visibleDates[0] ?? new Date(getEventsCalendarYear(), 0, 1);
     const monthLabel = formatEventsMonthLabel(monthLabelDate);
     const scopeAllActive = appState.eventsCalendarScope === "all";
     const scopeMineActive = appState.eventsCalendarScope === "mine";
     const columnsHtml = visibleDates.map((dayDate) => renderEventsCalendarColumn(dayDate)).join("");
+    const calendarYear = getEventsCalendarYear();
 
     return `
-        <section class="events-calendar-block" aria-label="Календарь ${EVENTS_CALENDAR_YEAR} года">
+        <section class="events-calendar-block" aria-label="Календарь ${calendarYear} года">
             <header class="events-calendar-toolbar">
                 <div class="events-calendar-toolbar-start">
                     <span class="events-calendar-month-label">${escapeHtml(monthLabel)}</span>
@@ -6205,8 +6229,9 @@ function wireProfileViewEvents(): void {
 async function submitLogin(form: HTMLFormElement): Promise<void> {
     appState.signIn.email = getInputValue(form.elements.namedItem("email")).trim();
     appState.signIn.password = getInputValue(form.elements.namedItem("password"));
+    clearAuthFormError();
     appState.isSubmitting = true;
-    setStatus("Подключаемся к серверу...");
+    clearStatus();
     render();
 
     try {
@@ -6232,9 +6257,10 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
         }
         appState.signIn.password = "";
         appState.view = "account";
+        clearAuthFormError();
         setStatus("Вход выполнен.");
     } catch (error) {
-        setStatus(getErrorMessage(error), "error");
+        setAuthFormError(getErrorMessage(error));
     } finally {
         appState.isSubmitting = false;
         render();
@@ -6247,25 +6273,26 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
     appState.signUp.passwordConfirm = getInputValue(form.elements.namedItem("passwordConfirm"));
 
     if (!appState.signUp.email || !appState.signUp.password) {
-        setStatus("Заполните email и пароль.", "error");
-        updateStatusBlock();
+        setAuthFormError(AUTH_FILL_EMAIL_PASSWORD_MESSAGE);
+        render();
         return;
     }
 
     if (appState.signUp.password.length < MIN_PASSWORD_LENGTH) {
-        setStatus(SIGN_UP_PASSWORD_TOO_SHORT_MESSAGE, "error");
+        setAuthFormError(AUTH_PASSWORD_TOO_SHORT_MESSAGE);
         render();
         return;
     }
 
     if (appState.signUp.password !== appState.signUp.passwordConfirm) {
-        setStatus("Пароли не совпадают.", "error");
-        updateStatusBlock();
+        setAuthFormError(AUTH_PASSWORD_MISMATCH_MESSAGE);
+        render();
         return;
     }
 
+    clearAuthFormError();
     appState.isSubmitting = true;
-    setStatus("Создаём аккаунт...");
+    clearStatus();
     render();
 
     try {
@@ -6293,9 +6320,10 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
         appState.view = "account";
         appState.signUp.password = "";
         appState.signUp.passwordConfirm = "";
+        clearAuthFormError();
         setStatus("Регистрация завершена.");
     } catch (error) {
-        setStatus(getErrorMessage(error), "error");
+        setAuthFormError(getErrorMessage(error));
     } finally {
         appState.isSubmitting = false;
         render();
@@ -6372,20 +6400,30 @@ function renderStatusBlock(): string {
     return `<p class="status-message hidden" aria-hidden="true"></p>`;
 }
 
-function isInvalidCredentialsError(): boolean {
-    return appState.statusTone === "error" && appState.statusMessage === INVALID_CREDENTIALS_MESSAGE;
+function shouldShowSignInRecoveryLink(): boolean {
+    return (
+        appState.view === "sign-in" &&
+        (appState.authFormError === AUTH_INVALID_PASSWORD_MESSAGE ||
+            appState.authFormError === AUTH_USER_NOT_FOUND_MESSAGE ||
+            appState.authFormError === AUTH_INVALID_CREDENTIALS_MESSAGE)
+    );
 }
 
-function renderSignInFeedbackBlock(): string {
-    if (isInvalidCredentialsError()) {
-        return `
-            <button type="button" class="auth-recovery-link" data-view="password-recovery">
-                Забыли пароль? Нажмите для восстановления
-            </button>
-        `;
+function renderAuthFormFeedbackBlock(): string {
+    const alertHtml = appState.authFormError
+        ? `<p class="auth-form-alert" role="alert" aria-live="polite">${escapeHtml(appState.authFormError)}</p>`
+        : "";
+
+    if (!shouldShowSignInRecoveryLink()) {
+        return alertHtml;
     }
 
-    return renderStatusBlock();
+    return `
+        ${alertHtml}
+        <button type="button" class="auth-recovery-link" data-view="password-recovery">
+            Забыли пароль? Восстановить
+        </button>
+    `;
 }
 
 function syncPersonalFormDraftFromDom(): void {

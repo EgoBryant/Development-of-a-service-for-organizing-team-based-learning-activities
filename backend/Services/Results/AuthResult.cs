@@ -16,6 +16,12 @@ public enum AuthResultType
     /// <summary>Неверный email или пароль (вход).</summary>
     InvalidCredentials,
 
+    /// <summary>Пользователь с указанным email не найден (вход).</summary>
+    UserNotFound,
+
+    /// <summary>Неверный пароль при существующем аккаунте (вход).</summary>
+    InvalidPassword,
+
     /// <summary>Обнаружен дубликат email в данных запроса или БД.</summary>
     DuplicateEmail
 }

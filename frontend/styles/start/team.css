@@ -205,53 +205,17 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
     align-content: start;
 }
 
-/* 2 участника — в ряд */
-.team-carousel-wrap--count-2 .team-carousel {
-    grid-template-columns: repeat(2, var(--team-member-card-width));
-    grid-template-rows: auto;
-    grid-auto-flow: row;
-    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
-    flex: 0 0 auto;
-}
-
-/* 3 участника — треугольник */
-.team-carousel-wrap--count-3 .team-carousel {
-    grid-template-columns: repeat(2, var(--team-member-card-width));
-    grid-template-rows: auto auto;
-    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
-    flex: 0 0 auto;
-    justify-items: center;
-}
-
-.team-carousel-wrap--count-3 .team-member-card:nth-child(1) {
-    grid-column: 1 / -1;
-    justify-self: center;
-}
-
-.team-carousel-wrap--count-3 .team-member-card:nth-child(2) {
-    justify-self: end;
-}
-
-.team-carousel-wrap--count-3 .team-member-card:nth-child(3) {
-    justify-self: start;
-}
-
-/* 4 участника — квадрат 2×2 */
-.team-carousel-wrap--count-4 .team-carousel {
-    grid-template-columns: repeat(2, var(--team-member-card-width));
-    grid-template-rows: repeat(2, auto);
-    grid-auto-flow: row;
-    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
-    flex: 0 0 auto;
-}
-
-/* 5+ — две строки, горизонтальная прокрутка */
+/* 2+ участника — одна строка */
+.team-carousel-wrap--count-2 .team-carousel,
+.team-carousel-wrap--count-3 .team-carousel,
+.team-carousel-wrap--count-4 .team-carousel,
 .team-carousel-wrap--scrollable .team-carousel,
 .team-carousel.team-carousel--scroll {
-    grid-template-rows: repeat(2, auto);
+    grid-template-rows: auto;
+    grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: var(--team-member-card-width);
-    width: calc(2 * var(--team-member-card-width) + var(--team-member-carousel-col-gap));
+    width: 100%;
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -259,6 +223,9 @@ button.team-topbar-tab--leave.team-topbar-tab--active:hover {
     flex: 1 1 auto;
 }
 
+.team-carousel-wrap--count-2 .team-member-card,
+.team-carousel-wrap--count-3 .team-member-card,
+.team-carousel-wrap--count-4 .team-member-card,
 .team-carousel-wrap--scrollable .team-member-card,
 .team-carousel.team-carousel--scroll .team-member-card {
     scroll-snap-align: start;

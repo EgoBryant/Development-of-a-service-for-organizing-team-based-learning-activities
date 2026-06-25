@@ -4,7 +4,7 @@ import type {
     ActivityFeedPushInput
 } from "../types/activity";
 
-const STORAGE_KEY = "team-exam-activity-feed";
+const STORAGE_KEY = "team-exam-activity-feed-v2";
 const MAX_ITEMS = 50;
 
 const COLOR_CYCLE: ActivityColorVariant[] = ["pink", "blue", "green", "purple", "amber", "rose"];
@@ -24,25 +24,23 @@ function persistActivityFeed(): void {
 }
 
 export function loadPersistedActivityFeed(): void {
+    activityFeedItems.length = 0;
+
     if (typeof localStorage === "undefined") {
-        seedDemoActivityFeedIfEmpty();
         return;
     }
 
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) {
-            seedDemoActivityFeedIfEmpty();
             return;
         }
 
         const parsed = JSON.parse(raw) as ActivityFeedItem[];
-        if (!Array.isArray(parsed) || parsed.length === 0) {
-            seedDemoActivityFeedIfEmpty();
+        if (!Array.isArray(parsed)) {
             return;
         }
 
-        activityFeedItems.length = 0;
         for (const item of parsed.slice(0, MAX_ITEMS)) {
             if (!item?.id || !item.title) {
                 continue;
@@ -59,49 +57,8 @@ export function loadPersistedActivityFeed(): void {
             });
         }
     } catch {
-        seedDemoActivityFeedIfEmpty();
+        activityFeedItems.length = 0;
     }
-}
-
-function seedDemoActivityFeedIfEmpty(): void {
-    if (activityFeedItems.length > 0) {
-        return;
-    }
-
-    const now = Date.now();
-    const seeds: ActivityFeedPushInput[] = [
-        {
-            kind: "event_created",
-            title: "Воркшоп команды",
-            description: "Команда «Организаторы» провели воркшоп «АГиТДУ: сдать нельзя отчислиться»",
-            badge: "50 баллов"
-        },
-        {
-            kind: "rating_changed",
-            title: "Переход в лигу",
-            description: "Валерий Салимгареев перешёл в лигу «Профи»"
-        },
-        {
-            kind: "challenge_completed",
-            title: "Челлендж выполнен",
-            description: "Егор Шадрин успешно выполнил челлендж «Ночной дозор»",
-            badge: "25 баллов"
-        }
-    ];
-
-    seeds.forEach((seed, index) => {
-        activityFeedItems.push({
-            id: `seed-${index}`,
-            kind: seed.kind,
-            title: seed.title,
-            description: seed.description,
-            createdAt: new Date(now - index * 3600_000).toISOString(),
-            colorVariant: COLOR_CYCLE[index % COLOR_CYCLE.length],
-            badge: seed.badge
-        });
-    });
-
-    persistActivityFeed();
 }
 
 export function pushActivityFeedItem(input: ActivityFeedPushInput): ActivityFeedItem {

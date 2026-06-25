@@ -79,6 +79,7 @@ export interface ProblemLike {
     title?: string;
     detail?: string;
     message?: string;
+    code?: string;
     /** ASP.NET 400 model validation: поле -> сообщения */
     errors?: Record<string, string[]>;
 }

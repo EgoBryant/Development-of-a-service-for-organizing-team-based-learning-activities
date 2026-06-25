@@ -5370,7 +5370,7 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
         display: grid !important;
-        grid-template-rows: repeat(2, auto) !important;
+        grid-template-rows: auto !important;
         grid-auto-flow: column !important;
         grid-auto-columns: var(--team-member-card-width) !important;
         column-gap: var(--team-member-carousel-col-gap) !important;
@@ -5506,7 +5506,7 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
         display: grid !important;
-        grid-template-rows: repeat(2, auto) !important;
+        grid-template-rows: auto !important;
         grid-auto-flow: column !important;
         grid-auto-columns: var(--team-member-card-width) !important;
         column-gap: var(--team-member-carousel-col-gap) !important;
@@ -6112,7 +6112,7 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
     .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
         display: grid !important;
-        grid-template-rows: repeat(2, auto) !important;
+        grid-template-rows: auto !important;
         grid-auto-flow: column !important;
         grid-auto-columns: var(--team-member-card-width) !important;
         column-gap: var(--team-member-carousel-col-gap) !important;
@@ -6211,5 +6211,72 @@
     .profile-app--dashboard-profile .rating-page--public-team .team-history-empty-text {
         font-size: 9px;
         line-height: 1.45;
+    }
+}
+
+/* Team member cards: single horizontal row on mobile/tablet */
+@media (max-width: 1024px) {
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel.team-carousel--scroll,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel.team-carousel--scroll,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-carousel,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll {
+        display: grid !important;
+        grid-template-rows: auto !important;
+        grid-template-columns: none !important;
+        grid-auto-flow: column !important;
+        grid-auto-columns: var(--team-member-card-width) !important;
+        column-gap: var(--team-member-carousel-col-gap) !important;
+        row-gap: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 auto !important;
+        margin-inline: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scroll-snap-type: x proximity !important;
+        -webkit-overflow-scrolling: touch !important;
+        justify-items: stretch !important;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card:nth-child(1),
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card:nth-child(2),
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card:nth-child(3),
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card:nth-child(1),
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card:nth-child(2),
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card:nth-child(3),
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card:nth-child(1),
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card:nth-child(2),
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card:nth-child(3) {
+        grid-column: auto !important;
+        justify-self: stretch !important;
+    }
+
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-2 .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-3 .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--count-4 .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel-wrap--scrollable .team-member-card,
+    .profile-app--dashboard-profile:has(.team-dashboard-main) .team-carousel.team-carousel--scroll .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-2 .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-3 .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--count-4 .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel-wrap--scrollable .team-member-card,
+    .profile-app--dashboard-profile:has(.rating-page--public-team) .team-carousel.team-carousel--scroll .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-2 .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-3 .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--count-4 .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel-wrap--scrollable .team-member-card,
+    .profile-app--dashboard-profile .rating-page--public-team .team-carousel.team-carousel--scroll .team-member-card {
+        scroll-snap-align: start !important;
     }
 }
