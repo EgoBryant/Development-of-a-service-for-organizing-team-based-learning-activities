@@ -39,7 +39,11 @@ public class AppDbContext : DbContext
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     /// <summary>Таблица новостей организатора.</summary>
     public DbSet<NewsItem> NewsItems => Set<NewsItem>();
+<<<<<<< HEAD
+    public DbSet<Assignment> Assignments => Set<Assignment>();
+=======
     /// <summary>Таблица записей ленты активности.</summary>
+>>>>>>> 3d578392bfadbd52fcf244fda5c70c5433a7e4dc
     public DbSet<ActivityFeedItem> ActivityFeedItems => Set<ActivityFeedItem>();
 
     /// <summary>Настраивает схему, индексы и связи между сущностями.</summary>
@@ -272,6 +276,20 @@ public class AppDbContext : DbContext
             entity.Property(news => news.Title).HasMaxLength(200).IsRequired();
             entity.Property(news => news.Body).HasMaxLength(4000).IsRequired();
             entity.HasIndex(news => news.PublishedAtUtc);
+        });
+
+        modelBuilder.Entity<Assignment>(entity =>
+        {
+            entity.HasKey(assignment => assignment.Id);
+            entity.Property(assignment => assignment.Title).HasMaxLength(200).IsRequired();
+            entity.Property(assignment => assignment.Tag).HasMaxLength(64).IsRequired();
+            entity.Property(assignment => assignment.Description).HasMaxLength(4000).IsRequired();
+            entity.Property(assignment => assignment.DeadlineLabel).HasMaxLength(64).IsRequired();
+            entity.Property(assignment => assignment.LeagueTier).HasMaxLength(16).IsRequired();
+            entity.HasIndex(assignment => assignment.IsActive);
+            entity.HasIndex(assignment => assignment.IsAvailableInFeed);
+            entity.HasIndex(assignment => assignment.DeadlineUtc);
+            entity.HasIndex(assignment => assignment.LeagueTier);
         });
 
         modelBuilder.Entity<ActivityFeedItem>(entity =>
