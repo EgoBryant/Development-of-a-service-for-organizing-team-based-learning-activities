@@ -7,6 +7,10 @@ using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Реализация сервиса рейтингов: формирование лидербордов команд и пользователей,
+/// расчёт показателей КРК, фильтрация и сортировка результатов.
+/// </summary>
 public class RatingsService : IRatingsService
 {
     private readonly AppDbContext _dbContext;
@@ -14,6 +18,10 @@ public class RatingsService : IRatingsService
     private readonly IAchievementsService _achievementsService;
     private readonly LeagueOptions _leagueOptions;
 
+    /// <summary>
+    /// Создаёт экземпляр сервиса рейтингов с зависимостями доступа к данным,
+    /// расчёта КРК, достижений и настроек лиг.
+    /// </summary>
     public RatingsService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
@@ -26,6 +34,11 @@ public class RatingsService : IRatingsService
         _leagueOptions = leagueOptions.Value;
     }
 
+    /// <summary>
+    /// Возвращает рейтинг команд: обновляет кэш КРК при необходимости, собирает метрики
+    /// (сплочённость, бонусы челленджей, чек-ины, спасения), ранжирует, выдаёт достижения топ-3
+    /// и применяет фильтры, сортировку и лимит из запроса.
+    /// </summary>
     public async Task<IReadOnlyCollection<RatingTeamResponse>> GetTeamsAsync(RatingQuery query, CancellationToken cancellationToken = default)
     {
         await EnsureKrkCacheAsync(cancellationToken);
@@ -73,6 +86,10 @@ public class RatingsService : IRatingsService
         return sorted;
     }
 
+    /// <summary>
+    /// Возвращает рейтинговую карточку одной команды по идентификатору
+    /// или <c>null</c>, если команда не найдена.
+    /// </summary>
     public async Task<RatingTeamResponse?> GetTeamByIdAsync(int teamId, CancellationToken cancellationToken = default)
     {
         await EnsureKrkCacheAsync(cancellationToken);
@@ -110,6 +127,10 @@ public class RatingsService : IRatingsService
             activityByTeam.GetValueOrDefault(team.Id) ?? []);
     }
 
+    /// <summary>
+    /// Возвращает рейтинг пользователей (без администраторов): рассчитывает личный рейтинг
+    /// с учётом анонимных оценок вклада, ранжирует и применяет фильтры запроса.
+    /// </summary>
     public async Task<IReadOnlyCollection<RatingUserResponse>> GetUsersAsync(RatingQuery query, CancellationToken cancellationToken = default)
     {
         var users = await _dbContext.Users
@@ -166,12 +187,20 @@ public class RatingsService : IRatingsService
         return sorted;
     }
 
+    /// <summary>
+    /// Возвращает рейтинговую карточку пользователя по идентификатору
+    /// или <c>null</c>, если пользователь не найден.
+    /// </summary>
     public async Task<RatingUserResponse?> GetUserByIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var users = await GetUsersAsync(new RatingQuery(), cancellationToken);
         return users.SingleOrDefault(user => user.Id == userId.ToString());
     }
 
+    /// <summary>
+    /// Гарантирует актуальность кэша КРК: при отсутствии значения у любой команды
+    /// запускает полный пересчёт через <see cref="IKrkCalculationService"/>.
+    /// </summary>
     private async Task EnsureKrkCacheAsync(CancellationToken cancellationToken)
     {
         var hasMissingKrk = await _dbContext.Teams
@@ -184,6 +213,10 @@ public class RatingsService : IRatingsService
         }
     }
 
+    /// <summary>
+    /// Выдаёт достижение «Топ-3 команды» всем участникам трёх лидирующих команд,
+    /// если оно ещё не было получено.
+    /// </summary>
     private async Task GrantTop3TeamAchievementsAsync(IReadOnlyCollection<Team> rankedTeams, CancellationToken cancellationToken)
     {
         var topMembers = rankedTeams
@@ -199,6 +232,9 @@ public class RatingsService : IRatingsService
         }
     }
 
+    /// <summary>
+    /// Возвращает средний балл анонимного голосования (коэффициент сплочённости) по каждой команде.
+    /// </summary>
     private async Task<Dictionary<int, double>> GetCohesionByTeamAsync(int[] teamIds, CancellationToken cancellationToken)
     {
         return await _dbContext.Votes
@@ -209,6 +245,9 @@ public class RatingsService : IRatingsService
             .ToDictionaryAsync(item => item.TeamId, item => item.Average, cancellationToken);
     }
 
+    /// <summary>
+    /// Возвращает среднюю оценку вклада пользователя по анонимным голосам команды.
+    /// </summary>
     private async Task<Dictionary<int, double>> GetContributionByUserAsync(int[] userIds, CancellationToken cancellationToken)
     {
         return await _dbContext.Votes
@@ -219,6 +258,9 @@ public class RatingsService : IRatingsService
             .ToDictionaryAsync(item => item.UserId, item => item.Average, cancellationToken);
     }
 
+    /// <summary>
+    /// Суммирует бонусные баллы одобренных челленджей по каждой команде.
+    /// </summary>
     private async Task<Dictionary<int, int>> GetChallengeBonusByTeamAsync(int[] teamIds, CancellationToken cancellationToken)
     {
         return await _dbContext.TeamChallengeProgresses
@@ -234,6 +276,9 @@ public class RatingsService : IRatingsService
             .ToDictionaryAsync(item => item.TeamId, item => item.Bonus, cancellationToken);
     }
 
+    /// <summary>
+    /// Возвращает количество чек-инов по каждой команде.
+    /// </summary>
     private async Task<Dictionary<int, int>> GetCheckInsCountByTeamAsync(int[] teamIds, CancellationToken cancellationToken)
     {
         return await _dbContext.CheckIns
@@ -244,6 +289,9 @@ public class RatingsService : IRatingsService
             .ToDictionaryAsync(item => item.TeamId, item => item.Count, cancellationToken);
     }
 
+    /// <summary>
+    /// Возвращает число завершённых «спасений» (help request) для каждой команды-получателя.
+    /// </summary>
     private async Task<Dictionary<int, int>> GetCompletedRescuesCountByTeamAsync(int[] teamIds, CancellationToken cancellationToken)
     {
         return await _dbContext.HelpRequests
@@ -254,6 +302,9 @@ public class RatingsService : IRatingsService
             .ToDictionaryAsync(item => item.TeamId, item => item.Count, cancellationToken);
     }
 
+    /// <summary>
+    /// Формирует краткую историю активности команды из ленты событий (до 6 последних записей на команду).
+    /// </summary>
     private async Task<Dictionary<int, List<RatingTeamHistoryItemResponse>>> GetActivityHistoryByTeamAsync(
         int[] teamIds,
         CancellationToken cancellationToken)
@@ -281,6 +332,9 @@ public class RatingsService : IRatingsService
                     .ToList());
     }
 
+    /// <summary>
+    /// Преобразует сущность команды в DTO рейтинга с переданными метриками и местом в таблице.
+    /// </summary>
     private static RatingTeamResponse MapTeam(
         Team team,
         int rank,
@@ -319,6 +373,9 @@ public class RatingsService : IRatingsService
         };
     }
 
+    /// <summary>
+    /// Преобразует проекцию пользователя в DTO рейтинга с личным рейтингом и лигой.
+    /// </summary>
     private RatingUserResponse MapUser(RatingUserProjection user, double contribution, int rank)
     {
         var personalRating = CalculatePersonalRating(user.UserPoints, contribution);
@@ -340,9 +397,16 @@ public class RatingsService : IRatingsService
         };
     }
 
+    /// <summary>
+    /// Рассчитывает личный рейтинг: базовые баллы пользователя плюс вклад из голосования
+    /// (средняя оценка × 20, округление от нуля).
+    /// </summary>
     private static int CalculatePersonalRating(int userPoints, double contribution) =>
         userPoints + (int)Math.Round(contribution * 20d, MidpointRounding.AwayFromZero);
 
+    /// <summary>
+    /// Формирует отображаемое имя для рейтинга: ФИО, иначе ник, иначе логин (в верхнем регистре).
+    /// </summary>
     private static string FormatRatingUserName(string? firstName, string? lastName, string? nickname, string? userName)
     {
         var first = (firstName ?? string.Empty).Trim();
@@ -361,6 +425,9 @@ public class RatingsService : IRatingsService
         return (userName ?? string.Empty).Trim().ToUpperInvariant();
     }
 
+    /// <summary>
+    /// Определяет лигу команды по значению КРК (фиксированные пороги: СТАРТ → НОВИЧОК → ПРОФИ → ЛЕГЕНДА).
+    /// </summary>
     private static string ResolveTeamLeague(double krk)
     {
         if (krk >= 8d) return "ЛЕГЕНДА";
@@ -369,6 +436,9 @@ public class RatingsService : IRatingsService
         return "СТАРТ";
     }
 
+    /// <summary>
+    /// Фильтрует команды по подстроке поиска (имя, лига, капитан) и/или точному названию лиги.
+    /// </summary>
     private static List<RatingTeamResponse> FilterTeams(IEnumerable<RatingTeamResponse> source, string? search, string? league)
     {
         var teams = source;
@@ -390,6 +460,9 @@ public class RatingsService : IRatingsService
         return teams.ToList();
     }
 
+    /// <summary>
+    /// Фильтрует пользователей по поиску, команде, учебной группе и лиге из запроса.
+    /// </summary>
     private static List<RatingUserResponse> FilterUsers(IEnumerable<RatingUserResponse> source, RatingQuery query)
     {
         var users = source;
@@ -423,6 +496,9 @@ public class RatingsService : IRatingsService
         return users.ToList();
     }
 
+    /// <summary>
+    /// Сортирует команды по ключу <paramref name="sort"/>; по умолчанию — по месту в рейтинге.
+    /// </summary>
     private static List<RatingTeamResponse> SortTeams(List<RatingTeamResponse> source, string? sort) => sort switch
     {
         "rank-desc" => source.OrderByDescending(t => t.Rank).ToList(),
@@ -432,6 +508,9 @@ public class RatingsService : IRatingsService
         _ => source.OrderBy(t => t.Rank).ToList()
     };
 
+    /// <summary>
+    /// Сортирует пользователей по ключу <paramref name="sort"/>; по умолчанию — по месту в рейтинге.
+    /// </summary>
     private static List<RatingUserResponse> SortUsers(List<RatingUserResponse> source, string? sort) => sort switch
     {
         "rank-desc" => source.OrderByDescending(u => u.Rank).ToList(),
@@ -441,6 +520,9 @@ public class RatingsService : IRatingsService
         _ => source.OrderBy(u => u.Rank).ToList()
     };
 
+    /// <summary>
+    /// Определяет лигу пользователя по личному рейтингу и порогам из <see cref="LeagueOptions"/>.
+    /// </summary>
     private string ResolveLeague(int points)
     {
         if (points >= _leagueOptions.GoldThreshold) return _leagueOptions.GoldLabel;
@@ -449,20 +531,48 @@ public class RatingsService : IRatingsService
         return _leagueOptions.BaseLabel;
     }
 
+    /// <summary>
+    /// Промежуточная проекция данных пользователя для построения рейтинга без лишних JOIN в памяти.
+    /// </summary>
     private sealed class RatingUserProjection
     {
+        /// <summary>Идентификатор пользователя.</summary>
         public int Id { get; init; }
+
+        /// <summary>Логин пользователя.</summary>
         public string UserName { get; init; } = string.Empty;
+
+        /// <summary>Имя.</summary>
         public string FirstName { get; init; } = string.Empty;
+
+        /// <summary>Фамилия.</summary>
         public string LastName { get; init; } = string.Empty;
+
+        /// <summary>Отчество.</summary>
         public string MiddleName { get; init; } = string.Empty;
+
+        /// <summary>Никнейм.</summary>
         public string Nickname { get; init; } = string.Empty;
+
+        /// <summary>Базовые баллы пользователя (до учёта вклада из голосования).</summary>
         public int UserPoints { get; init; }
+
+        /// <summary>Идентификатор команды или <c>null</c>, если пользователь без команды.</summary>
         public int? TeamId { get; init; }
+
+        /// <summary>Название команды.</summary>
         public string TeamName { get; init; } = string.Empty;
+
+        /// <summary>Название учебной группы.</summary>
         public string GroupTitle { get; init; } = string.Empty;
+
+        /// <summary>Признак капитана текущей команды.</summary>
         public bool IsCaptain { get; init; }
+
+        /// <summary>Количество полученных достижений.</summary>
         public int AchievementsCount { get; init; }
+
+        /// <summary>URL аватара.</summary>
         public string AvatarUrl { get; init; } = string.Empty;
     }
 }

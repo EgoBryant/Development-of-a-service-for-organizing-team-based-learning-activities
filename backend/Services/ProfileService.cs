@@ -8,6 +8,9 @@ using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Профиль пользователя: чтение, обновление, персональный рейтинг и лига.
+/// </summary>
 public class ProfileService : IProfileService
 {
     /// <summary>Максимальный размер файла аватара после декодирования data URL (2 МБ).</summary>
@@ -19,12 +22,18 @@ public class ProfileService : IProfileService
     private readonly AppDbContext _dbContext;
     private readonly LeagueOptions _leagueOptions;
 
+    /// <summary>
+    /// Создаёт сервис профиля с порогами лиг из конфигурации.
+    /// </summary>
     public ProfileService(AppDbContext dbContext, IOptions<LeagueOptions> leagueOptions)
     {
         _dbContext = dbContext;
         _leagueOptions = leagueOptions.Value;
     }
 
+    /// <summary>
+    /// Возвращает профиль пользователя по идентификатору или <c>null</c>, если не найден.
+    /// </summary>
     public async Task<UserProfileResponse?> GetProfileAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
@@ -40,6 +49,9 @@ public class ProfileService : IProfileService
         return await MapToProfileResponseAsync(user, cancellationToken);
     }
 
+    /// <summary>
+    /// Собирает DTO профиля с командой, персональным рейтингом, рангом и лигой.
+    /// </summary>
     public async Task<UserProfileResponse> MapToProfileResponseAsync(User user, CancellationToken cancellationToken = default)
     {
         var team = user.TeamId is null
@@ -87,6 +99,9 @@ public class ProfileService : IProfileService
         };
     }
 
+    /// <summary>
+    /// Обновляет поля профиля с валидацией аватара, группы и уникальности студенческого билета.
+    /// </summary>
     public async Task<ProfileUpdateResult> UpdateProfileAsync(int userId, UpdateProfileDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -184,6 +199,9 @@ public class ProfileService : IProfileService
         return await FindGroupIdByNormalizedTitleAsync(label, cancellationToken);
     }
 
+    /// <summary>
+    /// Ищет идентификатор группы по нормализованному названию.
+    /// </summary>
     private async Task<int?> FindGroupIdByNormalizedTitleAsync(string label, CancellationToken cancellationToken)
     {
         var key = NormalizeGroupKey(label);
@@ -196,12 +214,21 @@ public class ProfileService : IProfileService
         return groups.FirstOrDefault(g => NormalizeGroupKey(g.Title) == key)?.Id;
     }
 
+    /// <summary>
+    /// Возвращает положительный идентификатор или <c>null</c>.
+    /// </summary>
     private static int? OptionalPositiveId(int? value) =>
         value is > 0 ? value : null;
 
+    /// <summary>
+    /// Нормализует ключ группы для сравнения.
+    /// </summary>
     private static string NormalizeGroupKey(string title) =>
         title.Trim().ToUpperInvariant();
 
+    /// <summary>
+    /// Средняя оценка вклада пользователя по голосам коллег (шкала 1–5).
+    /// </summary>
     private async Task<double> CalculatePersonalContributionAsync(int userId, CancellationToken cancellationToken)
     {
         var votes = await _dbContext.Votes
@@ -213,9 +240,15 @@ public class ProfileService : IProfileService
         return votes.Count == 0 ? 0d : Math.Round(votes.Average(), 1);
     }
 
+    /// <summary>
+    /// Персональный рейтинг: баллы + вклад × 20.
+    /// </summary>
     private static int CalculatePersonalRating(int userPoints, double personalContribution) =>
         userPoints + (int)Math.Round(personalContribution * 20d, MidpointRounding.AwayFromZero);
 
+    /// <summary>
+    /// Определяет лигу по порогам из конфигурации.
+    /// </summary>
     private string ResolvePersonalLeague(int personalRating)
     {
         if (personalRating >= _leagueOptions.GoldThreshold) return _leagueOptions.GoldLabel;
@@ -224,6 +257,9 @@ public class ProfileService : IProfileService
         return _leagueOptions.BaseLabel;
     }
 
+    /// <summary>
+    /// Место пользователя среди студентов (админы исключены); при равенстве рейтинга выше тот, у кого меньший Id.
+    /// </summary>
     private async Task<int> CalculatePersonalRankAsync(int userId, int personalRating, CancellationToken cancellationToken)
     {
         var allPoints = await _dbContext.Users
@@ -248,6 +284,9 @@ public class ProfileService : IProfileService
         return higherCount + 1;
     }
 
+    /// <summary>
+    /// Перезагружает пользователя из БД и строит профиль.
+    /// </summary>
     private async Task<UserProfileResponse> BuildProfileAsync(int userId, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users
@@ -258,6 +297,9 @@ public class ProfileService : IProfileService
         return await MapToProfileResponseAsync(user, cancellationToken);
     }
 
+    /// <summary>
+    /// Проверяет размер base64-аватара в data URL.
+    /// </summary>
     private static bool IsAvatarPayloadWithinSizeLimit(string avatar)
     {
         if (string.IsNullOrWhiteSpace(avatar))

@@ -141,6 +141,97 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole(Roles.Captain, Roles.Admin));
 });
 
+/// <summary>
+/// Выполняет миграции EF Core, восстановление схемы и начальное заполнение БД при старте приложения.
+/// При ошибках подключения к PostgreSQL повторяет попытку до 10 раз с интервалом 3 секунды.
+/// В Development после исчерпания попыток API стартует в деградированном режиме; в Production — выбрасывает исключение.
+/// </summary>
+static async Task InitializeDatabaseAsync(
+    WebApplication app,
+    AppDbContext dbContext,
+    ILogger logger,
+    string connectionString)
+{
+    const int maxAttempts = 10;
+    var delay = TimeSpan.FromSeconds(3);
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            await dbContext.Database.MigrateAsync();
+            await DatabaseSchemaRepair.ApplyAsync(dbContext, logger);
+            await SeedData.InitializeAsync(dbContext);
+            logger.LogInformation("Database migration and seed completed successfully.");
+            return;
+        }
+        catch (Exception exception) when (IsDatabaseConnectionError(exception))
+        {
+            logger.LogWarning(
+                exception,
+                "Database connection attempt {Attempt}/{MaxAttempts} failed for {ConnectionTarget}.",
+                attempt,
+                maxAttempts,
+                DescribeConnectionTarget(connectionString));
+
+            if (attempt == maxAttempts)
+            {
+                var message =
+                    $"Could not connect to PostgreSQL at {DescribeConnectionTarget(connectionString)} after {maxAttempts} attempts. " +
+                    "Start PostgreSQL first, or override ConnectionStrings__DefaultConnection with a reachable host.";
+
+                if (app.Environment.IsDevelopment())
+                {
+                    logger.LogError("{Message} The API will continue to start in degraded mode.", message);
+                    return;
+                }
+
+                throw new InvalidOperationException(message, exception);
+            }
+
+            await Task.Delay(delay);
+        }
+    }
+}
+
+/// <summary>
+/// Определяет, связано ли исключение с недоступностью PostgreSQL (таймаут, NpgsqlException, SQLSTATE 08xxx).
+/// Используется для повторных попыток подключения при старте, а не для прерывания обработки других ошибок БД.
+/// </summary>
+static bool IsDatabaseConnectionError(Exception exception)
+{
+    if (exception is TimeoutException || exception.InnerException is TimeoutException)
+    {
+        return true;
+    }
+
+    if (exception is PostgresException postgresException)
+    {
+        return postgresException.SqlState.StartsWith("08", StringComparison.Ordinal);
+    }
+
+    if (exception.InnerException is PostgresException innerPostgresException)
+    {
+        return innerPostgresException.SqlState.StartsWith("08", StringComparison.Ordinal);
+    }
+
+    return exception is NpgsqlException
+           || exception.InnerException is NpgsqlException;
+}
+
+/// <summary>
+/// Формирует краткое описание цели подключения к БД в формате <c>host:port/database</c> для логов и сообщений об ошибках.
+/// </summary>
+static string DescribeConnectionTarget(string connectionString)
+{
+    var builder = new NpgsqlConnectionStringBuilder(connectionString);
+    var host = string.IsNullOrWhiteSpace(builder.Host) ? "unknown-host" : builder.Host;
+    var port = builder.Port == 0 ? 5432 : builder.Port;
+    var database = string.IsNullOrWhiteSpace(builder.Database) ? "unknown-db" : builder.Database;
+
+    return $"{host}:{port}/{database}";
+}
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
@@ -212,82 +303,3 @@ app.MapGet("/health", async (AppDbContext dbContext) =>
 app.MapFallbackToFile("index.html");
 
 app.Run();
-
-static async Task InitializeDatabaseAsync(
-    WebApplication app,
-    AppDbContext dbContext,
-    ILogger logger,
-    string connectionString)
-{
-    const int maxAttempts = 10;
-    var delay = TimeSpan.FromSeconds(3);
-
-    for (var attempt = 1; attempt <= maxAttempts; attempt++)
-    {
-        try
-        {
-            await dbContext.Database.MigrateAsync();
-            await DatabaseSchemaRepair.ApplyAsync(dbContext, logger);
-            await SeedData.InitializeAsync(dbContext);
-            logger.LogInformation("Database migration and seed completed successfully.");
-            return;
-        }
-        catch (Exception exception) when (IsDatabaseConnectionError(exception))
-        {
-            logger.LogWarning(
-                exception,
-                "Database connection attempt {Attempt}/{MaxAttempts} failed for {ConnectionTarget}.",
-                attempt,
-                maxAttempts,
-                DescribeConnectionTarget(connectionString));
-
-            if (attempt == maxAttempts)
-            {
-                var message =
-                    $"Could not connect to PostgreSQL at {DescribeConnectionTarget(connectionString)} after {maxAttempts} attempts. " +
-                    "Start PostgreSQL first, or override ConnectionStrings__DefaultConnection with a reachable host.";
-
-                if (app.Environment.IsDevelopment())
-                {
-                    logger.LogError("{Message} The API will continue to start in degraded mode.", message);
-                    return;
-                }
-
-                throw new InvalidOperationException(message, exception);
-            }
-
-            await Task.Delay(delay);
-        }
-    }
-}
-
-static bool IsDatabaseConnectionError(Exception exception)
-{
-    if (exception is TimeoutException || exception.InnerException is TimeoutException)
-    {
-        return true;
-    }
-
-    if (exception is PostgresException postgresException)
-    {
-        return postgresException.SqlState.StartsWith("08", StringComparison.Ordinal);
-    }
-
-    if (exception.InnerException is PostgresException innerPostgresException)
-    {
-        return innerPostgresException.SqlState.StartsWith("08", StringComparison.Ordinal);
-    }
-
-    return exception is NpgsqlException
-           || exception.InnerException is NpgsqlException;
-}
-
-static string DescribeConnectionTarget(string connectionString)
-{
-    var builder = new NpgsqlConnectionStringBuilder(connectionString);
-    var host = string.IsNullOrWhiteSpace(builder.Host) ? "unknown-host" : builder.Host;
-    var port = builder.Port == 0 ? 5432 : builder.Port;
-    var database = string.IsNullOrWhiteSpace(builder.Database) ? "unknown-db" : builder.Database;
-
-    return $"{host}:{port}/{database}";
-}

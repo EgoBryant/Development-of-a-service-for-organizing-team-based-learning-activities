@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Минимальная админская поверхность для MVP: правка очков, пересчёт КРК, модерация постов биржи знаний.
+/// Административные операции MVP: правка баллов пользователей, пересчёт КРК, модерация биржи знаний.
+/// Базовый маршрут: <c>api/admin</c>. Все методы требуют JWT с ролью <c>Admin</c>.
 /// </summary>
 [Route("api/admin")]
 [Authorize(Roles = Roles.Admin)]
@@ -27,7 +28,10 @@ public class AdminController : ApiControllerBase
         _knowledgePostsService = knowledgePostsService;
     }
 
-    /// <summary>Обновляет персональные баллы пользователя.</summary>
+    /// <summary>
+    /// PATCH <c>api/admin/users/{userId}/points</c> — обновляет персональные баллы пользователя по идентификатору.
+    /// Требуется роль Admin. 204 при успехе; 404, если пользователь не найден.
+    /// </summary>
     [HttpPatch("users/{userId:int}/points")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +48,10 @@ public class AdminController : ApiControllerBase
         return NoContent();
     }
 
-    /// <summary>Обновляет персональные баллы пользователя по email.</summary>
+    /// <summary>
+    /// PATCH <c>api/admin/users/by-email/points</c> — обновляет персональные баллы пользователя по email.
+    /// Требуется роль Admin. 204 при успехе; 404, если пользователь с указанным email не найден.
+    /// </summary>
     [HttpPatch("users/by-email/points")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -61,7 +68,10 @@ public class AdminController : ApiControllerBase
         return NoContent();
     }
 
-    /// <summary>Полный пересчёт КРК для всех команд.</summary>
+    /// <summary>
+    /// POST <c>api/admin/krk/recalculate</c> — запускает полный пересчёт КРК для всех команд.
+    /// Требуется роль Admin. Возвращает 204 No Content после завершения.
+    /// </summary>
     [HttpPost("krk/recalculate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RecalculateKrk(CancellationToken cancellationToken)
@@ -70,7 +80,10 @@ public class AdminController : ApiControllerBase
         return NoContent();
     }
 
-    /// <summary>Удаляет публикацию биржи знаний.</summary>
+    /// <summary>
+    /// DELETE <c>api/admin/knowledge-posts/{postId}</c> — удаляет публикацию биржи знаний (модерация).
+    /// Требуется роль Admin. 204 при успехе; 404, если пост не найден.
+    /// </summary>
     [HttpDelete("knowledge-posts/{postId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

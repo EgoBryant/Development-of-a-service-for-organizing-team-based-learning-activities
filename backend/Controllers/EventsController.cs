@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Игровой календарь: события команды, общеигровые события.
+/// Игровой календарь: события команды и общеигровые события.
+/// Базовый маршрут: <c>api/events</c>. Все методы требуют JWT; удаление доступно автору или Admin.
 /// </summary>
 [Route("api/events")]
 [Authorize]
@@ -20,7 +21,10 @@ public class EventsController : ApiControllerBase
         _eventsService = eventsService;
     }
 
-    /// <summary>Возвращает события календаря. Параметры: <c>from</c>, <c>to</c>, <c>scope=all|mine</c>.</summary>
+    /// <summary>
+    /// GET <c>api/events/calendar</c> — возвращает события календаря с фильтрацией по периоду и области.
+    /// Требуется JWT. Параметры: <c>from</c>, <c>to</c>, <c>scope=all|mine</c>. 200 со списком событий.
+    /// </summary>
     [HttpGet("calendar")]
     [ProducesResponseType<IEnumerable<CalendarEventResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<CalendarEventResponse>>> GetCalendar(
@@ -38,7 +42,11 @@ public class EventsController : ApiControllerBase
         return Ok(await _eventsService.GetCalendarAsync(userId.Value, query, cancellationToken));
     }
 
-    /// <summary>Создает событие. <c>isGlobal=true</c> — для всех, иначе — для команды текущего пользователя.</summary>
+    /// <summary>
+    /// POST <c>api/events</c> — создаёт событие календаря.
+    /// Требуется JWT. <c>isGlobal=true</c> — для всех участников, иначе — для команды текущего пользователя.
+    /// 201 Created; 404, если пользователь не найден.
+    /// </summary>
     [HttpPost]
     [ProducesResponseType<CalendarEventResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -61,7 +69,10 @@ public class EventsController : ApiControllerBase
         return CreatedAtAction(nameof(GetCalendar), new { id = created.Id }, created);
     }
 
-    /// <summary>Удаляет событие (автор или администратор).</summary>
+    /// <summary>
+    /// DELETE <c>api/events/{id}</c> — удаляет событие.
+    /// Требуется JWT; удалять может автор события или Admin. 204 при успехе; 404, если событие не найдено или нет прав.
+    /// </summary>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

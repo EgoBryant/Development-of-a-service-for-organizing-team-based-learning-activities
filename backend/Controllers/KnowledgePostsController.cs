@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Эндпоинты биржи знаний для публикации и просмотра экспертных объявлений.
+/// Биржа знаний: peer-to-peer объявления экспертов среди студентов.
+/// Базовый маршрут: <c>api/knowledge-posts</c>. Все методы требуют JWT; удаление — автор или Admin.
 /// </summary>
 [Route("api/knowledge-posts")]
 [Authorize]
@@ -21,12 +22,10 @@ public class KnowledgePostsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает все публикации биржи знаний с фильтрами.
+    /// GET <c>api/knowledge-posts</c> — возвращает публикации биржи знаний с фильтрами.
+    /// Требуется JWT. Параметры: <c>search</c> (подстрока в title/description), <c>type</c> (тег/категория).
+    /// 200 со списком объявлений с автором и командой.
     /// </summary>
-    /// <param name="search">Подстрока в title/description (регистронезависимый поиск).</param>
-    /// <param name="type">Точное совпадение тега/типа: «Java», «Матан», ...</param>
-    /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Список объявлений с автором и связанной командой.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<KnowledgePostResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<KnowledgePostResponse>>> GetAll(
@@ -39,11 +38,11 @@ public class KnowledgePostsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Создает новую публикацию на бирже знаний от имени текущего пользователя.
+    /// POST <c>api/knowledge-posts</c> — создаёт публикацию на бирже знаний от текущего пользователя.
+    /// Требуется JWT. 201 Created; 401 без токена; 404, если пользователь не найден.
     /// </summary>
     /// <param name="request">Заголовок, описание и категория публикации.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Созданная публикация.</returns>
     [HttpPost]
     [ProducesResponseType<KnowledgePostResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -69,7 +68,8 @@ public class KnowledgePostsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Удаляет публикацию (автор или администратор).
+    /// DELETE <c>api/knowledge-posts/{id}</c> — удаляет публикацию.
+    /// Требуется JWT; удалять может автор или Admin. 204 при успехе; 403 без прав; 404, если пост не найден.
     /// </summary>
     /// <param name="id">Идентификатор публикации.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>

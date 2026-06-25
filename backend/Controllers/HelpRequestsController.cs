@@ -7,7 +7,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Эндпоинты механики взаимопомощи между командами.
+/// Механика взаимопомощи («Спасение») между командами: запросы помощи и смена статуса.
+/// Базовый маршрут: <c>api/help-requests</c>. Требуется JWT; создание и смена статуса — политика Captain.
 /// </summary>
 [Route("api/help-requests")]
 [Authorize]
@@ -21,11 +22,10 @@ public class HelpRequestsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает список запросов на помощь между командами с фильтром <c>scope</c>.
+    /// GET <c>api/help-requests</c> — возвращает запросы на помощь с фильтром <c>scope</c>.
+    /// Требуется JWT. <c>scope</c>: all (admin) | incoming | outgoing; по умолчанию — входящие и исходящие для команды пользователя.
+    /// 200 со списком запросов.
     /// </summary>
-    /// <param name="scope">all (admin) | incoming | outgoing. По умолчанию — обе стороны для команды текущего пользователя.</param>
-    /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Запросы помощи с исходной и целевой командой.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<HelpRequestResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<HelpRequestResponse>>> GetAll(
@@ -42,11 +42,12 @@ public class HelpRequestsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Создает новый запрос на помощь от команды текущего капитана.
+    /// POST <c>api/help-requests</c> — создаёт запрос на помощь от команды текущего капитана.
+    /// Требуется JWT и политика Captain. 201 Created; 400 — запрос к своей команде; 404 — пользователь или целевая команда не найдены;
+    /// 409 — капитан не в команде; 403 — вызывающий не капитан.
     /// </summary>
     /// <param name="request">Описание проблемы и команда, к которой адресован запрос.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Созданный запрос на помощь.</returns>
     [HttpPost]
     [Authorize(Policy = PolicyNames.Captain)]
     [ProducesResponseType<HelpRequestResponse>(StatusCodes.Status201Created)]
@@ -94,12 +95,13 @@ public class HelpRequestsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Изменяет статус запроса на помощь.
+    /// PATCH <c>api/help-requests/{id}/status</c> — изменяет статус запроса на помощь.
+    /// Требуется JWT и политика Captain (капитан целевой или исходной команды). 200 с обновлённым запросом;
+    /// 400 — недопустимый статус; 403 — нет прав; 404 — запрос или пользователь не найден.
     /// </summary>
     /// <param name="id">Идентификатор запроса на помощь.</param>
     /// <param name="request">Новый статус: Open, Accepted, Rejected или Completed.</param>
     /// <param name="cancellationToken">Токен отмены запроса.</param>
-    /// <returns>Обновленный запрос на помощь.</returns>
     [HttpPatch("{id:int}/status")]
     [Authorize(Policy = PolicyNames.Captain)]
     [ProducesResponseType<HelpRequestResponse>(StatusCodes.Status200OK)]

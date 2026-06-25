@@ -6,8 +6,9 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Лидерборды команд и пользователей. JSON совместим с <c>RatingTeam</c> / <c>RatingUser</c> на фронте
-/// (поле <c>id</c> отдаётся строкой).
+/// Лидерборды команд и пользователей (рейтинги КРК и баллов).
+/// Базовый маршрут: <c>api/ratings</c>. Все методы требуют JWT.
+/// JSON совместим с <c>RatingTeam</c> / <c>RatingUser</c> на фронте (поле <c>id</c> отдаётся строкой).
 /// </summary>
 [Route("api/ratings")]
 [Authorize]
@@ -21,7 +22,8 @@ public class RatingsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Лидерборд команд. Параметры: <c>search</c>, <c>sort</c>, <c>limit</c> (топ-10 при limit=10).
+    /// GET <c>api/ratings/teams</c> — лидерборд команд с фильтрацией и сортировкой.
+    /// Требуется JWT. Параметры: <c>search</c>, <c>sort</c>, <c>limit</c>, <c>league</c>. 200 со списком команд.
     /// </summary>
     [HttpGet("teams")]
     [ProducesResponseType<IEnumerable<RatingTeamResponse>>(StatusCodes.Status200OK)]
@@ -36,7 +38,10 @@ public class RatingsController : ApiControllerBase
         return Ok(await _ratingsService.GetTeamsAsync(query, cancellationToken));
     }
 
-    /// <summary>Карточка команды для рейтинга по идентификатору.</summary>
+    /// <summary>
+    /// GET <c>api/ratings/teams/{id}</c> — карточка команды в рейтинге по идентификатору.
+    /// Требуется JWT. 200 с данными команды; 404, если команда не найдена.
+    /// </summary>
     [HttpGet("teams/{id:int}")]
     [ProducesResponseType<RatingTeamResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -51,7 +56,9 @@ public class RatingsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Лидерборд пользователей. Параметры: <c>search</c>, <c>sort</c>, <c>limit</c>.
+    /// GET <c>api/ratings/users</c> — лидерборд пользователей с фильтрацией и сортировкой.
+    /// Требуется JWT. Параметры: <c>search</c>, <c>sort</c>, <c>limit</c>, <c>teamId</c>, <c>group</c>, <c>league</c>.
+    /// 200 со списком пользователей.
     /// </summary>
     [HttpGet("users")]
     [ProducesResponseType<IEnumerable<RatingUserResponse>>(StatusCodes.Status200OK)]
@@ -68,7 +75,10 @@ public class RatingsController : ApiControllerBase
         return Ok(await _ratingsService.GetUsersAsync(query, cancellationToken));
     }
 
-    /// <summary>Карточка пользователя в рейтинге по идентификатору.</summary>
+    /// <summary>
+    /// GET <c>api/ratings/users/{id}</c> — карточка пользователя в рейтинге по идентификатору.
+    /// Требуется JWT. 200 с данными пользователя; 404, если пользователь не найден.
+    /// </summary>
     [HttpGet("users/{id:int}")]
     [ProducesResponseType<RatingUserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

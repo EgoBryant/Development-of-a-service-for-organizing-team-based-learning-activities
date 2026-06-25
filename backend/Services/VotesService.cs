@@ -5,12 +5,18 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Анонимное голосование участников команды за вклад коллег (шкала 1–5); влияет на КРК.
+/// </summary>
 public class VotesService : IVotesService
 {
     private readonly AppDbContext _dbContext;
     private readonly IKrkCalculationService _krkCalculationService;
     private readonly IAchievementsService _achievements;
 
+    /// <summary>
+    /// Создаёт сервис голосований.
+    /// </summary>
     public VotesService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
@@ -21,6 +27,9 @@ public class VotesService : IVotesService
         _achievements = achievements;
     }
 
+    /// <summary>
+    /// Возвращает все голоса в команде текущего пользователя.
+    /// </summary>
     public async Task<IReadOnlyCollection<VoteResponse>> GetForCurrentTeamAsync(int userId, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users
@@ -43,6 +52,9 @@ public class VotesService : IVotesService
         return votes.Select(Map).ToList();
     }
 
+    /// <summary>
+    /// Возвращает голоса, которые пользователь выставил другим участникам.
+    /// </summary>
     public async Task<IReadOnlyCollection<MyVoteResponse>> GetMyVotesAsync(int userId, CancellationToken cancellationToken = default)
     {
         var votes = await _dbContext.Votes
@@ -62,6 +74,9 @@ public class VotesService : IVotesService
         }).ToList();
     }
 
+    /// <summary>
+    /// Создаёт или обновляет голос внутри команды; пересчитывает КРК и выдаёт ачивку за первый голос.
+    /// </summary>
     public async Task<VoteCreateResult> CreateAsync(int userId, CreateVoteDto request, CancellationToken cancellationToken = default)
     {
         var fromUser = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -132,6 +147,9 @@ public class VotesService : IVotesService
         };
     }
 
+    /// <summary>
+    /// Обновляет существующий голос пользователя за участника своей команды.
+    /// </summary>
     public async Task<VoteUpdateResult> UpdateAsync(int userId, CreateVoteDto request, CancellationToken cancellationToken = default)
     {
         var fromUser = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -178,6 +196,9 @@ public class VotesService : IVotesService
         };
     }
 
+    /// <summary>
+    /// Загружает голос по идентификатору для ответа API.
+    /// </summary>
     private async Task<VoteResponse> LoadVoteResponseAsync(int voteId, CancellationToken cancellationToken)
     {
         return await _dbContext.Votes
@@ -189,6 +210,9 @@ public class VotesService : IVotesService
             .SingleAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Преобразует сущность голоса в DTO ответа.
+    /// </summary>
     private static VoteResponse Map(Vote vote)
     {
         return new VoteResponse

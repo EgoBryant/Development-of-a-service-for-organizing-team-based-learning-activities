@@ -9,7 +9,8 @@ using TeamExamProject.Services;
 namespace TeamExamProject.Controllers;
 
 /// <summary>
-/// Методы управления командами: просмотр, создание, вступление и обновление рейтинга.
+/// Управление командами: просмотр, создание, вступление, заявки и операции участника/капитана.
+/// Базовый маршрут: <c>api/teams</c>. Большинство методов требуют JWT; создание/вступление — политика Student; обновление score — Admin.
 /// </summary>
 [Route("api/[controller]")]
 [Authorize]
@@ -23,9 +24,9 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает список всех команд.
+    /// GET <c>api/teams</c> — возвращает список всех команд.
+    /// Требуется JWT. 200 со списком команд (капитан, участники, invite code).
     /// </summary>
-    /// <returns>Список команд с капитаном, участниками и invite code.</returns>
     [HttpGet]
     [ProducesResponseType<IEnumerable<TeamResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<TeamResponse>>> GetAll()
@@ -33,6 +34,10 @@ public class TeamsController : ApiControllerBase
         return Ok(await _teamService.GetAllAsync(HttpContext.RequestAborted));
     }
 
+    /// <summary>
+    /// GET <c>api/teams/search</c> — поиск команд по названию или описанию.
+    /// Требуется JWT. Параметры: <c>query</c>, <c>limit</c> (по умолчанию 20). 200 с подходящими командами.
+    /// </summary>
     [HttpGet("search")]
     [ProducesResponseType<IEnumerable<TeamResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<TeamResponse>>> Search([FromQuery] string? query, [FromQuery] int limit = 20)
@@ -40,6 +45,10 @@ public class TeamsController : ApiControllerBase
         return Ok(await _teamService.SearchAsync(query, limit, HttpContext.RequestAborted));
     }
 
+    /// <summary>
+    /// GET <c>api/teams/invite/{inviteCode}</c> — возвращает команду по пригласительному коду.
+    /// Требуется JWT. 200 с данными команды; 404, если код не найден.
+    /// </summary>
     [HttpGet("invite/{inviteCode}")]
     [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -58,10 +67,10 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает команду по идентификатору.
+    /// GET <c>api/teams/{id}</c> — возвращает команду по идентификатору.
+    /// Требуется JWT. 200 с данными команды; 404, если команда не найдена.
     /// </summary>
     /// <param name="id">Идентификатор команды.</param>
-    /// <returns>Данные выбранной команды.</returns>
     [HttpGet("{id:int}")]
     [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -80,10 +89,11 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Создает новую команду для пользователя, который еще не состоит в команде.
+    /// POST <c>api/teams/create</c> — создаёт команду для пользователя, не состоящего в команде.
+    /// Требуется JWT и политика Student. Создатель становится капитаном. 201 Created; 404 — пользователь не найден;
+    /// 409 — пользователь уже в команде.
     /// </summary>
     /// <param name="request">Название и описание создаваемой команды.</param>
-    /// <returns>Созданная команда. Создатель автоматически становится капитаном.</returns>
     [HttpPost("create")]
     [Authorize(Policy = PolicyNames.Student)]
     [ProducesResponseType<TeamResponse>(StatusCodes.Status201Created)]
@@ -121,10 +131,10 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Устаревший маршрут создания команды. Полностью эквивалентен <c>POST /api/teams/create</c>.
+    /// POST <c>api/teams</c> — устаревший маршрут создания команды, эквивалентен <c>POST /api/teams/create</c>.
+    /// Требуется JWT и политика Student. 201 Created или коды ошибок как у <see cref="Create"/>.
     /// </summary>
     /// <param name="request">Название и описание создаваемой команды.</param>
-    /// <returns>Созданная команда.</returns>
     [HttpPost]
     [Authorize(Policy = PolicyNames.Student)]
     [ApiExplorerSettings(IgnoreApi = false)]
@@ -134,10 +144,11 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Вступает в существующую команду по пригласительному коду.
+    /// POST <c>api/teams/join</c> — вступает в команду по пригласительному коду.
+    /// Требуется JWT и политика Student. 200 с данными команды; 404 — пользователь или команда не найдены;
+    /// 409 — уже в команде или команда заполнена (макс. 6 участников).
     /// </summary>
     /// <param name="request">Invite code команды.</param>
-    /// <returns>Команда, в которую вступил пользователь.</returns>
     [HttpPost("join")]
     [Authorize(Policy = PolicyNames.Student)]
     [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]
@@ -179,6 +190,10 @@ public class TeamsController : ApiControllerBase
         };
     }
 
+    /// <summary>
+    /// GET <c>api/teams/me/activity</c> — лента активности команды текущего пользователя.
+    /// Требуется JWT. Параметр <c>limit</c> (по умолчанию 30). 200 со списком событий; 401 без токена.
+    /// </summary>
     [HttpGet("me/activity")]
     [ProducesResponseType<IEnumerable<ActivityFeedItemResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -193,6 +208,10 @@ public class TeamsController : ApiControllerBase
         return Ok(await _teamService.GetActivityForUserTeamAsync(userId.Value, limit, HttpContext.RequestAborted));
     }
 
+    /// <summary>
+    /// GET <c>api/teams/me/weekly-stats</c> — недельная статистика команды текущего пользователя.
+    /// Требуется JWT. 200 со статистикой; 401 без токена; 404, если пользователь не состоит в команде.
+    /// </summary>
     [HttpGet("me/weekly-stats")]
     [ProducesResponseType<TeamWeeklyStatsResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -217,6 +236,10 @@ public class TeamsController : ApiControllerBase
         return Ok(stats);
     }
 
+    /// <summary>
+    /// GET <c>api/teams/join-requests</c> — заявки на вступление в команду.
+    /// Требуется JWT. Параметр <c>scope</c> фильтрует входящие/исходящие заявки. 200 со списком заявок.
+    /// </summary>
     [HttpGet("join-requests")]
     [ProducesResponseType<IEnumerable<TeamJoinRequestResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -231,6 +254,11 @@ public class TeamsController : ApiControllerBase
         return Ok(await _teamService.GetJoinRequestsAsync(userId.Value, scope, HttpContext.RequestAborted));
     }
 
+    /// <summary>
+    /// POST <c>api/teams/join-requests</c> — создаёт заявку на вступление в команду.
+    /// Требуется JWT и политика Student. 201 Created; 404 — пользователь или команда не найдены;
+    /// 409 — уже в команде, заявка уже существует или команда заполнена.
+    /// </summary>
     [HttpPost("join-requests")]
     [Authorize(Policy = PolicyNames.Student)]
     [ProducesResponseType<TeamJoinRequestResponse>(StatusCodes.Status201Created)]
@@ -279,6 +307,11 @@ public class TeamsController : ApiControllerBase
         };
     }
 
+    /// <summary>
+    /// PATCH <c>api/teams/join-requests/{id}/status</c> — принимает, отклоняет или отменяет заявку на вступление.
+    /// Требуется JWT (капитан команды или заявитель). 200 с обновлённой заявкой; 400 — недопустимый статус;
+    /// 403 — нет прав; 404 — заявка не найдена; 409 — заявитель уже в команде или команда заполнена.
+    /// </summary>
     [HttpPatch("join-requests/{id:int}/status")]
     [ProducesResponseType<TeamJoinRequestResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -327,7 +360,9 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Покидает команду текущего участника (не капитана).
+    /// POST <c>api/teams/me/leave</c> — покидает команду (только участник, не капитан).
+    /// Требуется JWT и политика Student. 204 при успехе; 400 — капитан не может покинуть команду;
+    /// 404 — пользователь не в команде.
     /// </summary>
     [HttpPost("me/leave")]
     [Authorize(Policy = PolicyNames.Student)]
@@ -367,7 +402,8 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Расформировывает команду текущего капитана (временный сценарий для MVP).
+    /// POST <c>api/teams/me/disband</c> — расформировывает команду текущего капитана (MVP-сценарий).
+    /// Требуется JWT и политика Student. Эквивалентен <see cref="DisbandMyTeam"/>. 204 при успехе; 403 — не капитан; 404 — нет команды.
     /// </summary>
     [HttpPost("me/disband")]
     [Authorize(Policy = PolicyNames.Student)]
@@ -381,7 +417,8 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Расформировывает команду текущего капитана (временный сценарий для MVP).
+    /// DELETE <c>api/teams/me</c> — расформировывает команду текущего капитана (MVP-сценарий).
+    /// Требуется JWT и политика Student. 204 при успехе; 403 — не капитан; 404 — нет команды.
     /// </summary>
     [HttpDelete("me")]
     [Authorize(Policy = PolicyNames.Student)]
@@ -418,9 +455,9 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Возвращает команду текущего пользователя.
+    /// GET <c>api/teams/me</c> — возвращает команду текущего пользователя.
+    /// Требуется JWT. 200 с данными команды; 401 без токена; 404, если пользователь не состоит в команде.
     /// </summary>
-    /// <returns>Текущая команда пользователя.</returns>
     [HttpGet("me")]
     [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -446,11 +483,11 @@ public class TeamsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Обновляет рейтинг команды. Доступно только администратору.
+    /// PATCH <c>api/teams/{id}/score</c> — обновляет рейтинг/баллы команды.
+    /// Требуется JWT и роль Admin. 200 с обновлённой командой; 403 без прав; 404, если команда не найдена.
     /// </summary>
     /// <param name="id">Идентификатор команды.</param>
     /// <param name="request">Новые значения рейтинга/баллов команды.</param>
-    /// <returns>Обновленная команда.</returns>
     [HttpPatch("{id:int}/score")]
     [Authorize(Roles = Roles.Admin)]
     [ProducesResponseType<TeamResponse>(StatusCodes.Status200OK)]

@@ -5,6 +5,9 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Механика «спасения»: запросы помощи между командами с бонусными баллами за завершённые сессии.
+/// </summary>
 public class HelpRequestsService : IHelpRequestsService
 {
     private static readonly string[] AllowedStatuses =
@@ -20,6 +23,9 @@ public class HelpRequestsService : IHelpRequestsService
     private readonly IActivityFeedService _activityFeed;
     private readonly IAchievementsService _achievements;
 
+    /// <summary>
+    /// Создаёт сервис запросов на помощь.
+    /// </summary>
     public HelpRequestsService(
         AppDbContext dbContext,
         IKrkCalculationService krkCalculationService,
@@ -32,6 +38,9 @@ public class HelpRequestsService : IHelpRequestsService
         _achievements = achievements;
     }
 
+    /// <summary>
+    /// Возвращает запросы по области (<c>incoming</c>, <c>outgoing</c>, <c>all</c>) с учётом роли и команды.
+    /// </summary>
     public async Task<IReadOnlyCollection<HelpRequestResponse>> GetAsync(int userId, bool isAdmin, string? scope, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.AsNoTracking()
@@ -65,6 +74,9 @@ public class HelpRequestsService : IHelpRequestsService
         return requests.Select(Map).ToList();
     }
 
+    /// <summary>
+    /// Создаёт запрос «спасения» от капитана команды к другой команде.
+    /// </summary>
     public async Task<HelpRequestCreateResult> CreateAsync(int userId, CreateHelpRequestDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -136,6 +148,9 @@ public class HelpRequestsService : IHelpRequestsService
         };
     }
 
+    /// <summary>
+    /// Обновляет статус запроса; при завершении начисляет бонус спасающей команде и пересчитывает КРК обеих сторон.
+    /// </summary>
     public async Task<HelpRequestStatusUpdateResult> UpdateStatusAsync(int userId, int helpRequestId, UpdateHelpRequestStatusDto request, CancellationToken cancellationToken = default)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(existingUser => existingUser.Id == userId, cancellationToken);
@@ -215,6 +230,9 @@ public class HelpRequestsService : IHelpRequestsService
         };
     }
 
+    /// <summary>
+    /// Загружает запрос по идентификатору для ответа API.
+    /// </summary>
     private async Task<HelpRequestResponse> BuildAsync(int helpRequestId, CancellationToken cancellationToken)
     {
         return await _dbContext.HelpRequests
@@ -226,6 +244,9 @@ public class HelpRequestsService : IHelpRequestsService
             .SingleAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Преобразует сущность запроса в DTO ответа.
+    /// </summary>
     private static HelpRequestResponse Map(HelpRequest request)
     {
         return new HelpRequestResponse

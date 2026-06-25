@@ -20,12 +20,18 @@ public class KrkCalculationService : IKrkCalculationService
     private readonly AppDbContext _dbContext;
     private readonly KrkOptions _options;
 
+    /// <summary>
+    /// Создаёт сервис расчёта КРК с весами из конфигурации.
+    /// </summary>
     public KrkCalculationService(AppDbContext dbContext, IOptions<KrkOptions> options)
     {
         _dbContext = dbContext;
         _options = options.Value;
     }
 
+    /// <summary>
+    /// Пересчитывает КРК одной команды, сохраняет кэш и возвращает новое значение.
+    /// </summary>
     public async Task<double> RecalculateForTeamAsync(int teamId, CancellationToken cancellationToken = default)
     {
         var team = await _dbContext.Teams.SingleOrDefaultAsync(t => t.Id == teamId, cancellationToken);
@@ -51,6 +57,9 @@ public class KrkCalculationService : IKrkCalculationService
         return krk;
     }
 
+    /// <summary>
+    /// Пересчитывает КРК для всех команд одной транзакцией (массовое обновление кэша).
+    /// </summary>
     public async Task RecalculateAllAsync(CancellationToken cancellationToken = default)
     {
         var teams = await _dbContext.Teams.ToListAsync(cancellationToken);
@@ -79,6 +88,9 @@ public class KrkCalculationService : IKrkCalculationService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Вычисляет КРК по трём нормализованным компонентам (баллы, сплочённость, челленджи) с весами из <see cref="KrkOptions"/>.
+    /// </summary>
     private async Task<double> CalculateAsync(Team team, int maxScore, int maxBonus, CancellationToken cancellationToken)
     {
         var baseNormalized = maxScore > 0

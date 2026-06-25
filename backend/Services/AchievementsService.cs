@@ -5,17 +5,26 @@ using TeamExamProject.Models;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Управление каталогом достижений и выдачей ачивок пользователям.
+/// </summary>
 public class AchievementsService : IAchievementsService
 {
     private readonly AppDbContext _dbContext;
     private readonly IActivityFeedService _activityFeed;
 
+    /// <summary>
+    /// Создаёт сервис достижений.
+    /// </summary>
     public AchievementsService(AppDbContext dbContext, IActivityFeedService activityFeed)
     {
         _dbContext = dbContext;
         _activityFeed = activityFeed;
     }
 
+    /// <summary>
+    /// Возвращает полный каталог достижений платформы.
+    /// </summary>
     public async Task<IReadOnlyCollection<AchievementResponse>> GetCatalogAsync(CancellationToken cancellationToken = default)
     {
         var items = await _dbContext.Achievements
@@ -33,6 +42,9 @@ public class AchievementsService : IAchievementsService
         }).ToList();
     }
 
+    /// <summary>
+    /// Возвращает достижения пользователя; перед выдачей проверяет право на ачивку «Топ-3 команды».
+    /// </summary>
     public async Task<IReadOnlyCollection<UserAchievementResponse>> GetUserAchievementsAsync(int userId, CancellationToken cancellationToken = default)
     {
         await EnsureTop3TeamAchievementAsync(userId, cancellationToken);
@@ -57,6 +69,10 @@ public class AchievementsService : IAchievementsService
         }).ToList();
     }
 
+    /// <summary>
+    /// Выдаёт достижение по коду, если у пользователя его ещё нет; публикует событие в ленту активности.
+    /// </summary>
+    /// <returns><c>true</c>, если ачивка была выдана впервые.</returns>
     public async Task<bool> GrantIfMissingAsync(int userId, string achievementCode, CancellationToken cancellationToken = default)
     {
         var achievement = await _dbContext.Achievements
@@ -91,6 +107,9 @@ public class AchievementsService : IAchievementsService
         return true;
     }
 
+    /// <summary>
+    /// Проверяет, входит ли команда пользователя в топ-3 по КРК, и выдаёт соответствующую ачивку.
+    /// </summary>
     private async Task EnsureTop3TeamAchievementAsync(int userId, CancellationToken cancellationToken)
     {
         var teamId = await _dbContext.Users

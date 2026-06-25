@@ -8,15 +8,23 @@ using TeamExamProject.Options;
 
 namespace TeamExamProject.Services;
 
+/// <summary>
+/// Реализация выпуска JWT-токенов на основе настроек <see cref="JwtOptions"/>.
+/// </summary>
 public class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _jwtOptions;
 
+    /// <summary>
+    /// Создаёт экземпляр сервиса с конфигурацией JWT из DI.
+    /// </summary>
+    /// <param name="jwtOptions">Параметры подписи и срока жизни токена.</param>
     public JwtTokenService(IOptions<JwtOptions> jwtOptions)
     {
         _jwtOptions = jwtOptions.Value;
     }
 
+    /// <inheritdoc />
     public string CreateToken(User user)
     {
         var role = string.IsNullOrWhiteSpace(user.Role) ? Roles.Student : user.Role;
