@@ -1,12 +1,12 @@
 import scrollLeftIconUrl from "../../assets/icons/Scroll_button_left.svg";
 import scrollRightIconUrl from "../../assets/icons/Scroll_button_right.svg";
-import { getMyProfileAchievements } from "../../state/achievementsState";
+import { getActiveChallenges } from "../../state/challengesState";
 import { tasksFlowState } from "../../state/tasksFlowState";
-import type { ProfileAchievement } from "../../types/profile";
+import type { ChallengeItem } from "../../types/challenge";
 import { escapeHtml } from "../../utils/html";
 import { renderProfileModalShell } from "../profile/ProfileModalShell";
 
-function formatAchievementPointsLabel(points: number): string {
+function formatChallengePointsLabel(points: number): string {
     const mod10 = points % 10;
     const mod100 = points % 100;
 
@@ -21,26 +21,22 @@ function formatAchievementPointsLabel(points: number): string {
     return `${points} баллов`;
 }
 
-function getChallengeAchievements(): ProfileAchievement[] {
-    return getMyProfileAchievements();
-}
-
-function getActiveChallengeAchievement(achievements: ProfileAchievement[]): ProfileAchievement | null {
-    if (achievements.length === 0) {
+function getActiveChallenge(challenges: ChallengeItem[]): ChallengeItem | null {
+    if (challenges.length === 0) {
         return null;
     }
 
     const index = Math.min(
         Math.max(tasksFlowState.challengeActiveIndex, 0),
-        achievements.length - 1
+        challenges.length - 1
     );
 
-    return achievements[index] ?? null;
+    return challenges[index] ?? null;
 }
 
-function renderChallengeAchievementSlide(achievement: ProfileAchievement): string {
-    const description = achievement.description.trim() || achievement.criterion.trim();
-    const pointsLabel = formatAchievementPointsLabel(achievement.points);
+function renderChallengeSlide(challenge: ChallengeItem): string {
+    const description = challenge.description.trim();
+    const pointsLabel = formatChallengePointsLabel(challenge.bonusPoints);
 
     return `
         <div class="tasks-challenge-modal-slide">
@@ -52,16 +48,16 @@ function renderChallengeAchievementSlide(achievement: ProfileAchievement): strin
 }
 
 export function renderTasksChallengeModal(): string {
-    const achievements = getChallengeAchievements();
-    const achievement = getActiveChallengeAchievement(achievements);
-    const activeIndex = achievement
-        ? achievements.findIndex((item) => item.id === achievement.id)
+    const challenges = getActiveChallenges();
+    const challenge = getActiveChallenge(challenges);
+    const activeIndex = challenge
+        ? challenges.findIndex((item) => item.id === challenge.id)
         : 0;
-    const hasMultiple = achievements.length > 1;
+    const hasMultiple = challenges.length > 1;
     const canGoPrev = hasMultiple && activeIndex > 0;
-    const canGoNext = hasMultiple && activeIndex < achievements.length - 1;
+    const canGoNext = hasMultiple && activeIndex < challenges.length - 1;
 
-    if (!achievement) {
+    if (!challenge) {
         return renderProfileModalShell({
             ariaLabel: "Челленджи",
             closeButtonId: "tasksCloseChallengeButton",
@@ -102,25 +98,25 @@ export function renderTasksChallengeModal(): string {
         : "";
 
     return renderProfileModalShell({
-        ariaLabel: achievement.title,
+        ariaLabel: challenge.title,
         closeButtonId: "tasksCloseChallengeButton",
         backdropCloseAttr: 'data-close-tasks-challenge-modal="1"',
         extraModalClass: "tasks-challenge-modal",
         extraCardClass: "tasks-challenge-modal-card profile-modal-card--shell",
         bodyHtml: `
             <div class="tasks-challenge-modal-body">
-                <div class="tasks-challenge-modal-hero profile-achievement-hero profile-achievement-circle--${escapeHtml(achievement.tone)}">
+                <div class="tasks-challenge-modal-hero profile-achievement-hero profile-achievement-circle--${escapeHtml(challenge.tone)}">
                     <img
                         class="profile-achievement-icon"
-                        src="${escapeHtml(achievement.iconUrl)}"
+                        src="${escapeHtml(challenge.iconUrl)}"
                         alt=""
                         aria-hidden="true"
                     >
                 </div>
-                <h2 class="tasks-challenge-modal-title">${escapeHtml(achievement.title)}</h2>
+                <h2 class="tasks-challenge-modal-title">${escapeHtml(challenge.title)}</h2>
                 <div class="tasks-challenge-modal-carousel${hasMultiple ? " has-nav" : ""}">
                     ${navPrevHtml}
-                    ${renderChallengeAchievementSlide(achievement)}
+                    ${renderChallengeSlide(challenge)}
                     ${navNextHtml}
                 </div>
                 <button type="button" class="tasks-challenge-modal-report" id="tasksChallengeReportButton">
@@ -145,7 +141,7 @@ export function wireTasksChallengeModal(
     }
 
     const { onClose, onRender, onReport } = options;
-    const achievements = getChallengeAchievements();
+    const challenges = getActiveChallenges();
 
     root.querySelectorAll<HTMLElement>('[data-close-tasks-challenge-modal="1"]').forEach((node) => {
         node.addEventListener("click", onClose);
@@ -171,7 +167,7 @@ export function wireTasksChallengeModal(
     const nextButton = root.querySelector("#tasksChallengeNextButton");
     if (nextButton instanceof HTMLButtonElement) {
         nextButton.addEventListener("click", () => {
-            if (tasksFlowState.challengeActiveIndex >= achievements.length - 1) {
+            if (tasksFlowState.challengeActiveIndex >= challenges.length - 1) {
                 return;
             }
 

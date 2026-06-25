@@ -130,6 +130,7 @@ import { renderTeamLeaveModal, wireTeamLeaveModal } from "./components/modals/Te
 import { renderExternalProfileDock } from "./components/team/ExternalProfileDock";
 import { getProfileAchievementById } from "./data/profileAchievements";
 import { fetchAchievementsCatalog, fetchMyAchievements, fetchUserAchievements } from "./services/achievementsApi";
+import { fetchActiveChallenges } from "./services/challengesApi";
 import { fetchCurrentUser, login, register, updateProfile } from "./services/authApi";
 import { fetchRatingTeams, fetchRatingUserById, fetchRatingUsers } from "./services/ratingApi";
 import {
@@ -173,6 +174,7 @@ import {
     setMyAchievements,
     setUserAchievements
 } from "./state/achievementsState";
+import { clearChallengesData, setActiveChallenges } from "./state/challengesState";
 import { clearRatingData, setRatingData } from "./state/ratingDataState";
 import { isSameUserId, resolveUserAvatarUrl } from "./utils/ratingAvatars";
 import { getRescueCalendarMonthKey } from "./utils/rescueFormUi";
@@ -1010,7 +1012,7 @@ async function bootstrap(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
-        await refreshMyAchievementsWorkspace(session.token);
+        await refreshUserActivityWorkspace(session.token);
         await refreshTeamWorkspace();
         await refreshRatingWorkspace();
         appState.view = "account";
@@ -1685,6 +1687,7 @@ function resetProfileUi(): void {
     appState.teamJoinRequests = [];
     appState.teamMyVotes = [];
     clearAchievementsData();
+    clearChallengesData();
     clearRatingData();
 }
 
@@ -2745,6 +2748,25 @@ async function refreshMyAchievementsWorkspace(token = getSessionToken()): Promis
     setMyAchievements(earned, appState.profile?.id);
 }
 
+async function refreshChallengesWorkspace(token = getSessionToken()): Promise<void> {
+    if (!token) {
+        clearChallengesData();
+        return;
+    }
+
+    const challenges = await fetchActiveChallenges(token).catch(() => null);
+    if (challenges) {
+        setActiveChallenges(challenges);
+    }
+}
+
+async function refreshUserActivityWorkspace(token = getSessionToken()): Promise<void> {
+    await Promise.all([
+        refreshMyAchievementsWorkspace(token),
+        refreshChallengesWorkspace(token)
+    ]);
+}
+
 async function refreshAchievementsForUsers(token: string, userIds: readonly string[]): Promise<void> {
     const numericUserIds = Array.from(new Set(userIds))
         .map((userId) => Number(userId))
@@ -2776,7 +2798,7 @@ async function refreshCurrentUserProfile(): Promise<void> {
 
     appState.profile = await fetchCurrentUser(token);
     hydrateProfileClientStateFromStorage();
-    await refreshMyAchievementsWorkspace(token);
+    await refreshUserActivityWorkspace(token);
 }
 
 function openRatingDashboard(): void {
@@ -5605,6 +5627,11 @@ function wireProfileViewEvents(): void {
                     tasksFlowState.tagFilterDropdownOpen = false;
                     openTasksChallengeModal();
                     render();
+                    void refreshChallengesWorkspace().then(() => {
+                        if (tasksFlowState.challengeModalOpen && appState.dashboardSection === "tasks") {
+                            render();
+                        }
+                    });
                 }
             }
         );
@@ -6032,13 +6059,13 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
-            await refreshMyAchievementsWorkspace(auth.token);
+            await refreshUserActivityWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
-            await refreshMyAchievementsWorkspace(auth.token);
+            await refreshUserActivityWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.signIn.password = "";
@@ -6092,13 +6119,13 @@ async function submitRegister(form: HTMLFormElement): Promise<void> {
                 auth as AuthResponse & { id: number }
             );
             applyPersistedClientStateAfterMe();
-            await refreshMyAchievementsWorkspace(auth.token);
+            await refreshUserActivityWorkspace(auth.token);
             await refreshTeamWorkspace();
             void syncProfileWithServerInBackground(auth.token);
         } else {
             appState.profile = await fetchCurrentUser(auth.token);
             applyPersistedClientStateAfterMe();
-            await refreshMyAchievementsWorkspace(auth.token);
+            await refreshUserActivityWorkspace(auth.token);
             await refreshTeamWorkspace();
         }
         appState.view = "account";
@@ -6128,7 +6155,7 @@ async function refreshProfile(): Promise<void> {
     try {
         appState.profile = await fetchCurrentUser(session.token);
         applyPersistedClientStateAfterMe();
-        await refreshMyAchievementsWorkspace(session.token);
+        await refreshUserActivityWorkspace(session.token);
         await refreshTeamWorkspace();
         setStatus("Данные обновлены.");
     } catch (error) {
@@ -6153,7 +6180,7 @@ function syncProfileWithServerInBackground(bearerToken: string): void {
             }
             appState.profile = p;
             applyPersistedClientStateAfterMe();
-            await refreshMyAchievementsWorkspace(bearerToken);
+            await refreshUserActivityWorkspace(bearerToken);
             await refreshTeamWorkspace();
             render();
         } catch {
@@ -6322,7 +6349,7 @@ async function submitPersonalProfileSave(options: PersonalProfileSaveOptions = {
                 appState.profileEdits = savedEdits;
                 applyProfileEditsToInMemoryProfile();
                 persistSavedProfileEdits();
-                await refreshMyAchievementsWorkspace(session.token);
+                await refreshUserActivityWorkspace(session.token);
                 if (!silent) {
                     setStatus("Данные сохранены на сервере и в этом браузере.");
                 }
