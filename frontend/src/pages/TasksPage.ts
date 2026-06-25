@@ -1,5 +1,7 @@
 import type { TasksKrcTier } from "../types/app";
 import {
+    TASKS_KRC_TIER_LABELS,
+    TASKS_KRC_TIER_ORDER,
     TASKS_KRC_TIER_THRESHOLDS,
     computeTasksKrcFillPercent,
     isTasksKrcTierUnlocked
@@ -16,11 +18,139 @@ import { ASSIGNMENT_DISPLAY_TAGS } from "../constants/assignmentTags";
 import { tasksFlowState, closeTasksChallengeModal } from "../state/tasksFlowState";
 import { escapeHtml } from "../utils/html";
 
-const KRC_TIERS: Array<{ id: TasksKrcTier; label: string }> = [
-    { id: "novice", label: "Новичок" },
-    { id: "pro", label: "Профи" },
-    { id: "legend", label: "Легенда" }
-];
+const KRC_TIERS = TASKS_KRC_TIER_ORDER.map((id) => ({
+    id,
+    label: TASKS_KRC_TIER_LABELS[id].full,
+    shortLabel: TASKS_KRC_TIER_LABELS[id].short
+}));
+
+const KRC_MOBILE_QUERY = "(max-width: 1024px)";
+
+function wireTasksKrcMarkerSwipe(root: HTMLElement): void {
+    if (!window.matchMedia(KRC_MOBILE_QUERY).matches) {
+        return;
+    }
+
+    const pockets = root.querySelectorAll<HTMLElement>(".tasks-krc-marker-pocket");
+
+    const closeAllRevealed = (): void => {
+        root.querySelectorAll<HTMLElement>(".tasks-krc-marker-pocket").forEach((pocket) => {
+            pocket.classList.remove("is-revealed");
+        });
+    };
+
+    const isInsideKrcPocket = (target: Node): boolean =>
+        root.querySelectorAll(".tasks-krc-marker-pocket").some((pocket) => pocket.contains(target));
+
+    pockets.forEach((pocket) => {
+        if (pocket.dataset.krcSwipeWired === "true") {
+            return;
+        }
+
+        pocket.dataset.krcSwipeWired = "true";
+
+        const target = pocket.querySelector<HTMLElement>(".tasks-krc-option") ?? pocket;
+        let startY = 0;
+        let startX = 0;
+        let trackingSwipe = false;
+        let suppressClick = false;
+
+        target.addEventListener("touchstart", (event) => {
+            const touch = event.touches[0];
+            if (!touch) {
+                return;
+            }
+
+            startY = touch.clientY;
+            startX = touch.clientX;
+            trackingSwipe = false;
+            suppressClick = false;
+        }, { passive: true });
+
+        target.addEventListener("touchmove", (event) => {
+            const touch = event.touches[0];
+            if (!touch) {
+                return;
+            }
+
+            const deltaY = touch.clientY - startY;
+            const deltaX = touch.clientX - startX;
+            if (deltaY > 8 && Math.abs(deltaY) > Math.abs(deltaX)) {
+                trackingSwipe = true;
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        target.addEventListener("touchend", (event) => {
+            if (!trackingSwipe) {
+                return;
+            }
+
+            const touch = event.changedTouches[0];
+            if (!touch) {
+                return;
+            }
+
+            const deltaY = touch.clientY - startY;
+            if (deltaY < 22) {
+                trackingSwipe = false;
+                return;
+            }
+
+            const option = pocket.querySelector<HTMLButtonElement>(".tasks-krc-option");
+            if (option?.disabled || option?.classList.contains("is-locked")) {
+                trackingSwipe = false;
+                return;
+            }
+
+            event.preventDefault();
+            suppressClick = true;
+            const wasRevealed = pocket.classList.contains("is-revealed");
+            closeAllRevealed();
+            if (!wasRevealed) {
+                pocket.classList.add("is-revealed");
+            }
+
+            trackingSwipe = false;
+        });
+
+        target.addEventListener("click", (event) => {
+            if (!suppressClick) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            suppressClick = false;
+        }, true);
+    });
+
+    if (root.dataset.krcSwipeOutsideWired === "true") {
+        return;
+    }
+
+    root.dataset.krcSwipeOutsideWired = "true";
+
+    const closeRevealedOnOutsideInteraction = (event: Event): void => {
+        if (!window.matchMedia(KRC_MOBILE_QUERY).matches) {
+            return;
+        }
+
+        const target = event.target;
+        if (!(target instanceof Node)) {
+            return;
+        }
+
+        if (isInsideKrcPocket(target)) {
+            return;
+        }
+
+        closeAllRevealed();
+    };
+
+    document.addEventListener("touchstart", closeRevealedOnOutsideInteraction, { passive: true });
+    document.addEventListener("click", closeRevealedOnOutsideInteraction);
+}
 
 function renderTasksKrcScale(activeTier: TasksKrcTier, userPoints: number): string {
     const fillPercent = computeTasksKrcFillPercent(userPoints);
@@ -46,10 +176,13 @@ function renderTasksKrcScale(activeTier: TasksKrcTier, userPoints: number): stri
                         role="radio"
                         aria-checked="${isActive}"
                         aria-disabled="${isLocked}"
+                        aria-label="${tier.label}, от ${threshold} баллов"
                         data-tasks-krc-tier="${tier.id}"
                         ${isLocked ? "disabled" : ""}
                     >
-                        <span class="tasks-krc-option-label">${tier.label}</span>
+                        <span class="tasks-krc-option-label tasks-krc-option-label--full">${tier.label}</span>
+                        <span class="tasks-krc-option-label tasks-krc-option-label--short" aria-hidden="true">${tier.shortLabel}</span>
+                        <span class="tasks-krc-option-swipe-hint" aria-hidden="true"></span>
                     </button>
                 </div>
             </div>`;
@@ -115,7 +248,10 @@ export function renderTasksPageMain(
             ${statusHtml}
             <div class="tasks-shell">
                 <section class="tasks-krc-card" aria-labelledby="tasksKrcTitle">
-                    <h1 class="tasks-krc-title" id="tasksKrcTitle">Командный рейтинговый коэффициент</h1>
+                    <h1 class="tasks-krc-title" id="tasksKrcTitle">
+                        <span class="tasks-krc-title-full">Командный рейтинговый коэффициент</span>
+                        <span class="tasks-krc-title-short" aria-hidden="true">КРК</span>
+                    </h1>
                     ${renderTasksKrcScale(activeTier, userPoints)}
                 </section>
 
@@ -203,6 +339,8 @@ export function wireTasksPageEvents(
             onTierSelect(tier);
         });
     });
+
+    wireTasksKrcMarkerSwipe(root);
 
     const requestButton = root.querySelector<HTMLButtonElement>("#tasksMarketRequestButton");
     if (requestButton && handlers) {

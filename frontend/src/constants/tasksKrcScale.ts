@@ -8,7 +8,13 @@ export const TASKS_KRC_TIER_THRESHOLDS: Record<TasksKrcTier, number> = {
     legend: 500
 };
 
-const TASKS_KRC_TIER_ORDER: TasksKrcTier[] = ["novice", "pro", "legend"];
+export const TASKS_KRC_TIER_LABELS: Record<TasksKrcTier, { full: string; short: string }> = {
+    novice: { full: "НОВИЧОК", short: "Н" },
+    pro: { full: "ПРОФИ", short: "П" },
+    legend: { full: "ЛЕГЕНДА", short: "Л" }
+};
+
+export const TASKS_KRC_TIER_ORDER: TasksKrcTier[] = ["novice", "pro", "legend"];
 
 export function normalizeTasksKrcUserPoints(userPoints: number): number {
     return Number.isFinite(userPoints) ? Math.max(0, userPoints) : 0;
